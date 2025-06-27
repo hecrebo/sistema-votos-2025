@@ -1,0 +1,19 @@
+{
+  "name": "sistema-votos-2025",
+  "version": "1.0.0",
+  "description": "Sistema de votación electrónica con HTML, CSS y JavaScript",
+  "main": "index.html",
+  "scripts": {
+    "start": "json-server --watch db.json --port 3000",
+    "dev": "live-server --port 8080",
+    "build": "echo 'No build step required for static files'",
+    "deploy": "node deploy.js"
+  },
+  "keywords": ["voting", "elections", "html", "css", "javascript"],
+  "author": "Tu Nombre",
+  "license": "MIT",
+  "devDependencies": {
+    "json-server": "^0.17.4",
+    "live-server": "^1.2.2"
+  }
+} 
