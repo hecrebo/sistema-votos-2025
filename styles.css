@@ -1604,6 +1604,45 @@ body {
     
     .bulk-preview-table th,
     .bulk-preview-table td {
-        padding: 8px 6px;
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+}
+
+/* Estilos para el formulario de edición */
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.edit-form .form-group {
+    margin-bottom: 0;
+}
+
+.edit-form .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.btn-small {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    margin: 0 0.25rem;
+}
+
+/* Responsive para el modal de edición */
+@media (max-width: 768px) {
+    .edit-form .modal-actions {
+        flex-direction: column;
+    }
+    
+    .edit-form .modal-actions .btn {
+        width: 100%;
+        margin: 0.25rem 0;
     }
 } 

@@ -316,6 +316,55 @@
             </div>
         </div>
 
+        <!-- Modal de Edición -->
+        <div id="edit-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Editar Registro</h3>
+                <form id="edit-form" class="edit-form">
+                    <div class="form-group">
+                        <label for="edit-ubch">UBCH</label>
+                        <select id="edit-ubch" name="ubch" required>
+                            <option value="">Selecciona una UBCH</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-community">Comunidad</label>
+                        <select id="edit-community" name="community" required disabled>
+                            <option value="">Selecciona una comunidad</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-name">Nombre</label>
+                        <input type="text" id="edit-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-cedula">Cédula</label>
+                        <input type="text" id="edit-cedula" name="cedula" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-telefono">Teléfono</label>
+                        <input type="text" id="edit-telefono" name="telefono" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-sexo">Sexo</label>
+                        <select id="edit-sexo" name="sexo" required>
+                            <option value="">Selecciona el sexo</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-edad">Edad</label>
+                        <input type="number" id="edit-edad" name="edad" min="16" max="120" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-edit">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="save-edit">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             <p>&copy; 2024 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>

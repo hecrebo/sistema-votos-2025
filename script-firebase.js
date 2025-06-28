@@ -19,6 +19,10 @@ class VotingSystemFirebase {
             lastUpdate: null
         };
         
+        // Variables para modales
+        this.voteToDelete = null;
+        this.voteToEdit = null;
+        
         this.ubchToCommunityMap = {
             "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO 4A ETAPA", "LA CAMACHERA"],
             "LICEO JOSE FELIX RIBAS": ["EL CUJIJAL", "LAS FLORES", "LAS ESPERANZA 200", "VILLAS DEL CENTRO 2ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CAIPARICALLY I II", "EL BANCO", "CAIPARICHA I Y II"],
@@ -44,7 +48,6 @@ class VotingSystemFirebase {
         this.votes = [];
         this.candidates = [];
         this.pdfLibrariesReady = false;
-        this.voteToDelete = null;
         this.projectionInterval = null;
         
         this.init();
@@ -412,9 +415,46 @@ class VotingSystemFirebase {
             this.handleCheckIn();
         });
 
-        // Cambio de UBCH
-        document.getElementById('ubch').addEventListener('click', (e) => {
+        // Formulario de edición
+        document.getElementById('edit-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleEditSubmit(e);
+        });
+
+        // Cambio de UBCH en formulario de registro
+        document.getElementById('ubch').addEventListener('change', (e) => {
             this.handleUBCHChange(e.target.value);
+        });
+
+        // Cambio de UBCH en formulario de edición
+        document.getElementById('edit-ubch').addEventListener('change', (e) => {
+            this.handleEditUBCHChange(e.target.value);
+        });
+
+        // Botones del modal de eliminación
+        document.getElementById('cancel-delete').addEventListener('click', () => {
+            this.closeDeleteModal();
+        });
+
+        document.getElementById('confirm-delete').addEventListener('click', () => {
+            this.confirmDelete();
+        });
+
+        // Botones del modal de edición
+        document.getElementById('cancel-edit').addEventListener('click', () => {
+            this.closeEditModal();
+        });
+
+        // Cerrar modales al hacer clic fuera de ellos
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+                if (e.target.id === 'delete-modal') {
+                    this.closeDeleteModal();
+                } else if (e.target.id === 'edit-modal') {
+                    this.closeEditModal();
+                }
+            }
         });
 
         // Mostrar ID de usuario
@@ -474,6 +514,21 @@ class VotingSystemFirebase {
 
     handleUBCHChange(selectedUBCH) {
         const communitySelect = document.getElementById('community');
+        communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
+        communitySelect.disabled = !selectedUBCH;
+
+        if (selectedUBCH && this.ubchToCommunityMap[selectedUBCH]) {
+            this.ubchToCommunityMap[selectedUBCH].forEach(community => {
+                const option = document.createElement('option');
+                option.value = community;
+                option.textContent = community;
+                communitySelect.appendChild(option);
+            });
+        }
+    }
+
+    handleEditUBCHChange(selectedUBCH) {
+        const communitySelect = document.getElementById('edit-community');
         communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
         communitySelect.disabled = !selectedUBCH;
 
@@ -558,7 +613,10 @@ class VotingSystemFirebase {
                     </span>
                 </td>
                 <td>
-                    <button class="btn btn-danger" onclick="votingSystem.deleteVote('${vote.id}')">
+                    <button class="btn btn-primary btn-small" onclick="votingSystem.editVote('${vote.id}')">
+                        Editar
+                    </button>
+                    <button class="btn btn-danger btn-small" onclick="votingSystem.deleteVote('${vote.id}')">
                         Eliminar
                     </button>
                 </td>
@@ -570,6 +628,123 @@ class VotingSystemFirebase {
     deleteVote(voteId) {
         this.voteToDelete = voteId;
         document.getElementById('delete-modal').style.display = 'flex';
+    }
+
+    editVote(voteId) {
+        // Encontrar el registro a editar
+        const vote = this.votes.find(v => v.id === voteId);
+        if (!vote) {
+            this.showMessage('Registro no encontrado', 'error', 'listado');
+            return;
+        }
+
+        // Guardar el ID del registro que se está editando
+        this.voteToEdit = voteId;
+
+        // Llenar el formulario con los datos actuales
+        this.populateEditForm(vote);
+
+        // Mostrar el modal de edición
+        document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    populateEditForm(vote) {
+        // Llenar los campos del formulario
+        document.getElementById('edit-name').value = vote.name || '';
+        document.getElementById('edit-cedula').value = vote.cedula || '';
+        document.getElementById('edit-telefono').value = vote.telefono || '';
+        document.getElementById('edit-sexo').value = vote.sexo || '';
+        document.getElementById('edit-edad').value = vote.edad || '';
+
+        // Configurar UBCH y comunidad
+        this.populateEditUBCH(vote.ubch, vote.community);
+    }
+
+    populateEditUBCH(selectedUBCH, selectedCommunity) {
+        const ubchSelect = document.getElementById('edit-ubch');
+        const communitySelect = document.getElementById('edit-community');
+
+        // Limpiar opciones existentes
+        ubchSelect.innerHTML = '<option value="">Selecciona una UBCH</option>';
+        communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
+
+        // Agregar opciones de UBCH
+        Object.keys(this.ubchToCommunityMap).forEach(ubch => {
+            const option = document.createElement('option');
+            option.value = ubch;
+            option.textContent = ubch;
+            if (ubch === selectedUBCH) {
+                option.selected = true;
+            }
+            ubchSelect.appendChild(option);
+        });
+
+        // Configurar comunidades si hay UBCH seleccionada
+        if (selectedUBCH && this.ubchToCommunityMap[selectedUBCH]) {
+            communitySelect.disabled = false;
+            this.ubchToCommunityMap[selectedUBCH].forEach(community => {
+                const option = document.createElement('option');
+                option.value = community;
+                option.textContent = community;
+                if (community === selectedCommunity) {
+                    option.selected = true;
+                }
+                communitySelect.appendChild(option);
+            });
+        } else {
+            communitySelect.disabled = true;
+        }
+    }
+
+    closeEditModal() {
+        document.getElementById('edit-modal').style.display = 'none';
+        this.voteToEdit = null;
+        
+        // Limpiar el formulario
+        document.getElementById('edit-form').reset();
+    }
+
+    async handleEditSubmit(event) {
+        event.preventDefault();
+
+        if (!this.voteToEdit) {
+            this.showMessage('Error: No hay registro seleccionado para editar', 'error', 'listado');
+            return;
+        }
+
+        // Obtener los datos del formulario
+        const formData = new FormData(event.target);
+        const editData = {
+            name: formData.get('name'),
+            cedula: formData.get('cedula'),
+            telefono: formData.get('telefono'),
+            sexo: formData.get('sexo'),
+            edad: parseInt(formData.get('edad')),
+            ubch: formData.get('ubch'),
+            community: formData.get('community')
+        };
+
+        // Validar los datos
+        const validation = this.validateRegistrationData(editData);
+        if (!validation.isValid) {
+            this.showMessage(validation.message, 'error', 'listado');
+            return;
+        }
+
+        try {
+            // Actualizar en Firebase
+            await this.updateVoteInFirebase(this.voteToEdit, editData);
+            
+            // Cerrar el modal
+            this.closeEditModal();
+            
+            // Mostrar mensaje de éxito
+            this.showMessage('Registro actualizado correctamente', 'success', 'listado');
+            
+        } catch (error) {
+            console.error('Error al actualizar registro:', error);
+            this.showMessage('Error al actualizar el registro: ' + error.message, 'error', 'listado');
+        }
     }
 
     closeDeleteModal() {
