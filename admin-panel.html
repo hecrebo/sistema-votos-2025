@@ -400,64 +400,6 @@
                 </div>
             </div>
             
-            <!-- Gestión de Usuarios -->
-            <div class="admin-card">
-                <h3>
-                    <span class="status-indicator status-online" id="users-status"></span>
-                    Gestión de Usuarios
-                </h3>
-                <div class="user-management-section">
-                    <div class="user-form">
-                        <h4>👤 Crear Nuevo Usuario</h4>
-                        <form id="create-user-form" class="admin-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="new-user-name">Nombre</label>
-                                    <input type="text" id="new-user-name" required placeholder="Nombre del usuario">
-                                </div>
-                                <div class="form-group">
-                                    <label for="new-user-password">Contraseña</label>
-                                    <input type="password" id="new-user-password" required placeholder="Contraseña">
-                                </div>
-                                <div class="form-group">
-                                    <label for="new-user-role">Rol</label>
-                                    <select id="new-user-role" required>
-                                        <option value="">Seleccionar rol</option>
-                                        <option value="superusuario">Superusuario</option>
-                                        <option value="usuario">Usuario</option>
-                                        <option value="registrador">Registrador</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-success">➕ Crear Usuario</button>
-                        </form>
-                    </div>
-                    <div class="users-list">
-                        <h4>📋 Usuarios Existentes</h4>
-                        <div class="users-table-container">
-                            <table class="users-table" id="users-table">
-                                <thead>
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Rol</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="users-table-body">
-                                    <!-- Los usuarios se cargarán dinámicamente -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <div class="service-controls">
-                    <button class="btn btn-primary" onclick="loadUsers()">🔄 Cargar Usuarios</button>
-                    <button class="btn btn-warning" onclick="exportUsers()">📥 Exportar Lista</button>
-                    <button class="btn btn-danger" onclick="clearAllUsers()">🗑️ Limpiar Todos</button>
-                </div>
-            </div>
-            
             <!-- Monitoreo -->
             <div class="admin-card">
                 <h3>
@@ -494,6 +436,64 @@
                 <div class="log-container" id="maintenance-logs">
                     <div class="log-entry log-info">Sistema listo para mantenimiento</div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Gestión de Usuarios -->
+        <div class="admin-card">
+            <h3>
+                <span class="status-indicator status-online" id="users-status"></span>
+                Gestión de Usuarios
+            </h3>
+            <div class="user-management-section">
+                <div class="user-form">
+                    <h4>👤 Crear Nuevo Usuario</h4>
+                    <form id="create-user-form" class="admin-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new-user-name">Nombre</label>
+                                <input type="text" id="new-user-name" required placeholder="Nombre del usuario">
+                            </div>
+                            <div class="form-group">
+                                <label for="new-user-password">Contraseña</label>
+                                <input type="password" id="new-user-password" required placeholder="Contraseña">
+                            </div>
+                            <div class="form-group">
+                                <label for="new-user-role">Rol</label>
+                                <select id="new-user-role" required>
+                                    <option value="">Seleccionar rol</option>
+                                    <option value="superusuario">Superusuario</option>
+                                    <option value="usuario">Usuario</option>
+                                    <option value="registrador">Registrador</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success">➕ Crear Usuario</button>
+                    </form>
+                </div>
+                <div class="users-list">
+                    <h4>📋 Usuarios Existentes</h4>
+                    <div class="users-table-container">
+                        <table class="users-table" id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Los usuarios se cargarán dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="service-controls">
+                <button class="btn btn-primary" onclick="loadUsers()">🔄 Cargar Usuarios</button>
+                <button class="btn btn-warning" onclick="exportUsers()">📥 Exportar Lista</button>
+                <button class="btn btn-danger" onclick="clearAllUsers()">🗑️ Limpiar Todos</button>
             </div>
         </div>
         

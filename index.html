@@ -57,7 +57,7 @@
                     <button class="nav-btn" data-page="statistics">Estadísticas</button>
                 </nav>
                 <div class="user-info">
-                    <p>ID de usuario: <span class="user-id" id="userId"></span></p>
+                    <span class="user-id" id="userId"></span>
                     <div class="sync-status">
                         <span class="sync-indicator" id="sync-indicator">🔄</span>
                         <span class="sync-text" id="sync-text">Sincronizando...</span>
@@ -67,14 +67,7 @@
                 <div class="mobile-menu">
                     <button class="menu-toggle" onclick="toggleMenu()">⋮</button>
                     <div class="menu-dropdown" id="menu-dropdown">
-                        <a href="admin-panel.html" class="menu-item" target="_blank">
-                            <span class="icon">🛠️</span>
-                            Panel Admin
-                        </a>
-                        <a href="#" class="menu-item danger" onclick="logout()">
-                            <span class="icon">🚪</span>
-                            Cerrar Sesión
-                        </a>
+                        <!-- El contenido del menú se generará dinámicamente por JS según el rol -->
                     </div>
                 </div>
             </div>
@@ -317,7 +310,25 @@
                 // Mostrar información del usuario en la interfaz
                 const userIdElement = document.getElementById('userId');
                 if (userIdElement) {
-                    userIdElement.textContent = user.name;
+                    let nombre = user.name || user.username || '';
+                    userIdElement.textContent = 'ID de usuario: ' + nombre;
+                }
+
+                // Generar menú según el rol
+                const menuDropdown = document.getElementById('menu-dropdown');
+                if (menuDropdown) {
+                    let menuHtml = '';
+                    if (user.role === 'superusuario') {
+                        menuHtml += `<a href="admin-panel.html" class="menu-item" target="_blank">
+                            <span class="icon">🛠️</span>
+                            Panel Admin
+                        </a>`;
+                    }
+                    menuHtml += `<a href="#" class="menu-item danger" onclick="logout()">
+                        <span class="icon">🚪</span>
+                        Cerrar Sesión
+                    </a>`;
+                    menuDropdown.innerHTML = menuHtml;
                 }
                 
             } catch (error) {
@@ -332,19 +343,6 @@
             localStorage.removeItem('currentUser');
             window.location.href = 'login.html';
         }
-        
-        // Agregar botón de logout al header si no existe
-        document.addEventListener('DOMContentLoaded', function() {
-            const userInfo = document.querySelector('.user-info');
-            if (userInfo && !document.getElementById('logout-btn')) {
-                const logoutBtn = document.createElement('button');
-                logoutBtn.id = 'logout-btn';
-                logoutBtn.className = 'btn btn-danger';
-                logoutBtn.textContent = 'Salir';
-                logoutBtn.onclick = logout;
-                userInfo.appendChild(logoutBtn);
-            }
-        });
         
         // Funciones del menú desplegable
         function toggleMenu() {
