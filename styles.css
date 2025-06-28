@@ -1700,8 +1700,8 @@ body {
     }
 }
 
-/* Quitar doble flecha en selects del modal de edición */
-#edit-modal select {
+/* Quitar doble flecha y poner flecha moderna en todos los selects */
+select {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -1712,7 +1712,7 @@ body {
     padding-right: 2.5em;
     border: 1px solid #e5e7eb;
 }
-#edit-modal select:focus {
+select:focus {
     border-color: var(--primary-color);
     outline: none;
 } 
