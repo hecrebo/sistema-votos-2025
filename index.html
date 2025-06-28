@@ -62,7 +62,24 @@
                         <span class="sync-indicator" id="sync-indicator">🔄</span>
                         <span class="sync-text" id="sync-text">Sincronizando...</span>
                     </div>
-                    <a href="admin-panel.html" class="admin-link" target="_blank">🛠️ Panel Admin</a>
+                </div>
+                <!-- Menú desplegable móvil -->
+                <div class="mobile-menu">
+                    <button class="menu-toggle" onclick="toggleMenu()">⋮</button>
+                    <div class="menu-dropdown" id="menu-dropdown">
+                        <a href="admin-panel.html" class="menu-item" target="_blank">
+                            <span class="icon">🛠️</span>
+                            Panel Admin
+                        </a>
+                        <a href="user-management-simple.html" class="menu-item" target="_blank">
+                            <span class="icon">👥</span>
+                            Gestionar Usuarios
+                        </a>
+                        <a href="#" class="menu-item danger" onclick="logout()">
+                            <span class="icon">🚪</span>
+                            Cerrar Sesión
+                        </a>
+                    </div>
                 </div>
             </div>
         </header>
@@ -330,6 +347,22 @@
                 logoutBtn.textContent = 'Salir';
                 logoutBtn.onclick = logout;
                 userInfo.appendChild(logoutBtn);
+            }
+        });
+        
+        // Funciones del menú desplegable
+        function toggleMenu() {
+            const dropdown = document.getElementById('menu-dropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        // Cerrar menú al hacer clic fuera de él
+        document.addEventListener('click', function(event) {
+            const menu = document.querySelector('.mobile-menu');
+            const dropdown = document.getElementById('menu-dropdown');
+            
+            if (!menu.contains(event.target) && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
             }
         });
     </script>
