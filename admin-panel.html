@@ -324,6 +324,112 @@
             color: #155724;
             font-weight: 500;
         }
+
+        .users-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .users-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Estilos para importación de usuarios */
+        .import-section {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid #bbdefb;
+        }
+
+        .import-section h4 {
+            color: #1976d2;
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+        }
+
+        .import-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .import-info p {
+            margin: 5px 0;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .import-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .import-preview {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #4caf50;
+            margin-top: 15px;
+        }
+
+        .import-preview h5 {
+            color: #2e7d32;
+            margin: 0 0 15px 0;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .preview-table th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+        }
+
+        .preview-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .import-status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+
+        .import-status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .import-status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .import-status.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
     </style>
 </head>
 <body>
@@ -470,6 +576,30 @@
                         </div>
                         <button type="submit" class="btn btn-success">➕ Crear Usuario</button>
                     </form>
+                    
+                    <!-- Importación desde Excel -->
+                    <div class="import-section">
+                        <h4>📊 Importar Usuarios desde Excel</h4>
+                        <div class="import-info">
+                            <p><strong>Formato requerido:</strong> CSV con columnas: Nombre, Contraseña, Rol</p>
+                            <p><strong>Roles válidos:</strong> superusuario, usuario, registrador</p>
+                        </div>
+                        <div class="import-controls">
+                            <input type="file" id="excel-file-input" accept=".csv,.xlsx,.xls" style="display: none;">
+                            <button class="btn btn-primary" onclick="document.getElementById('excel-file-input').click()">
+                                📁 Seleccionar Archivo
+                            </button>
+                            <button class="btn btn-info" onclick="downloadTemplate()">
+                                📥 Descargar Plantilla
+                            </button>
+                        </div>
+                        <div id="import-preview" class="import-preview" style="display: none;">
+                            <h5>📋 Vista Previa de Usuarios a Importar</h5>
+                            <div id="preview-content"></div>
+                            <button class="btn btn-success" onclick="confirmImport()">✅ Confirmar Importación</button>
+                            <button class="btn btn-secondary" onclick="cancelImport()">❌ Cancelar</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="users-list">
                     <h4>📋 Usuarios Existentes</h4>
@@ -989,6 +1119,254 @@
             } catch (error) {
                 log(`❌ Error eliminando usuarios: ${error.message}`, 'error');
             }
+        }
+
+        // Variables para importación
+        let usersToImport = [];
+        let importFile = null;
+
+        // Configurar el input de archivo
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('excel-file-input');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFileSelect);
+            }
+        });
+
+        // Manejar selección de archivo
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            importFile = file;
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const users = parseCSV(content);
+                    
+                    if (users.length === 0) {
+                        showImportStatus('❌ No se encontraron datos válidos en el archivo', 'error');
+                        return;
+                    }
+
+                    usersToImport = users;
+                    showImportPreview(users);
+                    showImportStatus(`📋 ${users.length} usuarios encontrados para importar`, 'success');
+                    
+                } catch (error) {
+                    showImportStatus(`❌ Error procesando archivo: ${error.message}`, 'error');
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        // Parsear archivo CSV
+        function parseCSV(content) {
+            const lines = content.split('\n').filter(line => line.trim());
+            if (lines.length < 2) {
+                throw new Error('El archivo debe tener al menos una fila de encabezados y una fila de datos');
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const requiredHeaders = ['nombre', 'contraseña', 'rol'];
+            
+            // Verificar que los encabezados sean correctos
+            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+            if (missingHeaders.length > 0) {
+                throw new Error(`Faltan columnas requeridas: ${missingHeaders.join(', ')}`);
+            }
+
+            const users = [];
+            const validRoles = ['superusuario', 'usuario', 'registrador'];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length < 3) continue;
+
+                const user = {
+                    name: values[headers.indexOf('nombre')],
+                    password: values[headers.indexOf('contraseña')],
+                    role: values[headers.indexOf('rol')].toLowerCase()
+                };
+
+                // Validar datos
+                if (!user.name || !user.password || !user.role) {
+                    continue; // Saltar filas incompletas
+                }
+
+                if (!validRoles.includes(user.role)) {
+                    user.role = 'usuario'; // Rol por defecto si no es válido
+                }
+
+                users.push(user);
+            }
+
+            return users;
+        }
+
+        // Mostrar vista previa de importación
+        function showImportPreview(users) {
+            const previewDiv = document.getElementById('import-preview');
+            const contentDiv = document.getElementById('preview-content');
+            
+            if (!previewDiv || !contentDiv) return;
+
+            let tableHTML = `
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            users.forEach(user => {
+                const status = validateUser(user);
+                const statusClass = status === '✅ Válido' ? 'success' : 'warning';
+                
+                tableHTML += `
+                    <tr>
+                        <td>${user.name}</td>
+                        <td>${user.role}</td>
+                        <td class="import-status ${statusClass}">${status}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += '</tbody></table>';
+            contentDiv.innerHTML = tableHTML;
+            previewDiv.style.display = 'block';
+        }
+
+        // Validar usuario individual
+        function validateUser(user) {
+            if (!user.name || user.name.length < 2) {
+                return '❌ Nombre muy corto';
+            }
+            if (!user.password || user.password.length < 4) {
+                return '❌ Contraseña muy corta';
+            }
+            if (!['superusuario', 'usuario', 'registrador'].includes(user.role)) {
+                return '❌ Rol inválido';
+            }
+            return '✅ Válido';
+        }
+
+        // Mostrar estado de importación
+        function showImportStatus(message, type) {
+            const previewDiv = document.getElementById('import-preview');
+            if (!previewDiv) return;
+
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `import-status ${type}`;
+            statusDiv.textContent = message;
+            
+            // Insertar al inicio del preview
+            previewDiv.insertBefore(statusDiv, previewDiv.firstChild);
+            
+            // Remover después de 5 segundos
+            setTimeout(() => {
+                if (statusDiv.parentNode) {
+                    statusDiv.parentNode.removeChild(statusDiv);
+                }
+            }, 5000);
+        }
+
+        // Confirmar importación
+        function confirmImport() {
+            if (usersToImport.length === 0) {
+                showImportStatus('❌ No hay usuarios para importar', 'error');
+                return;
+            }
+
+            try {
+                const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                let importedCount = 0;
+                let skippedCount = 0;
+
+                usersToImport.forEach(user => {
+                    // Verificar si el usuario ya existe
+                    const existingUser = existingUsers.find(u => u.name.toLowerCase() === user.name.toLowerCase());
+                    
+                    if (existingUser) {
+                        skippedCount++;
+                        return; // Saltar usuario existente
+                    }
+
+                    // Crear nuevo usuario
+                    const newUser = {
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                        name: user.name,
+                        password: user.password,
+                        role: user.role,
+                        createdAt: new Date().toISOString(),
+                        active: true
+                    };
+
+                    existingUsers.push(newUser);
+                    importedCount++;
+                });
+
+                localStorage.setItem('users', JSON.stringify(existingUsers));
+                loadUsers();
+
+                // Mostrar resultados
+                let resultMessage = `✅ ${importedCount} usuarios importados exitosamente`;
+                if (skippedCount > 0) {
+                    resultMessage += `, ${skippedCount} usuarios existentes omitidos`;
+                }
+                
+                showImportStatus(resultMessage, 'success');
+                log(`📊 Importación completada: ${importedCount} nuevos, ${skippedCount} omitidos`, 'success');
+                maintenanceLog(`Importación masiva: ${importedCount} usuarios creados`, 'success');
+
+                // Limpiar vista previa
+                cancelImport();
+
+            } catch (error) {
+                showImportStatus(`❌ Error en importación: ${error.message}`, 'error');
+                log(`❌ Error importando usuarios: ${error.message}`, 'error');
+            }
+        }
+
+        // Cancelar importación
+        function cancelImport() {
+            usersToImport = [];
+            importFile = null;
+            
+            const previewDiv = document.getElementById('import-preview');
+            const fileInput = document.getElementById('excel-file-input');
+            
+            if (previewDiv) {
+                previewDiv.style.display = 'none';
+            }
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        }
+
+        // Descargar plantilla CSV
+        function downloadTemplate() {
+            const template = `Nombre,Contraseña,Rol
+Juan Pérez,123456,usuario
+María García,654321,registrador
+Admin Principal,admin123,superusuario`;
+
+            const blob = new Blob([template], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'plantilla-usuarios.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('📥 Plantilla de usuarios descargada', 'success');
         }
     </script>
 </body>
