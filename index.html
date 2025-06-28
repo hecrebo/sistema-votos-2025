@@ -285,5 +285,53 @@
     <script src="service-manager.js"></script>
     <script src="user-management.js"></script>
     <script src="script-firebase.js"></script>
+    
+    <script>
+        // Verificación de autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('currentUser');
+            
+            if (!currentUser) {
+                // No hay sesión activa, redirigir al login
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                const user = JSON.parse(currentUser);
+                console.log('👤 Usuario autenticado:', user.name, 'Rol:', user.role);
+                
+                // Mostrar información del usuario en la interfaz
+                const userIdElement = document.getElementById('userId');
+                if (userIdElement) {
+                    userIdElement.textContent = user.name;
+                }
+                
+            } catch (error) {
+                console.error('Error al parsear datos de usuario:', error);
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            }
+        });
+        
+        // Función para cerrar sesión
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+        
+        // Agregar botón de logout al header si no existe
+        document.addEventListener('DOMContentLoaded', function() {
+            const userInfo = document.querySelector('.user-info');
+            if (userInfo && !document.getElementById('logout-btn')) {
+                const logoutBtn = document.createElement('button');
+                logoutBtn.id = 'logout-btn';
+                logoutBtn.className = 'btn btn-danger';
+                logoutBtn.textContent = 'Salir';
+                logoutBtn.onclick = logout;
+                userInfo.appendChild(logoutBtn);
+            }
+        });
+    </script>
 </body>
 </html>
