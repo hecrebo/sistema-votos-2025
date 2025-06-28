@@ -468,6 +468,16 @@ class VotingSystemFirebase {
 
         // Mostrar ID de usuario
         document.getElementById('userId').textContent = this.userId;
+
+        // Listeners para exportar PDF y CSV
+        const pdfBtn = document.getElementById('export-pdf-btn');
+        if (pdfBtn) {
+            pdfBtn.addEventListener('click', () => this.exportToPDF());
+        }
+        const csvBtn = document.getElementById('export-csv-btn');
+        if (csvBtn) {
+            csvBtn.addEventListener('click', () => this.exportToCSV());
+        }
     }
 
     navigateToPage(page) {
@@ -902,6 +912,64 @@ class VotingSystemFirebase {
             }
         };
         checkLibraries();
+    }
+
+    exportToPDF() {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            alert('No se encontró la librería jsPDF.');
+            return;
+        }
+        const doc = new window.jspdf.jsPDF();
+        const columns = [
+            { header: 'Nombre', dataKey: 'name' },
+            { header: 'Cédula', dataKey: 'cedula' },
+            { header: 'Sexo', dataKey: 'sexo' },
+            { header: 'Edad', dataKey: 'edad' },
+            { header: 'UBCH', dataKey: 'ubch' },
+            { header: 'Comunidad', dataKey: 'community' },
+            { header: 'Votó', dataKey: 'voted' }
+        ];
+        const rows = this.votes.map(vote => ({
+            name: vote.name,
+            cedula: vote.cedula,
+            sexo: vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : '',
+            edad: vote.edad || '',
+            ubch: vote.ubch,
+            community: vote.community,
+            voted: vote.voted ? 'Sí' : 'No'
+        }));
+        doc.text('Listado de Personas Registradas', 14, 16);
+        doc.autoTable({
+            columns,
+            body: rows,
+            startY: 20,
+            styles: { fontSize: 9 }
+        });
+        doc.save('listado-personas.pdf');
+    }
+
+    exportToCSV() {
+        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Votó'];
+        const rows = this.votes.map(vote => [
+            vote.name,
+            vote.cedula,
+            vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : '',
+            vote.edad || '',
+            vote.ubch,
+            vote.community,
+            vote.voted ? 'Sí' : 'No'
+        ]);
+        let csvContent = headers.join(',') + '\n';
+        rows.forEach(row => {
+            csvContent += row.map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(',') + '\n';
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', 'listado-personas.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 }
 
