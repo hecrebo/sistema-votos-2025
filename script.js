@@ -5,6 +5,23 @@ class VotingSystem {
         this.apiUrl = 'http://localhost:3000';
         this.currentPage = 'registration';
         this.userId = this.generateUserId();
+        
+        // Sistema de cola para múltiples usuarios
+        this.registrationQueue = [];
+        this.isProcessingQueue = false;
+        this.concurrentRegistrations = 0;
+        this.maxConcurrentRegistrations = 5;
+        
+        // Debounce para búsquedas
+        this.searchTimeout = null;
+        
+        // Cache para optimizar consultas
+        this.cache = {
+            ubchData: null,
+            votes: null,
+            lastUpdate: null
+        };
+        
         this.ubchToCommunityMap = {
             "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO 4A ETAPA", "LA CAMACHERA"],
             "LICEO JOSE FELIX RIBAS": ["EL CUJIJAL", "LAS FLORES", "LAS ESPERANZA 200", "VILLAS DEL CENTRO 2ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CAIPARICALLY I II", "EL BANCO", "CAIPARICHA I Y II"],
@@ -32,6 +49,163 @@ class VotingSystem {
         this.pdfLibrariesReady = false;
         
         this.init();
+    }
+
+    // Sistema de cola para registros múltiples
+    async addToRegistrationQueue(registrationData) {
+        return new Promise((resolve, reject) => {
+            const queueItem = {
+                data: registrationData,
+                resolve,
+                reject,
+                timestamp: Date.now()
+            };
+            
+            this.registrationQueue.push(queueItem);
+            this.showMessage(`Registro en cola. Posición: ${this.registrationQueue.length}`, 'info', 'registration');
+            
+            if (!this.isProcessingQueue) {
+                this.processRegistrationQueue();
+            }
+        });
+    }
+
+    async processRegistrationQueue() {
+        if (this.isProcessingQueue || this.registrationQueue.length === 0) {
+            return;
+        }
+
+        this.isProcessingQueue = true;
+
+        while (this.registrationQueue.length > 0 && this.concurrentRegistrations < this.maxConcurrentRegistrations) {
+            const queueItem = this.registrationQueue.shift();
+            this.concurrentRegistrations++;
+
+            try {
+                const result = await this.processRegistration(queueItem.data);
+                queueItem.resolve(result);
+            } catch (error) {
+                queueItem.reject(error);
+            } finally {
+                this.concurrentRegistrations--;
+                // Pequeña pausa entre registros para evitar sobrecarga
+                await this.delay(100);
+            }
+        }
+
+        this.isProcessingQueue = false;
+
+        // Si quedan elementos en la cola, continuar procesando
+        if (this.registrationQueue.length > 0) {
+            setTimeout(() => this.processRegistrationQueue(), 200);
+        }
+    }
+
+    async processRegistration(registrationData) {
+        // Validación en tiempo real
+        const validation = this.validateRegistrationData(registrationData);
+        if (!validation.isValid) {
+            throw new Error(validation.message);
+        }
+
+        // Verificar duplicados
+        const isDuplicate = this.votes.some(vote => vote.cedula === registrationData.cedula);
+        if (isDuplicate) {
+            throw new Error('Esta cédula ya está registrada');
+        }
+
+        // Crear nuevo registro
+        const newVote = {
+            id: Date.now() + Math.random(),
+            ...registrationData,
+            registeredAt: new Date().toISOString(),
+            registeredBy: this.userId,
+            hasVoted: false
+        };
+
+        // Agregar a la lista local
+        this.votes.push(newVote);
+        
+        // Guardar datos
+        await this.saveData();
+        
+        return newVote;
+    }
+
+    validateRegistrationData(data) {
+        // Validar cédula
+        if (!data.cedula || !/^\d{6,10}$/.test(data.cedula)) {
+            return { isValid: false, message: 'Cédula inválida. Debe tener entre 6 y 10 dígitos' };
+        }
+
+        // Validar nombre
+        if (!data.name || data.name.trim().length < 3) {
+            return { isValid: false, message: 'Nombre inválido. Debe tener al menos 3 caracteres' };
+        }
+
+        // Validar teléfono
+        if (!data.telefono || !/^04\d{9}$/.test(data.telefono)) {
+            return { isValid: false, message: 'Teléfono inválido. Debe tener formato: 04xxxxxxxxx' };
+        }
+
+        // Validar UBCH y comunidad
+        if (!data.ubch || !data.community) {
+            return { isValid: false, message: 'Debe seleccionar UBCH y comunidad' };
+        }
+
+        return { isValid: true, message: 'Datos válidos' };
+    }
+
+    // Debounce para búsquedas
+    debounce(func, wait) {
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(this.searchTimeout);
+                func(...args);
+            };
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(later, wait);
+        }.bind(this);
+    }
+
+    // Función de delay
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Cache optimizado
+    async getCachedData(key, fetchFunction, maxAge = 30000) {
+        const now = Date.now();
+        const cached = this.cache[key];
+        
+        if (cached && (now - cached.timestamp) < maxAge) {
+            return cached.data;
+        }
+
+        const data = await fetchFunction();
+        this.cache[key] = {
+            data,
+            timestamp: now
+        };
+
+        return data;
+    }
+
+    // Notificaciones optimizadas
+    showOptimizedMessage(message, type = 'info', page = 'registration') {
+        // Evitar múltiples mensajes del mismo tipo
+        const messageKey = `${type}-${message}`;
+        if (this.lastMessage === messageKey) {
+            return;
+        }
+        
+        this.lastMessage = messageKey;
+        this.showMessage(message, type, page);
+        
+        // Limpiar después de 3 segundos
+        setTimeout(() => {
+            this.lastMessage = null;
+        }, 3000);
     }
 
     async init() {
@@ -263,63 +437,42 @@ class VotingSystem {
         const ubch = formData.get('ubch');
         const community = formData.get('community');
 
-        // Validación adicional de cédula y teléfono
-        const cedulaLimpia = cedula.replace(/\D/g, ''); // Solo números
-        const cedulaValida = cedulaLimpia.length >= 6 && cedulaLimpia.length <= 10;
-        
-        const telefonoLimpio = telefono.replace(/\D/g, ''); // Solo números
-        const telefonoValido = telefonoLimpio.length === 11 && telefonoLimpio.startsWith('04');
-
+        // Validación inicial
         if (!name || !cedula || !telefono || !ubch || !community) {
-            this.showMessage('Por favor, completa todos los campos.', 'error', 'registration');
-            return;
-        }
-        if (!cedulaValida) {
-            this.showMessage('Introduce una cédula válida (solo números, 6 a 10 dígitos).', 'error', 'registration');
-            return;
-        }
-        if (!telefonoValido) {
-            this.showMessage('Introduce un teléfono válido (ej: 04121234567).', 'error', 'registration');
+            this.showOptimizedMessage('Por favor, completa todos los campos.', 'error', 'registration');
             return;
         }
 
-        // Verificar si la cédula ya existe
-        if (this.votes.some(vote => vote.cedula === cedulaLimpia)) {
-            this.showMessage('Error: Esta cédula ya está registrada.', 'error', 'registration');
-            return;
-        }
+        // Preparar datos para la cola
+        const registrationData = {
+            name,
+            cedula: cedula.replace(/\D/g, ''),
+            telefono: telefono.replace(/\D/g, ''),
+            ubch,
+            community
+        };
 
         this.setLoadingState('registration', true);
 
         try {
-            const newVote = {
-                id: Date.now(),
-                name,
-                cedula: cedulaLimpia,
-                telefono: telefonoLimpio,
-                ubch,
-                community,
-                timestamp: new Date().toISOString(),
-                registeredBy: this.userId,
-                preRegistered: true,
-                voted: false
-            };
-
-            this.votes.push(newVote);
-            await this.saveData();
-
-            this.showMessage('¡Persona registrada con éxito!', 'success', 'registration');
+            // Agregar a la cola de registros
+            const result = await this.addToRegistrationQueue(registrationData);
+            
+            this.showOptimizedMessage('¡Persona registrada con éxito!', 'success', 'registration');
             await this.generateThankYouMessage(name, ubch, community);
             
+            // Limpiar formulario
             form.reset();
             document.getElementById('community').disabled = true;
+            
             // Mantener visible el mensaje de agradecimiento
             setTimeout(() => {
                 document.getElementById('thank-you-message').style.display = 'none';
             }, 10000);
+            
         } catch (error) {
             console.error('Error al registrar:', error);
-            this.showMessage('Error al registrar persona. Inténtalo de nuevo.', 'error', 'registration');
+            this.showOptimizedMessage(error.message || 'Error al registrar persona. Inténtalo de nuevo.', 'error', 'registration');
         } finally {
             this.setLoadingState('registration', false);
         }
@@ -360,35 +513,34 @@ class VotingSystem {
         const cedula = document.getElementById('cedula-search').value.trim();
         
         if (!cedula) {
-            this.showMessage('Por favor, ingresa un número de cédula para buscar.', 'error', 'check-in');
+            this.showOptimizedMessage('Por favor, ingresa un número de cédula para buscar.', 'error', 'check-in');
             return;
         }
 
-        this.setLoadingState('check-in', true);
+        // Usar debounce para evitar múltiples búsquedas
+        const debouncedSearch = this.debounce(async (searchCedula) => {
+            this.setLoadingState('check-in', true);
 
-        try {
-            const results = this.votes.filter(vote => vote.cedula === cedula);
-            
-            if (results.length === 0) {
-                this.showMessage(`No se encontró a ninguna persona con la cédula ${cedula}.`, 'error', 'check-in');
-                return;
+            try {
+                const results = this.votes.filter(vote => vote.cedula === searchCedula);
+                
+                if (results.length === 0) {
+                    this.showOptimizedMessage(`No se encontró a ninguna persona con la cédula ${searchCedula}.`, 'error', 'check-in');
+                    return;
+                }
+
+                this.renderSearchResults(results);
+                this.showOptimizedMessage(`Se encontró ${results.length} persona(s) con la cédula ${searchCedula}.`, 'success', 'check-in');
+                
+            } catch (error) {
+                console.error('Error en búsqueda:', error);
+                this.showOptimizedMessage('Error al buscar. Inténtalo de nuevo.', 'error', 'check-in');
+            } finally {
+                this.setLoadingState('check-in', false);
             }
+        }, 300);
 
-            const notVoted = results.filter(vote => !vote.voted);
-            
-            if (notVoted.length === 0) {
-                this.showMessage(`La persona con cédula ${cedula} ya ha votado.`, 'error', 'check-in');
-                return;
-            }
-
-            this.renderSearchResults(notVoted);
-
-        } catch (error) {
-            console.error('Error al buscar:', error);
-            this.showMessage('Error al buscar persona. Inténtalo de nuevo.', 'error', 'check-in');
-        } finally {
-            this.setLoadingState('check-in', false);
-        }
+        await debouncedSearch(cedula);
     }
 
     renderSearchResults(results) {
