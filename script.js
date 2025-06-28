@@ -235,8 +235,8 @@ class VotingSystem {
         } catch (error) {
             console.warn('No se pudo conectar al servidor, usando localStorage:', error);
             // Si falla, usar localStorage como respaldo
-            this.useLocalStorage = true;
-            this.loadFromLocalStorage();
+        this.useLocalStorage = true;
+        this.loadFromLocalStorage();
             this.showMessage('Modo offline activado. Los datos solo se guardan en esta computadora.', 'warning', 'registration');
         }
         
@@ -475,12 +475,12 @@ class VotingSystem {
 
         // Preparar datos para la cola
         const registrationData = {
-            name,
+                name,
             cedula: cedula.replace(/\D/g, ''),
             telefono: telefono.replace(/\D/g, ''),
             sexo,
             edad: parseInt(edad),
-            ubch,
+                ubch,
             community
         };
 
@@ -489,7 +489,7 @@ class VotingSystem {
         try {
             // Agregar a la cola de registros
             const result = await this.addToRegistrationQueue(registrationData);
-            
+
             this.showOptimizedMessage('¡Persona registrada con éxito!', 'success', 'registration');
             await this.generateThankYouMessage(name, ubch, community);
             
@@ -551,25 +551,25 @@ class VotingSystem {
 
         // Usar debounce para evitar múltiples búsquedas
         const debouncedSearch = this.debounce(async (searchCedula) => {
-            this.setLoadingState('check-in', true);
+        this.setLoadingState('check-in', true);
 
-            try {
+        try {
                 const results = this.votes.filter(vote => vote.cedula === searchCedula);
-                
-                if (results.length === 0) {
+            
+            if (results.length === 0) {
                     this.showOptimizedMessage(`No se encontró a ninguna persona con la cédula ${searchCedula}.`, 'error', 'check-in');
-                    return;
-                }
+                return;
+            }
 
                 this.renderSearchResults(results);
                 this.showOptimizedMessage(`Se encontró ${results.length} persona(s) con la cédula ${searchCedula}.`, 'success', 'check-in');
-                
-            } catch (error) {
+
+        } catch (error) {
                 console.error('Error en búsqueda:', error);
                 this.showOptimizedMessage('Error al buscar. Inténtalo de nuevo.', 'error', 'check-in');
-            } finally {
-                this.setLoadingState('check-in', false);
-            }
+        } finally {
+            this.setLoadingState('check-in', false);
+        }
         }, 300);
 
         await debouncedSearch(cedula);
