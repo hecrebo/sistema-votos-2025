@@ -52,15 +52,27 @@ class VotingSystemFirebase {
 
     async init() {
         try {
+            console.log('🔍 Iniciando conexión con Firebase...');
+            
+            // Verificar que Firebase esté disponible
+            if (!window.firebaseDB) {
+                throw new Error('Firebase no está inicializado');
+            }
+            
+            console.log('✅ Firebase configurado correctamente');
+            
             // Cargar datos desde Firebase
             await this.loadDataFromFirebase();
+            console.log('✅ Datos cargados desde Firebase:', this.votes.length, 'registros');
+            
             this.showMessage('Conectado a Firebase. Los datos están centralizados en la nube.', 'success', 'registration');
             
             // Configurar listener en tiempo real
             this.setupRealtimeListener();
+            console.log('✅ Listener en tiempo real configurado');
             
         } catch (error) {
-            console.error('Error al conectar con Firebase:', error);
+            console.error('❌ Error al conectar con Firebase:', error);
             this.showMessage('Error de conexión. Verificando configuración de Firebase.', 'error', 'registration');
         }
         
@@ -91,30 +103,47 @@ class VotingSystemFirebase {
     }
 
     setupRealtimeListener() {
+        console.log('🔄 Configurando listener en tiempo real...');
+        
         // Escuchar cambios en tiempo real
-        window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
+        const unsubscribe = window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
+            console.log('📡 Cambio detectado en Firebase:', snapshot.docs.length, 'registros');
+            
             this.votes = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
             
+            console.log('✅ Datos actualizados localmente');
+            
             // Actualizar la interfaz si estamos en una página que muestra datos
             if (this.currentPage === 'listado' || this.currentPage === 'dashboard' || this.currentPage === 'statistics') {
+                console.log('🔄 Actualizando interfaz...');
                 this.renderCurrentPage();
             }
+        }, (error) => {
+            console.error('❌ Error en listener de Firebase:', error);
         });
+        
+        // Guardar la función de unsubscribe para limpiar después
+        this.unsubscribeListener = unsubscribe;
+        console.log('✅ Listener en tiempo real configurado correctamente');
     }
 
     async saveVoteToFirebase(voteData) {
         try {
+            console.log('💾 Guardando en Firebase:', voteData);
+            
             const docRef = await window.firebaseDB.votesCollection.add({
                 ...voteData,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
+            
+            console.log('✅ Datos guardados en Firebase con ID:', docRef.id);
             return docRef.id;
         } catch (error) {
-            console.error('Error guardando en Firebase:', error);
+            console.error('❌ Error guardando en Firebase:', error);
             throw error;
         }
     }

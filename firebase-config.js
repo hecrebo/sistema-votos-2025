@@ -1,12 +1,11 @@
 // Configuración de Firebase para Sistema de Votos 2025
 const firebaseConfig = {
-    // Configuración de ejemplo - Reemplazar con tu proyecto real
-    apiKey: "AIzaSyBtuEjemplo123456789",
+    apiKey: "AIzaSyAtgIwPlrxpsrVNWIIG8i2fVle-DhX0suY",
     authDomain: "sistema-votos-2025.firebaseapp.com",
     projectId: "sistema-votos-2025",
-    storageBucket: "sistema-votos-2025.appspot.com",
-    messagingSenderId: "123456789012",
-    appId: "1:123456789012:web:abcdef123456789"
+    storageBucket: "sistema-votos-2025.firebasestorage.app",
+    messagingSenderId: "136821740270",
+    appId: "1:136821740270:web:a503de06b4cc28af3899ff"
 };
 
 // Inicializar Firebase
