@@ -145,23 +145,7 @@ class UserManagement {
     }
     
     setupNavigation() {
-        // Configurar logout
-        this.setupLogout();
-    }
-    
-    setupLogout() {
-        // Crear botón de logout si no existe
-        if (!document.getElementById('logout-btn')) {
-            const userInfo = document.querySelector('.user-info');
-            if (userInfo) {
-                const logoutBtn = document.createElement('button');
-                logoutBtn.id = 'logout-btn';
-                logoutBtn.className = 'btn btn-danger';
-                logoutBtn.textContent = '🚪 Cerrar Sesión';
-                logoutBtn.onclick = () => this.logout();
-                userInfo.appendChild(logoutBtn);
-            }
-        }
+        // Ya no se debe agregar botón de logout aquí
     }
     
     getUserPermissions() {
