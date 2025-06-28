@@ -32,7 +32,7 @@ class VotingSystem {
             "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO"],
             "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE"],
             "CASA COMUNAL": ["LOS JABILLOS"],
-            "UNIDAD EDUCATiva MONSEÑOR JACINTO SOTO LAYERA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II"],
+            "UNIDAD EDUCATIVA MONSEÑOR JACINTO SOTO LAYERA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II"],
             "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["24 DE ENERO", "19 DE ABRIL", "EL PROGRESO"],
             "ESCUELA ESTADAL ALEJO ZULOAGA": ["MAIQUETIA", "SAENZ", "PANAMERICANO"],
             "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMEDIOS"],
@@ -45,8 +45,17 @@ class VotingSystem {
         };
         this.votes = [];
         this.candidates = [];
-        this.useLocalStorage = true;
+        this.useLocalStorage = false;
         this.pdfLibrariesReady = false;
+        
+        // Configuración de optimizaciones
+        this.registrationQueue = [];
+        this.isProcessingQueue = false;
+        this.cache = {};
+        this.searchTimeout = null;
+        this.lastMessage = null;
+        this.voteToDelete = null;
+        this.projectionInterval = null;
         
         this.init();
     }
@@ -120,13 +129,13 @@ class VotingSystem {
             ...registrationData,
             registeredAt: new Date().toISOString(),
             registeredBy: this.userId,
-            hasVoted: false
+            voted: false
         };
 
         // Agregar a la lista local
         this.votes.push(newVote);
         
-        // Guardar datos
+        // Guardar datos en servidor o localStorage
         await this.saveData();
         
         return newVote;
@@ -219,9 +228,18 @@ class VotingSystem {
     }
 
     async init() {
-        // Usar localStorage por defecto para evitar problemas de conexión
-        this.useLocalStorage = true;
-        this.loadFromLocalStorage();
+        try {
+            // Intentar cargar datos del servidor JSON
+            await this.loadData();
+            this.showMessage('Conectado al servidor. Los datos se comparten entre todas las computadoras.', 'success', 'registration');
+        } catch (error) {
+            console.warn('No se pudo conectar al servidor, usando localStorage:', error);
+            // Si falla, usar localStorage como respaldo
+            this.useLocalStorage = true;
+            this.loadFromLocalStorage();
+            this.showMessage('Modo offline activado. Los datos solo se guardan en esta computadora.', 'warning', 'registration');
+        }
+        
         this.setupEventListeners();
         this.renderCurrentPage();
         this.loadPdfLibraries();
