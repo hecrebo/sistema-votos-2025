@@ -109,6 +109,7 @@ class VotingSystemFirebase {
         const unsubscribe = window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
             console.log('📡 Cambio detectado en Firebase:', snapshot.docs.length, 'registros');
             
+            // Actualizar datos locales
             this.votes = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -116,18 +117,102 @@ class VotingSystemFirebase {
             
             console.log('✅ Datos actualizados localmente');
             
-            // Actualizar la interfaz si estamos en una página que muestra datos
-            if (this.currentPage === 'listado' || this.currentPage === 'dashboard' || this.currentPage === 'statistics') {
-                console.log('🔄 Actualizando interfaz...');
-                this.renderCurrentPage();
-            }
+            // Actualizar TODAS las páginas que muestran datos
+            this.updateAllDataDisplays();
+            
         }, (error) => {
             console.error('❌ Error en listener de Firebase:', error);
+            this.showMessage('Error de sincronización. Reintentando...', 'error', 'registration');
         });
         
         // Guardar la función de unsubscribe para limpiar después
         this.unsubscribeListener = unsubscribe;
         console.log('✅ Listener en tiempo real configurado correctamente');
+    }
+
+    // Función para actualizar todas las pantallas de datos
+    updateAllDataDisplays() {
+        console.log('🔄 Actualizando todas las pantallas...');
+        
+        // Actualizar indicador de sincronización
+        this.updateSyncIndicator(true);
+        
+        // Actualizar contadores en dashboard
+        if (this.currentPage === 'dashboard') {
+            this.renderDashboardPage();
+        }
+        
+        // Actualizar tabla de listado
+        if (this.currentPage === 'listado') {
+            this.renderVotesTable();
+        }
+        
+        // Actualizar estadísticas
+        if (this.currentPage === 'statistics') {
+            this.renderStatisticsPage();
+        }
+        
+        // Actualizar proyección si está activa
+        if (document.getElementById('projection-view').style.display !== 'none') {
+            this.updateProjection();
+        }
+        
+        // Mostrar notificación de actualización
+        this.showRealtimeUpdate('Datos actualizados en tiempo real');
+    }
+
+    // Actualizar indicador de sincronización
+    updateSyncIndicator(synced = false, error = false) {
+        const indicator = document.getElementById('sync-indicator');
+        const text = document.getElementById('sync-text');
+        
+        if (error) {
+            indicator.textContent = '❌';
+            indicator.className = 'sync-indicator error';
+            text.textContent = 'Error de sincronización';
+            text.className = 'sync-text error';
+        } else if (synced) {
+            indicator.textContent = '✅';
+            indicator.className = 'sync-indicator synced';
+            text.textContent = 'Sincronizado';
+            text.className = 'sync-text synced';
+            
+            // Volver a estado de sincronización después de 3 segundos
+            setTimeout(() => {
+                indicator.textContent = '🔄';
+                indicator.className = 'sync-indicator';
+                text.textContent = 'Sincronizando...';
+                text.className = 'sync-text';
+            }, 3000);
+        } else {
+            indicator.textContent = '🔄';
+            indicator.className = 'sync-indicator';
+            text.textContent = 'Sincronizando...';
+            text.className = 'sync-text';
+        }
+    }
+
+    // Mostrar notificación de actualización en tiempo real
+    showRealtimeUpdate(message) {
+        // Remover notificación anterior si existe
+        const existingNotification = document.querySelector('.realtime-update');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // Crear nueva notificación
+        const notification = document.createElement('div');
+        notification.className = 'realtime-update';
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remover después de 3 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
     }
 
     async saveVoteToFirebase(voteData) {
