@@ -147,11 +147,6 @@ class UserManagement {
     setupNavigation() {
         // Configurar logout
         this.setupLogout();
-        
-        // Configurar menú de usuario si es superusuario
-        if (this.currentUser.role === 'superusuario') {
-            this.setupAdminMenu();
-        }
     }
     
     setupLogout() {
@@ -166,22 +161,6 @@ class UserManagement {
                 logoutBtn.onclick = () => this.logout();
                 userInfo.appendChild(logoutBtn);
             }
-        }
-    }
-    
-    setupAdminMenu() {
-        // Crear menú de administración
-        const userInfo = document.querySelector('.user-info');
-        if (userInfo && !document.getElementById('admin-menu')) {
-            const adminMenu = document.createElement('div');
-            adminMenu.id = 'admin-menu';
-            adminMenu.className = 'admin-menu';
-            adminMenu.innerHTML = `
-                <button class="btn btn-primary" onclick="userManagement.openUserManager()">
-                    👥 Gestionar Usuarios
-                </button>
-            `;
-            userInfo.appendChild(adminMenu);
         }
     }
     
