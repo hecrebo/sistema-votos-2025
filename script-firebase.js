@@ -60,6 +60,7 @@ class VotingSystemFirebase {
             }
             
             console.log('✅ Firebase configurado correctamente');
+            console.log('📊 Configuración Firebase:', window.firebaseDB);
             
             // Cargar datos desde Firebase
             await this.loadDataFromFirebase();
@@ -71,9 +72,13 @@ class VotingSystemFirebase {
             this.setupRealtimeListener();
             console.log('✅ Listener en tiempo real configurado');
             
+            // Actualizar indicador de sincronización
+            this.updateSyncIndicator(true);
+            
         } catch (error) {
             console.error('❌ Error al conectar con Firebase:', error);
             this.showMessage('Error de conexión. Verificando configuración de Firebase.', 'error', 'registration');
+            this.updateSyncIndicator(false, true);
         }
         
         this.setupEventListeners();
