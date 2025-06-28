@@ -1698,4 +1698,21 @@ body {
         width: 100%;
         margin: 0.25rem 0;
     }
+}
+
+/* Quitar doble flecha en selects del modal de edición */
+#edit-modal select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg width='16' height='16' fill='gray' xmlns='http://www.w3.org/2000/svg'><path d='M4 6l4 4 4-4'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.2em;
+    padding-right: 2.5em;
+    border: 1px solid #e5e7eb;
+}
+#edit-modal select:focus {
+    border-color: var(--primary-color);
+    outline: none;
 } 
