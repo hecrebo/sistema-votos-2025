@@ -404,6 +404,64 @@
                 </div>
             </div>
             
+            <!-- Gestión de Usuarios -->
+            <div class="admin-card">
+                <h3>
+                    <span class="status-indicator status-online" id="users-status"></span>
+                    Gestión de Usuarios
+                </h3>
+                <div class="user-management-section">
+                    <div class="user-form">
+                        <h4>👤 Crear Nuevo Usuario</h4>
+                        <form id="create-user-form" class="admin-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="new-user-name">Nombre</label>
+                                    <input type="text" id="new-user-name" required placeholder="Nombre del usuario">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-user-password">Contraseña</label>
+                                    <input type="password" id="new-user-password" required placeholder="Contraseña">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-user-role">Rol</label>
+                                    <select id="new-user-role" required>
+                                        <option value="">Seleccionar rol</option>
+                                        <option value="superusuario">Superusuario</option>
+                                        <option value="usuario">Usuario</option>
+                                        <option value="registrador">Registrador</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success">➕ Crear Usuario</button>
+                        </form>
+                    </div>
+                    <div class="users-list">
+                        <h4>📋 Usuarios Existentes</h4>
+                        <div class="users-table-container">
+                            <table class="users-table" id="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Rol</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <!-- Los usuarios se cargarán dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="service-controls">
+                    <button class="btn btn-primary" onclick="loadUsers()">🔄 Cargar Usuarios</button>
+                    <button class="btn btn-warning" onclick="exportUsers()">📥 Exportar Lista</button>
+                    <button class="btn btn-danger" onclick="clearAllUsers()">🗑️ Limpiar Todos</button>
+                </div>
+            </div>
+            
             <!-- Monitoreo -->
             <div class="admin-card">
                 <h3>
@@ -458,6 +516,7 @@
 
     <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     
     <script src="firebase-config.js"></script>
@@ -729,6 +788,212 @@
                 dropdown.classList.remove('active');
             }
         });
+        
+        // Funciones de gestión de usuarios
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cargar usuarios al iniciar
+            loadUsers();
+            
+            // Event listener para el formulario de crear usuario
+            const createUserForm = document.getElementById('create-user-form');
+            if (createUserForm) {
+                createUserForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    createUser();
+                });
+            }
+        });
+        
+        // Crear nuevo usuario
+        async function createUser() {
+            const name = document.getElementById('new-user-name').value.trim();
+            const password = document.getElementById('new-user-password').value;
+            const role = document.getElementById('new-user-role').value;
+            
+            if (!name || !password || !role) {
+                log('❌ Por favor completa todos los campos', 'error');
+                return;
+            }
+            
+            try {
+                log(`👤 Creando usuario: ${name} con rol ${role}`, 'info');
+                
+                // Crear usuario en localStorage (simulación)
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const newUser = {
+                    id: Date.now().toString(),
+                    name: name,
+                    password: password,
+                    role: role,
+                    createdAt: new Date().toISOString(),
+                    active: true
+                };
+                
+                users.push(newUser);
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                // Limpiar formulario
+                document.getElementById('create-user-form').reset();
+                
+                // Recargar lista de usuarios
+                loadUsers();
+                
+                log(`✅ Usuario ${name} creado exitosamente`, 'success');
+                maintenanceLog(`Usuario creado: ${name} (${role})`, 'success');
+                
+            } catch (error) {
+                log(`❌ Error creando usuario: ${error.message}`, 'error');
+                maintenanceLog(`Error creando usuario: ${error.message}`, 'error');
+            }
+        }
+        
+        // Cargar lista de usuarios
+        function loadUsers() {
+            try {
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const tbody = document.getElementById('users-table-body');
+                
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #666;">No hay usuarios registrados</td></tr>';
+                    return;
+                }
+                
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.name}</td>
+                        <td><span class="user-role ${user.role}">${user.role}</span></td>
+                        <td>
+                            <span class="user-status ${user.active ? 'active' : 'inactive'}"></span>
+                            ${user.active ? 'Activo' : 'Inactivo'}
+                        </td>
+                        <td class="user-actions">
+                            <button class="btn btn-warning btn-sm" onclick="editUser('${user.id}')">✏️</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.id}')">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                log(`📋 ${users.length} usuarios cargados`, 'info');
+                
+            } catch (error) {
+                log(`❌ Error cargando usuarios: ${error.message}`, 'error');
+            }
+        }
+        
+        // Editar usuario
+        function editUser(userId) {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.id === userId);
+            
+            if (!user) {
+                log('❌ Usuario no encontrado', 'error');
+                return;
+            }
+            
+            const newName = prompt('Nuevo nombre:', user.name);
+            if (!newName) return;
+            
+            const newRole = prompt('Nuevo rol (superusuario/usuario/registrador):', user.role);
+            if (!newRole) return;
+            
+            const newPassword = prompt('Nueva contraseña (dejar vacío para mantener la actual):');
+            
+            try {
+                user.name = newName;
+                user.role = newRole;
+                if (newPassword) {
+                    user.password = newPassword;
+                }
+                user.updatedAt = new Date().toISOString();
+                
+                localStorage.setItem('users', JSON.stringify(users));
+                loadUsers();
+                
+                log(`✅ Usuario ${user.name} actualizado`, 'success');
+                maintenanceLog(`Usuario actualizado: ${user.name}`, 'success');
+                
+            } catch (error) {
+                log(`❌ Error actualizando usuario: ${error.message}`, 'error');
+            }
+        }
+        
+        // Eliminar usuario
+        function deleteUser(userId) {
+            if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+                return;
+            }
+            
+            try {
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const userIndex = users.findIndex(u => u.id === userId);
+                
+                if (userIndex === -1) {
+                    log('❌ Usuario no encontrado', 'error');
+                    return;
+                }
+                
+                const userName = users[userIndex].name;
+                users.splice(userIndex, 1);
+                localStorage.setItem('users', JSON.stringify(users));
+                loadUsers();
+                
+                log(`✅ Usuario ${userName} eliminado`, 'success');
+                maintenanceLog(`Usuario eliminado: ${userName}`, 'success');
+                
+            } catch (error) {
+                log(`❌ Error eliminando usuario: ${error.message}`, 'error');
+            }
+        }
+        
+        // Exportar lista de usuarios
+        function exportUsers() {
+            try {
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const csvContent = [
+                    'Nombre,Rol,Estado,Fecha Creación',
+                    ...users.map(user => 
+                        `${user.name},${user.role},${user.active ? 'Activo' : 'Inactivo'},${new Date(user.createdAt).toLocaleDateString()}`
+                    )
+                ].join('\n');
+                
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `usuarios-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                log(`📥 Lista de usuarios exportada (${users.length} usuarios)`, 'success');
+                
+            } catch (error) {
+                log(`❌ Error exportando usuarios: ${error.message}`, 'error');
+            }
+        }
+        
+        // Limpiar todos los usuarios
+        function clearAllUsers() {
+            if (!confirm('¿Estás seguro de que quieres eliminar TODOS los usuarios? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            try {
+                localStorage.removeItem('users');
+                loadUsers();
+                
+                log('✅ Todos los usuarios eliminados', 'success');
+                maintenanceLog('Todos los usuarios eliminados', 'warning');
+                
+            } catch (error) {
+                log(`❌ Error eliminando usuarios: ${error.message}`, 'error');
+            }
+        }
     </script>
 </body>
 </html> 

@@ -1249,4 +1249,161 @@ body {
 .menu-item.danger:hover {
     background: #f8d7da;
     color: #721c24;
+}
+
+/* Estilos para gestión de usuarios en panel admin */
+.user-management-section {
+    margin: 20px 0;
+}
+
+.user-form {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.user-form h4 {
+    color: #333;
+    margin: 0 0 15px 0;
+    font-size: 1.1em;
+}
+
+.admin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.admin-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.admin-form label {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9em;
+}
+
+.admin-form input,
+.admin-form select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9em;
+    transition: border-color 0.3s ease;
+}
+
+.admin-form input:focus,
+.admin-form select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.users-list {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+}
+
+.users-list h4 {
+    color: #333;
+    margin: 0 0 15px 0;
+    font-size: 1.1em;
+}
+
+.users-table-container {
+    overflow-x: auto;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.users-table th {
+    background: var(--primary-color);
+    color: white;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.users-table td {
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9em;
+}
+
+.users-table tr:hover {
+    background: #f8f9fa;
+}
+
+.user-role {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.user-role.superusuario {
+    background: #dc3545;
+    color: white;
+}
+
+.user-role.usuario {
+    background: #007bff;
+    color: white;
+}
+
+.user-role.registrador {
+    background: #28a745;
+    color: white;
+}
+
+.user-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.user-actions .btn {
+    padding: 4px 8px;
+    font-size: 0.8em;
+    border-radius: 4px;
+}
+
+.user-status {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.user-status.active {
+    background: #28a745;
+}
+
+.user-status.inactive {
+    background: #dc3545;
 } 
