@@ -93,6 +93,18 @@
                             <label for="telefono">Teléfono</label>
                             <input type="text" id="telefono" name="telefono" placeholder="Ej: 04121234567" required title="Introduce un teléfono válido (ej: 04121234567)" autocomplete="off">
                         </div>
+                        <div class="form-group">
+                            <label for="sexo">Sexo</label>
+                            <select id="sexo" name="sexo" required>
+                                <option value="">Selecciona el sexo</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edad">Edad</label>
+                            <input type="number" id="edad" name="edad" placeholder="Ej: 25" min="16" max="120" required title="Introduce una edad válida (entre 16 y 120 años)" autocomplete="off">
+                        </div>
                         <button type="submit" class="btn btn-primary btn-large" id="register-btn">
                             <span class="btn-text">Registrar Persona</span>
                             <span class="btn-loading" style="display: none;">Registrando...</span>
@@ -144,6 +156,8 @@
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Cédula</th>
+                                    <th>Sexo</th>
+                                    <th>Edad</th>
                                     <th>UBCH</th>
                                     <th>Comunidad</th>
                                     <th>Votó</th>
@@ -198,6 +212,14 @@
                         <div class="stats-card">
                             <h3>Votos por Comunidad</h3>
                             <div class="stats-list" id="community-stats"></div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Votos por Sexo</h3>
+                            <div class="stats-list" id="sexo-stats"></div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Votos por Rango de Edad</h3>
+                            <div class="stats-list" id="edad-stats"></div>
                         </div>
                     </div>
                 </div>

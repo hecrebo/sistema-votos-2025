@@ -222,8 +222,48 @@ body {
 }
 
 .form-group select:disabled {
-    background: #f9fafb;
+    background-color: #f3f4f6;
     cursor: not-allowed;
+}
+
+/* Estilos específicos para campos de sexo y edad */
+.form-group select[name="sexo"] {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+
+.form-group input[name="edad"] {
+    text-align: center;
+    font-weight: 600;
+}
+
+.form-group input[name="edad"]::-webkit-inner-spin-button,
+.form-group input[name="edad"]::-webkit-outer-spin-button {
+    opacity: 1;
+    height: 2em;
+}
+
+/* Estilos para mostrar sexo en la tabla */
+.sexo-masculino {
+    color: var(--secondary-color);
+    font-weight: 600;
+}
+
+.sexo-femenino {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Estilos para rangos de edad en estadísticas */
+.stats-item.edad {
+    border-left: 4px solid var(--accent-color);
+}
+
+.stats-item.sexo {
+    border-left: 4px solid var(--success-color);
 }
 
 .search-container {

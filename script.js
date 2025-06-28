@@ -148,6 +148,16 @@ class VotingSystem {
             return { isValid: false, message: 'Teléfono inválido. Debe tener formato: 04xxxxxxxxx' };
         }
 
+        // Validar sexo
+        if (!data.sexo || !['M', 'F'].includes(data.sexo)) {
+            return { isValid: false, message: 'Debe seleccionar el sexo' };
+        }
+
+        // Validar edad
+        if (!data.edad || isNaN(data.edad) || data.edad < 16 || data.edad > 120) {
+            return { isValid: false, message: 'Edad inválida. Debe estar entre 16 y 120 años' };
+        }
+
         // Validar UBCH y comunidad
         if (!data.ubch || !data.community) {
             return { isValid: false, message: 'Debe seleccionar UBCH y comunidad' };
@@ -434,11 +444,13 @@ class VotingSystem {
         const name = formData.get('name').trim();
         const cedula = formData.get('cedula').trim();
         const telefono = formData.get('telefono').trim();
+        const sexo = formData.get('sexo');
+        const edad = formData.get('edad');
         const ubch = formData.get('ubch');
         const community = formData.get('community');
 
         // Validación inicial
-        if (!name || !cedula || !telefono || !ubch || !community) {
+        if (!name || !cedula || !telefono || !sexo || !edad || !ubch || !community) {
             this.showOptimizedMessage('Por favor, completa todos los campos.', 'error', 'registration');
             return;
         }
@@ -448,6 +460,8 @@ class VotingSystem {
             name,
             cedula: cedula.replace(/\D/g, ''),
             telefono: telefono.replace(/\D/g, ''),
+            sexo,
+            edad: parseInt(edad),
             ubch,
             community
         };
@@ -554,6 +568,8 @@ class VotingSystem {
                 <div class="search-result-info">
                     <h4>${person.name}</h4>
                     <p>Cédula: ${person.cedula}</p>
+                    <p>Sexo: ${person.sexo === 'M' ? 'Masculino' : person.sexo === 'F' ? 'Femenino' : 'N/A'}</p>
+                    <p>Edad: ${person.edad || 'N/A'} años</p>
                     <p>UBCH: ${person.ubch}</p>
                     <p>Comunidad: ${person.community}</p>
                 </div>
@@ -595,9 +611,12 @@ class VotingSystem {
 
         this.votes.forEach(vote => {
             const tr = document.createElement('tr');
+            const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
             tr.innerHTML = `
                 <td>${vote.name}</td>
                 <td>${vote.cedula}</td>
+                <td class="${sexoClass}">${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}</td>
+                <td>${vote.edad || 'N/A'}</td>
                 <td>${vote.ubch}</td>
                 <td>${vote.community}</td>
                 <td>
@@ -636,9 +655,12 @@ class VotingSystem {
 
         filteredVotes.forEach(vote => {
             const tr = document.createElement('tr');
+            const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
             tr.innerHTML = `
                 <td>${vote.name}</td>
                 <td>${vote.cedula}</td>
+                <td class="${sexoClass}">${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}</td>
+                <td>${vote.edad || 'N/A'}</td>
                 <td>${vote.ubch}</td>
                 <td>${vote.community}</td>
                 <td>
@@ -706,8 +728,33 @@ class VotingSystem {
             communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
         });
 
+        // Estadísticas por Sexo
+        const sexoStats = {};
+        votedVotes.forEach(vote => {
+            const sexo = vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'No especificado';
+            sexoStats[sexo] = (sexoStats[sexo] || 0) + 1;
+        });
+
+        // Estadísticas por Rango de Edad
+        const edadStats = {};
+        votedVotes.forEach(vote => {
+            const edad = vote.edad || 0;
+            let rango = 'No especificado';
+            
+            if (edad >= 16 && edad <= 25) rango = '16-25 años';
+            else if (edad >= 26 && edad <= 35) rango = '26-35 años';
+            else if (edad >= 36 && edad <= 45) rango = '36-45 años';
+            else if (edad >= 46 && edad <= 55) rango = '46-55 años';
+            else if (edad >= 56 && edad <= 65) rango = '56-65 años';
+            else if (edad >= 66) rango = '66+ años';
+            
+            edadStats[rango] = (edadStats[rango] || 0) + 1;
+        });
+
         this.renderStatsList('ubch-stats', ubchStats, 'ubch');
         this.renderStatsList('community-stats', communityStats, 'community');
+        this.renderStatsList('sexo-stats', sexoStats, 'sexo');
+        this.renderStatsList('edad-stats', edadStats, 'edad');
     }
 
     renderStatsList(containerId, stats, type) {
@@ -811,13 +858,15 @@ class VotingSystem {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        const tableColumn = ["Nombre", "Cédula", "Teléfono", "UBCH", "Comunidad", "Votó"];
+        const tableColumn = ["Nombre", "Cédula", "Sexo", "Edad", "Teléfono", "UBCH", "Comunidad", "Votó"];
         const tableRows = [];
 
         this.votes.forEach(vote => {
             tableRows.push([
                 vote.name,
                 vote.cedula,
+                vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A',
+                vote.edad || 'N/A',
                 vote.telefono,
                 vote.ubch,
                 vote.community,
@@ -837,12 +886,14 @@ class VotingSystem {
     }
 
     exportToCSV() {
-        const headers = ["Nombre", "Cédula", "Teléfono", "UBCH", "Comunidad", "Votó"];
+        const headers = ["Nombre", "Cédula", "Sexo", "Edad", "Teléfono", "UBCH", "Comunidad", "Votó"];
         const csvRows = [
             headers.join(','),
             ...this.votes.map(vote => [
                 `"${vote.name}"`,
                 `"${vote.cedula}"`,
+                `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}"`,
+                `"${vote.edad || 'N/A'}"`,
                 `"${vote.telefono}"`,
                 `"${vote.ubch}"`,
                 `"${vote.community}"`,
