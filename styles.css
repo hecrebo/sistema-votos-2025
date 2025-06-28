@@ -75,6 +75,7 @@ body {
     align-items: center;
     justify-content: center;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
 }
 
 .logo-container:hover {
@@ -1715,4 +1716,111 @@ select {
 select:focus {
     border-color: var(--primary-color);
     outline: none;
+}
+
+/* Luz de sincronización sobre el logo */
+.sync-light {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px 2px rgba(0,0,0,0.15);
+    border: 2px solid #fff;
+    background: #fbbf24; /* Amarillo por defecto */
+    z-index: 2;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+.sync-light.synced {
+    background: #22c55e; /* Verde */
+    box-shadow: 0 0 12px 2px #22c55e66;
+    animation: none;
+}
+.sync-light.syncing {
+    background: #fbbf24; /* Amarillo */
+    box-shadow: 0 0 12px 2px #fbbf2466;
+    animation: blink-sync 1s infinite;
+}
+.sync-light.error {
+    background: #ef4444; /* Rojo */
+    box-shadow: 0 0 12px 2px #ef444466;
+    animation: none;
+}
+@keyframes blink-sync {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+.logo-container {
+    position: relative;
+}
+
+/* Spinner animado para sincronización */
+.sync-spinner {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: 3px solid #fbbf24;
+    border-top: 3px solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 0.5em;
+    vertical-align: middle;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Check animado para sincronizado */
+.sync-check {
+    display: none;
+    width: 18px;
+    height: 18px;
+    margin-right: 0.5em;
+    vertical-align: middle;
+    position: relative;
+}
+.sync-check::after {
+    content: '';
+    display: block;
+    width: 8px;
+    height: 14px;
+    border: solid #22c55e;
+    border-width: 0 3px 3px 0;
+    position: absolute;
+    left: 5px;
+    top: 0px;
+    transform: rotate(45deg) scale(0);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(.68,-0.55,.27,1.55);
+}
+.sync-check.active::after {
+    transform: rotate(45deg) scale(1);
+    opacity: 1;
+}
+
+/* Error icono */
+.sync-indicator.error {
+    color: #ef4444;
+    font-size: 1.2em;
+    margin-right: 0.5em;
+}
+
+.sync-status {
+    display: flex;
+    align-items: center;
+    gap: 0.2em;
+}
+
+.sync-text {
+    font-weight: 500;
+    font-size: 1em;
+    color: #374151;
+}
+.sync-text.synced {
+    color: #22c55e;
+}
+.sync-text.error {
+    color: #ef4444;
 } 

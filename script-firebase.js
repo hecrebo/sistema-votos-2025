@@ -173,30 +173,44 @@ class VotingSystemFirebase {
     updateSyncIndicator(synced = false, error = false) {
         const indicator = document.getElementById('sync-indicator');
         const text = document.getElementById('sync-text');
+        const syncLight = document.getElementById('sync-light');
+        const spinner = document.getElementById('sync-spinner');
+        const check = document.getElementById('sync-check');
         
         if (error) {
             indicator.textContent = '❌';
             indicator.className = 'sync-indicator error';
-            text.textContent = 'Error de sincronización';
+            text.textContent = 'Error de conexión';
             text.className = 'sync-text error';
+            if (syncLight) syncLight.className = 'sync-light error';
+            if (spinner) spinner.style.display = 'none';
+            if (check) { check.style.display = 'none'; check.classList.remove('active'); }
         } else if (synced) {
-            indicator.textContent = '✅';
+            indicator.textContent = '';
             indicator.className = 'sync-indicator synced';
             text.textContent = 'Sincronizado';
             text.className = 'sync-text synced';
-            
+            if (syncLight) syncLight.className = 'sync-light synced';
+            if (spinner) spinner.style.display = 'none';
+            if (check) { check.style.display = 'inline-block'; setTimeout(() => check.classList.add('active'), 50); }
             // Volver a estado de sincronización después de 3 segundos
             setTimeout(() => {
-                indicator.textContent = '🔄';
+                indicator.textContent = '';
                 indicator.className = 'sync-indicator';
-                text.textContent = 'Sincronizando...';
+                text.textContent = 'Sincronizando';
                 text.className = 'sync-text';
+                if (syncLight) syncLight.className = 'sync-light syncing';
+                if (spinner) spinner.style.display = 'inline-block';
+                if (check) { check.style.display = 'none'; check.classList.remove('active'); }
             }, 3000);
         } else {
-            indicator.textContent = '🔄';
+            indicator.textContent = '';
             indicator.className = 'sync-indicator';
-            text.textContent = 'Sincronizando...';
+            text.textContent = 'Sincronizando';
             text.className = 'sync-text';
+            if (syncLight) syncLight.className = 'sync-light syncing';
+            if (spinner) spinner.style.display = 'inline-block';
+            if (check) { check.style.display = 'none'; check.classList.remove('active'); }
         }
     }
 

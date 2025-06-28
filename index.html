@@ -45,6 +45,7 @@
             <div class="header-content">
                 <div class="header-top">
                     <div class="logo-container">
+                        <div id="sync-light" class="sync-light"></div>
                         <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
                     </div>
                     <h1 class="header-title">Registro de Votos y Estadísticas</h1>
@@ -59,8 +60,10 @@
                 <div class="user-info">
                     <span class="user-id" id="userId"></span>
                     <div class="sync-status">
+                        <span class="sync-spinner" id="sync-spinner"></span>
+                        <span class="sync-check" id="sync-check"></span>
                         <span class="sync-indicator" id="sync-indicator">🔄</span>
-                        <span class="sync-text" id="sync-text">Sincronizando...</span>
+                        <span class="sync-text" id="sync-text">Sincronizando</span>
                     </div>
                 </div>
                 <!-- Menú desplegable móvil -->
