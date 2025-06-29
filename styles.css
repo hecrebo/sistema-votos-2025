@@ -1119,6 +1119,7 @@ body {
     
     .page-container {
         padding: 1rem;
+        border-radius: 0.5rem;
     }
     
     .page-header {
@@ -1148,6 +1149,47 @@ body {
     
     .modal-actions {
         flex-direction: column;
+    }
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .data-table {
+        min-width: 700px;
+        font-size: 0.95rem;
+    }
+    .pagination-controls {
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+    .pagination-controls button, .pagination-controls select {
+        font-size: 1.1rem;
+        padding: 0.7rem 1.2rem;
+    }
+    .btn, .btn-primary, .btn-secondary, .btn-danger, .btn-success {
+        font-size: 1.1rem;
+        padding: 0.9rem 1.5rem;
+        border-radius: 0.7rem;
+    }
+    .form-group input, .form-group select {
+        font-size: 1.1rem;
+        padding: 1rem 1.2rem;
+        border-radius: 0.7rem;
+    }
+    .modal-content {
+        width: 98vw;
+        min-width: unset;
+        max-width: 99vw;
+        padding: 1rem;
+        border-radius: 0.7rem;
+    }
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+    .bulk-preview-table {
+        min-width: 600px;
+        font-size: 0.95rem;
     }
 }
 
