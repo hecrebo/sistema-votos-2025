@@ -270,13 +270,13 @@ class VotingSystem {
         if (cached && (now - cached.timestamp) < maxAge) {
             return cached.data;
         }
-        
+
         const data = await fetchFunction();
         this.cache[key] = {
             data,
             timestamp: now
         };
-        
+
         return data;
     }
 
@@ -307,9 +307,9 @@ class VotingSystem {
         } catch (error) {
             console.warn('No se pudo conectar al servidor, usando localStorage:', error);
             // Si falla, usar localStorage como respaldo
-            this.useLocalStorage = true;
+        this.useLocalStorage = true;
             this.offlineMode = true;
-            this.loadFromLocalStorage();
+        this.loadFromLocalStorage();
             this.showMessage('Modo offline activado. Los datos solo se guardan en esta computadora.', 'warning', 'registration');
         }
         
