@@ -452,8 +452,6 @@
             <p>Sistema de Votos 2025 - Gestión 24/7</p>
         </div>
         
-        <div id="dashboard-visual"></div>
-        
         <div class="admin-grid">
             <!-- Estado del Sistema -->
             <div class="admin-card">
@@ -558,6 +556,10 @@
                 <div class="log-entry log-info">Panel de administración iniciado</div>
             </div>
         </div>
+        
+        <div id="dashboard-visual"></div>
+        
+        <div id="sync-panel"></div>
     </div>
 
     <!-- Firebase Libraries -->
@@ -566,9 +568,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     
     <script src="firebase-config.js"></script>
+    <script src="sync-manager.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="admin-dashboard.js"></script>
+    <script src="admin-sync-panel.js"></script>
     
     <script>
         let systemStartTime = Date.now();

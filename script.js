@@ -181,10 +181,31 @@ class VotingSystem {
             voted: false
         };
 
-        // Agregar a la lista local
+        // Usar SyncManager si está disponible, sino método tradicional
+        if (window.syncManager) {
+            try {
+                // Agregar a la cola local del SyncManager
+                const localRecord = window.syncManager.addLocalRecord(newVote);
+                
+                // Agregar también a la lista local para mostrar inmediatamente
+                this.votes.push(localRecord);
+                
+                // Mostrar mensaje según estado de conexión
+                if (window.syncManager.isOnline) {
+                    this.showMessage('✅ Registro guardado y sincronizado', 'success', 'registration');
+                } else {
+                    this.showMessage('📱 Registro guardado localmente (se sincronizará cuando haya conexión)', 'info', 'registration');
+                }
+                
+                return localRecord;
+            } catch (error) {
+                console.error('Error con SyncManager:', error);
+                // Fallback al método tradicional
+            }
+        }
+
+        // Método tradicional (fallback)
         this.votes.push(newVote);
-        
-        // Guardar datos en servidor o localStorage
         await this.saveData();
         
         return newVote;
@@ -298,6 +319,14 @@ class VotingSystem {
         
         // Mostrar información del usuario
         this.displayUserInfo();
+        
+        // Actualizar indicador de sincronización
+        this.updateSyncStatus('Iniciando...', 'info');
+        
+        // Actualizar indicador cada 10 segundos
+        setInterval(() => {
+            this.updateSyncStatus('', 'info');
+        }, 10000);
     }
 
     // Mostrar información del usuario
@@ -346,13 +375,37 @@ class VotingSystem {
     updateSyncStatus(message, type) {
         const syncIndicator = document.getElementById('sync-indicator');
         const syncText = document.getElementById('sync-text');
+        const syncSpinner = document.getElementById('sync-spinner');
+        const syncCheck = document.getElementById('sync-check');
         
-        if (syncIndicator) {
+        if (!syncIndicator) return;
+        
+        // Usar SyncManager si está disponible
+        if (window.syncManager) {
+            const stats = window.syncManager.getSyncStats();
+            
+            if (stats.isOnline) {
+                syncIndicator.textContent = '🌐';
+                syncText.textContent = stats.pending > 0 ? `Sincronizando (${stats.pending} pendientes)` : 'Sincronizado';
+                
+                if (stats.pending > 0) {
+                    syncSpinner.style.display = 'inline-block';
+                    syncCheck.style.display = 'none';
+                } else {
+                    syncSpinner.style.display = 'none';
+                    syncCheck.style.display = 'inline-block';
+                    syncCheck.textContent = '✅';
+                }
+            } else {
+                syncIndicator.textContent = '📴';
+                syncText.textContent = `Offline (${stats.pending} pendientes)`;
+                syncSpinner.style.display = 'none';
+                syncCheck.style.display = 'none';
+            }
+        } else {
+            // Método tradicional
             syncIndicator.textContent = type === 'success' ? '✅' : '❌';
             syncIndicator.className = `sync-indicator ${type}`;
-        }
-        
-        if (syncText) {
             syncText.textContent = message;
             syncText.className = `sync-text ${type}`;
         }
@@ -364,28 +417,34 @@ class VotingSystem {
 
     async loadData() {
         try {
-            // Cargar mapeo UBCH-Comunidad
-            const ubchResponse = await fetch(`${this.apiUrl}/ubchToCommunityMap`);
-            if (!ubchResponse.ok) throw new Error('No se pudo cargar el mapeo UBCH-Comunidad');
-            const ubchData = await ubchResponse.json();
-            if (!ubchData || Object.keys(ubchData).length === 0) {
-                this.showMessage('No se encontraron UBCH disponibles. Contacte al administrador.', 'error', 'registration');
-                this.ubchToCommunityMap = {};
-            } else {
-                this.ubchToCommunityMap = ubchData;
+            // Usar SyncManager si está disponible
+            if (window.syncManager) {
+                const allRecords = await window.syncManager.getAllRecords();
+                
+                // Combinar registros locales y remotos
+                this.votes = [
+                    ...allRecords.local,
+                    ...allRecords.remote
+                ];
+                
+                console.log(`📦 Datos cargados: ${allRecords.local.length} locales, ${allRecords.remote.length} remotos`);
+                
+                // Actualizar interfaz
+                this.renderCurrentPage();
+                return;
             }
-            
-            // Cargar votos
-            const votesResponse = await fetch(`${this.apiUrl}/votes`);
-            this.votes = await votesResponse.json();
-            
-            // Cargar candidatos
-            const candidatesResponse = await fetch(`${this.apiUrl}/candidates`);
-            this.candidates = await candidatesResponse.json();
-            
+
+            // Método tradicional (fallback)
+            const response = await fetch(`${this.apiUrl}/votes`);
+            if (response.ok) {
+                this.votes = await response.json();
+            } else {
+                console.warn('No se pudo cargar desde servidor, usando localStorage');
+                this.loadFromLocalStorage();
+            }
         } catch (error) {
-            this.showMessage('Error al cargar datos del servidor. Verifique su conexión.', 'error', 'registration');
-            throw new Error('No se pudo conectar al servidor');
+            console.error('Error cargando datos:', error);
+            this.loadFromLocalStorage();
         }
     }
 
