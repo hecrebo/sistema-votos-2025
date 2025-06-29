@@ -2,10 +2,17 @@
   publish = "."
   command = "npm install"
 
+# VERSIÓN PRODUCCIÓN (ACTUAL)
 [[redirects]]
   from = "/"
   to = "/login.html"
   status = 200
+
+# VERSIÓN DESARROLLO (ALTERNATIVA)
+# [[redirects]]
+#   from = "/"
+#   to = "/login-simple.html"
+#   status = 200
 
 [[redirects]]
   from = "/*"

@@ -1012,3 +1012,9 @@ class VotingSystem {
 document.addEventListener('DOMContentLoaded', () => {
     window.votingSystem = new VotingSystem();
 });
+
+function logout() {
+  firebase.auth().signOut().then(() => {
+    window.location.href = 'login.html';
+  });
+}
