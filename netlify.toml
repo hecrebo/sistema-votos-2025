@@ -8,12 +8,6 @@
   to = "/login.html"
   status = 200
 
-# VERSIÓN DESARROLLO (ALTERNATIVA)
-# [[redirects]]
-#   from = "/"
-#   to = "/login-simple.html"
-#   status = 200
-
 [[redirects]]
   from = "/*"
   to = "/index.html"

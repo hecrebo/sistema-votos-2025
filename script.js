@@ -97,7 +97,7 @@ class VotingSystem {
 
     // Redirigir al login
     redirectToLogin() {
-        if (window.location.pathname !== '/login.html' && window.location.pathname !== '/login-simple.html') {
+        if (window.location.pathname !== '/login.html') {
             window.location.href = 'login.html';
         }
     }

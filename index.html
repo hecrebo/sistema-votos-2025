@@ -386,7 +386,7 @@
     <script src="firebase-config.js"></script>
     <script src="service-manager.js"></script>
     <script src="user-management.js"></script>
-    <script src="script-firebase.js"></script>
+    <script src="script.js"></script>
     
     <script>
         const USUARIOS_INICIALES = [
@@ -885,48 +885,6 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
             a.download = 'plantilla-registro-masivo.csv';
             a.click();
             URL.revokeObjectURL(url);
-        }
-
-        // Sistema de sesión local
-        function checkSession() {
-            const currentUser = localStorage.getItem('currentUser');
-            const sessionTime = localStorage.getItem('sessionTime');
-            
-            if (!currentUser) {
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            // Verificar si la sesión ha expirado (24 horas)
-            if (sessionTime && (Date.now() - parseInt(sessionTime)) > 24 * 60 * 60 * 1000) {
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('sessionTime');
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            // Mostrar información del usuario
-            try {
-                const user = JSON.parse(currentUser);
-                const userInfo = document.getElementById('userId');
-                if (userInfo) {
-                    userInfo.textContent = `${user.username} (${user.rol})`;
-                }
-            } catch (error) {
-                console.error('Error al mostrar información del usuario:', error);
-            }
-        }
-
-        // Verificar sesión al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            checkSession();
-        });
-
-        // Función de logout
-        function logout() {
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('sessionTime');
-            window.location.href = 'login.html';
         }
 
         // Agregar función de logout al menú móvil
