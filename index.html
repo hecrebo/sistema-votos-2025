@@ -369,7 +369,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>&copy; 2024 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>
+            <p>© 2025 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>
         </footer>
     </div>
 
@@ -413,6 +413,12 @@
                 const menuDropdown = document.getElementById('menu-dropdown');
                 if (menuDropdown) {
                     let menuHtml = '';
+                    if (user.role === 'superusuario' || user.role === 'admin') {
+                        menuHtml += `<a href="user-management.html" class="menu-item" target="_blank">
+                            <span class="icon">👥</span>
+                            Gestión de Usuarios
+                        </a>`;
+                    }
                     if (user.role === 'superusuario') {
                         menuHtml += `<a href="admin-panel.html" class="menu-item" target="_blank">
                             <span class="icon">🛠️</span>
@@ -777,6 +783,8 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
             a.click();
             URL.revokeObjectURL(url);
         }
+
+        firebase.auth().signOut();
     </script>
 </body>
 </html>
