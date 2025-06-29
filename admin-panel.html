@@ -1201,19 +1201,19 @@
 
             const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Estado', 'Registrado por', 'Fecha Registro'];
             const csvContent = [
-                headers.join(','),
+                headers.join(';'),
                 ...filteredUsers.map(user => [
-                    user.name || '',
+                    `"${user.name || ''}"`,
                     user.cedula || '',
                     user.telefono || '',
                     user.sexo === 'M' ? 'Masculino' : 'Femenino',
                     user.edad || '',
-                    user.ubch || '',
-                    user.community || '',
+                    `"${user.ubch || ''}"`,
+                    `"${user.community || ''}"`,
                     user.voted ? 'Sí' : 'No',
-                    user.registeredBy || '',
+                    `"${user.registeredBy || ''}"`,
                     user.registeredAt ? new Date(user.registeredAt).toLocaleDateString() : ''
-                ].join(','))
+                ].join(';'))
             ].join('\n');
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1224,7 +1224,7 @@
             a.click();
             URL.revokeObjectURL(url);
 
-            log('📥 Lista de usuarios exportada a CSV', 'success');
+            log('📥 Lista de usuarios exportada a CSV (formato Excel)', 'success');
         }
 
         // Función para exportar a PDF
