@@ -921,12 +921,15 @@ class VotingSystem {
     // Actualizar contador de resultados filtrados
     updateFilterCounter(count) {
         const totalCount = this.votes.length;
-        const pageTitle = document.querySelector('#listado-page .page-title');
-        if (pageTitle) {
+        const filterCounter = document.getElementById('filter-counter');
+        
+        if (filterCounter) {
             if (count === totalCount) {
-                pageTitle.textContent = `Listado de Personas Registradas (${totalCount})`;
+                filterCounter.textContent = totalCount;
+                filterCounter.style.background = 'linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%)';
             } else {
-                pageTitle.textContent = `Listado de Personas Registradas (${count} de ${totalCount})`;
+                filterCounter.textContent = `${count}/${totalCount}`;
+                filterCounter.style.background = 'linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-dark) 100%)';
             }
         }
     }
