@@ -9,11 +9,21 @@
     "build": "echo 'No build step required for static files'",
     "deploy": "node deploy.js"
   },
-  "keywords": ["voting", "elections", "html", "css", "javascript"],
+  "keywords": [
+    "voting",
+    "elections",
+    "html",
+    "css",
+    "javascript"
+  ],
   "author": "Tu Nombre",
   "license": "MIT",
   "devDependencies": {
     "json-server": "^0.17.4",
     "live-server": "^1.2.2"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.4.0",
+    "uuid": "^11.1.0"
   }
-} 
+}
