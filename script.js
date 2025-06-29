@@ -833,6 +833,9 @@ class VotingSystem {
             `;
             tbody.appendChild(tr);
         });
+
+        // Inicializar el contador con el total de registros
+        this.updateFilterCounter(this.votes.length);
     }
 
     // Poblar el selector de filtro por UBCH
@@ -926,10 +929,12 @@ class VotingSystem {
         if (filterCounter) {
             if (count === totalCount) {
                 filterCounter.textContent = totalCount;
-                filterCounter.style.background = 'linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%)';
+                filterCounter.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+                filterCounter.style.borderColor = '#10b981';
             } else {
                 filterCounter.textContent = `${count}/${totalCount}`;
-                filterCounter.style.background = 'linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-dark) 100%)';
+                filterCounter.style.background = 'linear-gradient(135deg, #1f2937 0%, #374151 100%)';
+                filterCounter.style.borderColor = '#4b5563';
             }
         }
     }
