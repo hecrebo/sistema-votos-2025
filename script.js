@@ -1,4 +1,4 @@
-// Sistema de Registro de Votos 2025 - JavaScript Vanilla con JSON Server
+// Sistema de Registro de Votos 2025 - JavaScript Vanilla con Cache Local y Sincronización Inteligente
 
 class VotingSystem {
     constructor() {
@@ -21,6 +21,19 @@ class VotingSystem {
             votes: null,
             lastUpdate: null
         };
+        
+        // Sistema de sincronización inteligente
+        this.syncInterval = null;
+        this.lastSyncTime = Date.now();
+        this.syncEnabled = true;
+        this.offlineMode = false;
+        
+        // Verificar sesión de usuario
+        this.currentUser = this.getCurrentUser();
+        if (!this.currentUser) {
+            this.redirectToLogin();
+            return;
+        }
         
         this.ubchToCommunityMap = {
             "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO 4A ETAPA", "LA CAMACHERA"],
@@ -58,6 +71,42 @@ class VotingSystem {
         this.projectionInterval = null;
         
         this.init();
+    }
+
+    // Verificar sesión de usuario
+    getCurrentUser() {
+        try {
+            const userData = localStorage.getItem('currentUser');
+            if (!userData) return null;
+            
+            const user = JSON.parse(userData);
+            const sessionTime = localStorage.getItem('sessionTime');
+            
+            // Verificar si la sesión ha expirado (24 horas)
+            if (sessionTime && (Date.now() - parseInt(sessionTime)) > 24 * 60 * 60 * 1000) {
+                this.logout();
+                return null;
+            }
+            
+            return user;
+        } catch (error) {
+            console.error('Error al verificar sesión:', error);
+            return null;
+        }
+    }
+
+    // Redirigir al login
+    redirectToLogin() {
+        if (window.location.pathname !== '/login.html' && window.location.pathname !== '/login-simple.html') {
+            window.location.href = 'login.html';
+        }
+    }
+
+    // Logout
+    logout() {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('sessionTime');
+        this.redirectToLogin();
     }
 
     // Sistema de cola para registros múltiples
@@ -128,7 +177,7 @@ class VotingSystem {
             id: Date.now() + Math.random(),
             ...registrationData,
             registeredAt: new Date().toISOString(),
-            registeredBy: this.userId,
+            registeredBy: this.currentUser.username,
             voted: false
         };
 
@@ -200,28 +249,27 @@ class VotingSystem {
         if (cached && (now - cached.timestamp) < maxAge) {
             return cached.data;
         }
-
+        
         const data = await fetchFunction();
         this.cache[key] = {
             data,
             timestamp: now
         };
-
+        
         return data;
     }
 
     // Notificaciones optimizadas
     showOptimizedMessage(message, type = 'info', page = 'registration') {
-        // Evitar múltiples mensajes del mismo tipo
-        const messageKey = `${type}-${message}`;
-        if (this.lastMessage === messageKey) {
+        // Evitar mensajes duplicados
+        if (this.lastMessage === message) {
             return;
         }
         
-        this.lastMessage = messageKey;
+        this.lastMessage = message;
         this.showMessage(message, type, page);
         
-        // Limpiar después de 3 segundos
+        // Limpiar mensaje después de 3 segundos
         setTimeout(() => {
             this.lastMessage = null;
         }, 3000);
@@ -232,17 +280,82 @@ class VotingSystem {
             // Intentar cargar datos del servidor JSON
             await this.loadData();
             this.showMessage('Conectado al servidor. Los datos se comparten entre todas las computadoras.', 'success', 'registration');
+            
+            // Iniciar sincronización automática
+            this.startAutoSync();
         } catch (error) {
             console.warn('No se pudo conectar al servidor, usando localStorage:', error);
             // Si falla, usar localStorage como respaldo
-        this.useLocalStorage = true;
-        this.loadFromLocalStorage();
+            this.useLocalStorage = true;
+            this.offlineMode = true;
+            this.loadFromLocalStorage();
             this.showMessage('Modo offline activado. Los datos solo se guardan en esta computadora.', 'warning', 'registration');
         }
         
         this.setupEventListeners();
         this.renderCurrentPage();
         this.loadPdfLibraries();
+        
+        // Mostrar información del usuario
+        this.displayUserInfo();
+    }
+
+    // Mostrar información del usuario
+    displayUserInfo() {
+        const userInfo = document.getElementById('userId');
+        if (userInfo && this.currentUser) {
+            userInfo.textContent = `${this.currentUser.username} (${this.currentUser.rol})`;
+        }
+    }
+
+    // Iniciar sincronización automática
+    startAutoSync() {
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+        }
+        
+        // Sincronizar cada 30 segundos
+        this.syncInterval = setInterval(() => {
+            if (this.syncEnabled && !this.offlineMode) {
+                this.syncData();
+            }
+        }, 30000);
+    }
+
+    // Sincronizar datos
+    async syncData() {
+        try {
+            const response = await fetch(`${this.apiUrl}/votes`);
+            const serverVotes = await response.json();
+            
+            // Comparar con datos locales
+            if (JSON.stringify(serverVotes) !== JSON.stringify(this.votes)) {
+                this.votes = serverVotes;
+                this.updateSyncStatus('Sincronizado', 'success');
+                this.renderCurrentPage(); // Actualizar vista si es necesario
+            }
+            
+            this.lastSyncTime = Date.now();
+        } catch (error) {
+            console.warn('Error en sincronización:', error);
+            this.updateSyncStatus('Error de sincronización', 'error');
+        }
+    }
+
+    // Actualizar estado de sincronización
+    updateSyncStatus(message, type) {
+        const syncIndicator = document.getElementById('sync-indicator');
+        const syncText = document.getElementById('sync-text');
+        
+        if (syncIndicator) {
+            syncIndicator.textContent = type === 'success' ? '✅' : '❌';
+            syncIndicator.className = `sync-indicator ${type}`;
+        }
+        
+        if (syncText) {
+            syncText.textContent = message;
+            syncText.className = `sync-text ${type}`;
+        }
     }
 
     generateUserId() {
@@ -425,7 +538,7 @@ class VotingSystem {
         // Si no hay UBCH, desactivar el formulario y mostrar mensaje
         if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
             form.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
-            this.showMessage('No hay UBCH disponibles. Contacte al administrador.', 'error', 'registration');
+            this.showOptimizedMessage('No hay UBCH disponibles. Contacte al administrador.', 'error', 'registration');
             return;
         } else {
             form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);

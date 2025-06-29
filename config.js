@@ -90,9 +90,94 @@ const CONFIG = {
     }
 };
 
+// Configuración del Sistema de Votos 2025
+const SYSTEM_CONFIG = {
+    // Configuración de sincronización
+    sync: {
+        interval: 30000, // 30 segundos
+        enabled: true,
+        maxRetries: 3,
+        retryDelay: 5000 // 5 segundos
+    },
+    
+    // Configuración de cache
+    cache: {
+        ubchData: 300000, // 5 minutos
+        votes: 60000, // 1 minuto
+        userData: 3600000 // 1 hora
+    },
+    
+    // Configuración de sesión
+    session: {
+        timeout: 24 * 60 * 60 * 1000, // 24 horas
+        checkInterval: 60000 // 1 minuto
+    },
+    
+    // Configuración de validación
+    validation: {
+        cedula: {
+            minLength: 6,
+            maxLength: 10,
+            pattern: /^\d+$/
+        },
+        telefono: {
+            pattern: /^04\d{9}$/
+        },
+        edad: {
+            min: 16,
+            max: 120
+        },
+        nombre: {
+            minLength: 3
+        }
+    },
+    
+    // Configuración de cola de registros
+    queue: {
+        maxConcurrent: 5,
+        delayBetween: 100,
+        maxQueueSize: 100
+    },
+    
+    // Configuración de mensajes
+    messages: {
+        autoHide: 3000,
+        maxDisplay: 5
+    },
+    
+    // URLs de la aplicación
+    urls: {
+        api: 'http://localhost:3000',
+        login: 'login.html',
+        main: 'index.html',
+        admin: 'user-management.html'
+    },
+    
+    // Configuración de exportación
+    export: {
+        maxRecords: 10000,
+        batchSize: 1000
+    }
+};
+
+// Función para obtener configuración
+function getConfig(key) {
+    return key.split('.').reduce((obj, k) => obj && obj[k], SYSTEM_CONFIG);
+}
+
+// Función para actualizar configuración
+function updateConfig(key, value) {
+    const keys = key.split('.');
+    const lastKey = keys.pop();
+    const obj = keys.reduce((o, k) => o[k] = o[k] || {}, SYSTEM_CONFIG);
+    obj[lastKey] = value;
+}
+
 // Exportar configuración
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CONFIG;
+    module.exports = { SYSTEM_CONFIG, getConfig, updateConfig };
 } else {
-    window.CONFIG = CONFIG;
+    window.SYSTEM_CONFIG = SYSTEM_CONFIG;
+    window.getConfig = getConfig;
+    window.updateConfig = updateConfig;
 } 

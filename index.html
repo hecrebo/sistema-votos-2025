@@ -37,6 +37,7 @@
     
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="config.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -509,93 +510,44 @@
 
         function logout() {
             localStorage.removeItem('currentUser');
-            location.reload();
+            localStorage.removeItem('sessionTime');
+            window.location.href = 'login.html';
         }
 
-        function checkSessionAndRender() {
-            const root = document.getElementById('root') || document.body;
+        function checkSession() {
             const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) {
-                root.innerHTML = renderLoginForm();
-                document.getElementById('login-form').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const username = document.getElementById('username').value.trim();
-                    const password = document.getElementById('password').value;
-                    if (!username || !password) {
-                        showMessage('Por favor, completa todos los campos', 'error');
-                        return;
-                    }
-                    showMessage('Verificando credenciales...', 'info');
-                    const user = USUARIOS_INICIALES.find(u => u.username === username && u.password === password);
-                    if (!user) {
-                        showMessage('Usuario o contraseña incorrectos', 'error');
-                        return;
-                    }
-                    localStorage.setItem('currentUser', JSON.stringify({ username: user.username, rol: user.rol }));
-                    showMessage('¡Inicio de sesión exitoso!', 'success');
-                    setTimeout(() => {
-                        checkSessionAndRender();
-                    }, 1000);
-                });
-            } else {
-                const user = JSON.parse(currentUser);
-                root.innerHTML = renderAppContent(user);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', checkSessionAndRender);
-
-        // Verificación de autenticación al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentUser = localStorage.getItem('currentUser');
+            const sessionTime = localStorage.getItem('sessionTime');
             
             if (!currentUser) {
-                // No hay sesión activa, redirigir al login
                 window.location.href = 'login.html';
                 return;
             }
             
+            // Verificar si la sesión ha expirado (24 horas)
+            if (sessionTime && (Date.now() - parseInt(sessionTime)) > 24 * 60 * 60 * 1000) {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('sessionTime');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Mostrar información del usuario
             try {
                 const user = JSON.parse(currentUser);
-                console.log('👤 Usuario autenticado:', user.name, 'Rol:', user.role);
-                
-                // Mostrar información del usuario en la interfaz
-                const userIdElement = document.getElementById('userId');
-                if (userIdElement) {
-                    let nombre = user.name || user.username || '';
-                    userIdElement.textContent = 'ID de usuario: ' + nombre;
+                const userInfo = document.getElementById('userId');
+                if (userInfo) {
+                    userInfo.textContent = `${user.username} (${user.rol})`;
                 }
-
-                // Generar menú según el rol
-                const menuDropdown = document.getElementById('menu-dropdown');
-                if (menuDropdown) {
-                    let menuHtml = '';
-                    if (user.role === 'superusuario' || user.role === 'admin') {
-                        menuHtml += `<a href="user-management.html" class="menu-item" target="_blank">
-                            <span class="icon">👥</span>
-                            Gestión de Usuarios
-                        </a>`;
-                    }
-                    if (user.role === 'superusuario') {
-                        menuHtml += `<a href="admin-panel.html" class="menu-item" target="_blank">
-                            <span class="icon">🛠️</span>
-                            Panel Admin
-                        </a>`;
-                    }
-                    menuHtml += `<a href="#" class="menu-item danger" onclick="logout()">
-                        <span class="icon">🚪</span>
-                        Cerrar Sesión
-                    </a>`;
-                    menuDropdown.innerHTML = menuHtml;
-                }
-                
             } catch (error) {
-                console.error('Error al parsear datos de usuario:', error);
-                localStorage.removeItem('currentUser');
-                window.location.href = 'login.html';
+                console.error('Error al mostrar información del usuario:', error);
             }
+        }
+
+        // Verificar sesión al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSession();
         });
-        
+
         // Funciones del menú desplegable
         function toggleMenu() {
             const dropdown = document.getElementById('menu-dropdown');
@@ -604,11 +556,11 @@
         
         // Cerrar menú al hacer clic fuera de él
         document.addEventListener('click', function(event) {
-            const menu = document.querySelector('.mobile-menu');
-            const dropdown = document.getElementById('menu-dropdown');
+            const menuToggle = document.querySelector('.menu-toggle');
+            const menuDropdown = document.getElementById('menu-dropdown');
             
-            if (!menu.contains(event.target) && dropdown.classList.contains('active')) {
-                dropdown.classList.remove('active');
+            if (menuToggle && menuDropdown && !menuToggle.contains(event.target) && !menuDropdown.contains(event.target)) {
+                menuDropdown.classList.remove('active');
             }
         });
 
@@ -935,25 +887,70 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
             URL.revokeObjectURL(url);
         }
 
-        firebase.auth().onAuthStateChanged(async function(user) {
-            if (!user) {
+        // Sistema de sesión local
+        function checkSession() {
+            const currentUser = localStorage.getItem('currentUser');
+            const sessionTime = localStorage.getItem('sessionTime');
+            
+            if (!currentUser) {
                 window.location.href = 'login.html';
                 return;
             }
-            const doc = await firebase.firestore().collection('usuarios').doc(user.uid).get();
-            if (!doc.exists) {
-                alert('No tienes perfil asignado. Contacta al administrador.');
+            
+            // Verificar si la sesión ha expirado (24 horas)
+            if (sessionTime && (Date.now() - parseInt(sessionTime)) > 24 * 60 * 60 * 1000) {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('sessionTime');
                 window.location.href = 'login.html';
                 return;
             }
-            const rol = doc.data().rol;
-            // Aquí puedes mostrar/ocultar menús según el rol
-            // Ejemplo:
-            if (rol === 'superusuario' || rol === 'admin') {
-                // Mostrar menú de gestión de usuarios
-                document.getElementById('menu-gestion-usuarios').style.display = 'block';
+            
+            // Mostrar información del usuario
+            try {
+                const user = JSON.parse(currentUser);
+                const userInfo = document.getElementById('userId');
+                if (userInfo) {
+                    userInfo.textContent = `${user.username} (${user.rol})`;
+                }
+            } catch (error) {
+                console.error('Error al mostrar información del usuario:', error);
             }
-            // ...otros controles según rol...
+        }
+
+        // Verificar sesión al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSession();
+        });
+
+        // Función de logout
+        function logout() {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('sessionTime');
+            window.location.href = 'login.html';
+        }
+
+        // Agregar función de logout al menú móvil
+        function setupMobileMenu() {
+            const menuDropdown = document.getElementById('menu-dropdown');
+            if (menuDropdown) {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                
+                let menuHTML = '';
+                
+                if (currentUser.rol === 'superusuario' || currentUser.rol === 'admin') {
+                    menuHTML += '<a href="user-management.html" class="menu-item"><span class="icon">👥</span>Gestión de Usuarios</a>';
+                }
+                
+                menuHTML += '<a href="admin-panel.html" class="menu-item"><span class="icon">⚙️</span>Panel de Administración</a>';
+                menuHTML += '<a href="#" onclick="logout()" class="menu-item danger"><span class="icon">🚪</span>Cerrar Sesión</a>';
+                
+                menuDropdown.innerHTML = menuHTML;
+            }
+        }
+
+        // Configurar menú móvil
+        document.addEventListener('DOMContentLoaded', function() {
+            setupMobileMenu();
         });
     </script>
 </body>
