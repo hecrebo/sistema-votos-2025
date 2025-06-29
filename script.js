@@ -541,6 +541,14 @@ class VotingSystem {
             });
         });
 
+        // Filtro por UBCH
+        const ubchFilterSelect = document.getElementById('ubch-filter-select');
+        if (ubchFilterSelect) {
+            ubchFilterSelect.addEventListener('change', () => {
+                this.applyFilters();
+            });
+        }
+
         // Mostrar ID de usuario
         document.getElementById('userId').textContent = this.userId;
     }
@@ -799,6 +807,9 @@ class VotingSystem {
         const tbody = document.querySelector('#registros-table tbody');
         tbody.innerHTML = '';
 
+        // Poblar el selector de UBCH con las UBCH disponibles
+        this.populateUBCHFilter();
+
         this.votes.forEach(vote => {
             const tr = document.createElement('tr');
             const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
@@ -824,6 +835,26 @@ class VotingSystem {
         });
     }
 
+    // Poblar el selector de filtro por UBCH
+    populateUBCHFilter() {
+        const ubchSelect = document.getElementById('ubch-filter-select');
+        if (!ubchSelect) return;
+
+        // Obtener todas las UBCH únicas de los registros
+        const uniqueUBCHs = [...new Set(this.votes.map(vote => vote.ubch).filter(ubch => ubch))];
+        
+        // Limpiar opciones existentes excepto la primera
+        ubchSelect.innerHTML = '<option value="">Todas las UBCH</option>';
+        
+        // Agregar opciones para cada UBCH
+        uniqueUBCHs.sort().forEach(ubch => {
+            const option = document.createElement('option');
+            option.value = ubch;
+            option.textContent = ubch;
+            ubchSelect.appendChild(option);
+        });
+    }
+
     handleFilterChange(filter) {
         // Actualizar botones de filtro
         document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -831,18 +862,34 @@ class VotingSystem {
         });
         document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
 
-        // Filtrar tabla
+        // Aplicar filtros
+        this.applyFilters();
+    }
+
+    // Aplicar todos los filtros (estado de voto y UBCH)
+    applyFilters() {
         const tbody = document.querySelector('#registros-table tbody');
         tbody.innerHTML = '';
 
+        // Obtener filtros activos
+        const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+        const selectedUBCH = document.getElementById('ubch-filter-select').value;
+
         let filteredVotes = this.votes;
         
-        if (filter === 'voted') {
-            filteredVotes = this.votes.filter(vote => vote.voted);
-        } else if (filter === 'not-voted') {
-            filteredVotes = this.votes.filter(vote => !vote.voted);
+        // Filtrar por estado de voto
+        if (activeFilter === 'voted') {
+            filteredVotes = filteredVotes.filter(vote => vote.voted);
+        } else if (activeFilter === 'not-voted') {
+            filteredVotes = filteredVotes.filter(vote => !vote.voted);
         }
 
+        // Filtrar por UBCH
+        if (selectedUBCH) {
+            filteredVotes = filteredVotes.filter(vote => vote.ubch === selectedUBCH);
+        }
+
+        // Renderizar votos filtrados
         filteredVotes.forEach(vote => {
             const tr = document.createElement('tr');
             const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
@@ -866,6 +913,22 @@ class VotingSystem {
             `;
             tbody.appendChild(tr);
         });
+
+        // Mostrar contador de resultados
+        this.updateFilterCounter(filteredVotes.length);
+    }
+
+    // Actualizar contador de resultados filtrados
+    updateFilterCounter(count) {
+        const totalCount = this.votes.length;
+        const pageTitle = document.querySelector('#listado-page .page-title');
+        if (pageTitle) {
+            if (count === totalCount) {
+                pageTitle.textContent = `Listado de Personas Registradas (${totalCount})`;
+            } else {
+                pageTitle.textContent = `Listado de Personas Registradas (${count} de ${totalCount})`;
+            }
+        }
     }
 
     deleteVote(voteId) {
