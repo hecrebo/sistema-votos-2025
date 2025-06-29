@@ -1830,4 +1830,40 @@ select:focus {
     color: #fff;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
+}
+
+/* Controles de paginación */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1.5rem 0 0 0;
+}
+.pagination-controls button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--secondary-color);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.pagination-controls button:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+.pagination-controls .page-info {
+    font-weight: 500;
+    color: var(--text-dark);
+    margin: 0 0.5rem;
+}
+.pagination-controls select {
+    padding: 0.3rem 0.7rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    font-size: 1rem;
+    margin-left: 1rem;
 } 

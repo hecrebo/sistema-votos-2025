@@ -231,6 +231,7 @@
                             </thead>
                             <tbody></tbody>
                         </table>
+                        <div id="pagination-controls" class="pagination-controls"></div>
                     </div>
                 </div>
             </div>
@@ -527,7 +528,7 @@
             
             if (!currentUser) {
                 window.location.href = 'login.html';
-                return;
+                        return;
             }
             
             // Verificar si la sesión ha expirado (24 horas)
@@ -554,7 +555,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             checkSession();
         });
-
+        
         // Funciones del menú desplegable
         function toggleMenu() {
             const dropdown = document.getElementById('menu-dropdown');

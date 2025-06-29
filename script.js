@@ -70,6 +70,12 @@ class VotingSystem {
         this.voteToDelete = null;
         this.projectionInterval = null;
         
+        // --- Paginación ---
+        this.currentPage = 1;
+        this.pageSize = 20;
+        this.totalPages = 1;
+        this.paginatedVotes = [];
+        
         this.init();
     }
 
@@ -800,6 +806,7 @@ class VotingSystem {
     }
 
     renderListPage() {
+        this.currentPage = 1;
         this.renderVotesTable();
     }
 
@@ -810,7 +817,27 @@ class VotingSystem {
         // Poblar el selector de UBCH con las UBCH disponibles
         this.populateUBCHFilter();
 
-        this.votes.forEach(vote => {
+        // Filtrar votos según filtros activos
+        let filteredVotes = this.votes;
+        const activeFilterBtn = document.querySelector('.filter-btn.active');
+        const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
+        if (activeFilterBtn) {
+            const filter = activeFilterBtn.dataset.filter;
+            if (filter === 'voted') filteredVotes = filteredVotes.filter(v => v.voted);
+            if (filter === 'not-voted') filteredVotes = filteredVotes.filter(v => !v.voted);
+        }
+        if (selectedUBCH) {
+            filteredVotes = filteredVotes.filter(v => v.ubch === selectedUBCH);
+        }
+
+        // Paginación
+        this.totalPages = Math.max(1, Math.ceil(filteredVotes.length / this.pageSize));
+        if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+        const startIdx = (this.currentPage - 1) * this.pageSize;
+        const endIdx = startIdx + this.pageSize;
+        this.paginatedVotes = filteredVotes.slice(startIdx, endIdx);
+
+        this.paginatedVotes.forEach(vote => {
             const tr = document.createElement('tr');
             const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
             tr.innerHTML = `
@@ -826,7 +853,7 @@ class VotingSystem {
                     </span>
                 </td>
                 <td>
-                    <button class="btn btn-danger" onclick="votingSystem.deleteVote(${vote.id})">
+                    <button class="btn btn-danger" onclick="votingSystem.deleteVote('${vote.id}')">
                         Eliminar
                     </button>
                 </td>
@@ -834,8 +861,65 @@ class VotingSystem {
             tbody.appendChild(tr);
         });
 
-        // Inicializar el contador con el total de registros
-        this.updateFilterCounter(this.votes.length);
+        // Actualizar contador
+        this.updateFilterCounter(filteredVotes.length);
+        // Renderizar controles de paginación
+        this.renderPaginationControls(filteredVotes.length);
+    }
+
+    renderPaginationControls(totalItems) {
+        const container = document.getElementById('pagination-controls');
+        if (!container) return;
+        container.innerHTML = '';
+        if (totalItems === 0) return;
+
+        // Botones de navegación
+        const btnFirst = document.createElement('button');
+        btnFirst.textContent = '«';
+        btnFirst.disabled = this.currentPage === 1;
+        btnFirst.onclick = () => { this.currentPage = 1; this.renderVotesTable(); };
+
+        const btnPrev = document.createElement('button');
+        btnPrev.textContent = '‹';
+        btnPrev.disabled = this.currentPage === 1;
+        btnPrev.onclick = () => { this.currentPage--; this.renderVotesTable(); };
+
+        const btnNext = document.createElement('button');
+        btnNext.textContent = '›';
+        btnNext.disabled = this.currentPage === this.totalPages;
+        btnNext.onclick = () => { this.currentPage++; this.renderVotesTable(); };
+
+        const btnLast = document.createElement('button');
+        btnLast.textContent = '»';
+        btnLast.disabled = this.currentPage === this.totalPages;
+        btnLast.onclick = () => { this.currentPage = this.totalPages; this.renderVotesTable(); };
+
+        // Info de página
+        const pageInfo = document.createElement('span');
+        pageInfo.className = 'page-info';
+        pageInfo.textContent = `Página ${this.currentPage} de ${this.totalPages}`;
+
+        // Selector de tamaño de página
+        const pageSizeSelect = document.createElement('select');
+        [10, 20, 50, 100].forEach(size => {
+            const opt = document.createElement('option');
+            opt.value = size;
+            opt.textContent = `${size} por página`;
+            if (size === this.pageSize) opt.selected = true;
+            pageSizeSelect.appendChild(opt);
+        });
+        pageSizeSelect.onchange = (e) => {
+            this.pageSize = parseInt(e.target.value);
+            this.currentPage = 1;
+            this.renderVotesTable();
+        };
+
+        container.appendChild(btnFirst);
+        container.appendChild(btnPrev);
+        container.appendChild(pageInfo);
+        container.appendChild(btnNext);
+        container.appendChild(btnLast);
+        container.appendChild(pageSizeSelect);
     }
 
     // Poblar el selector de filtro por UBCH
