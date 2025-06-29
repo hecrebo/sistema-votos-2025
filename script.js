@@ -1149,25 +1149,25 @@ class VotingSystem {
     exportToCSV() {
         const headers = ["Nombre", "Cédula", "Sexo", "Edad", "Teléfono", "UBCH", "Comunidad", "Votó"];
         const csvRows = [
-            headers.join(','),
+            headers.join(';'),
             ...this.votes.map(vote => [
-                `"${vote.name}"`,
-                `"${vote.cedula}"`,
+                `"${(vote.name || '').replace(/"/g, '""')}"`,
+                `"${(vote.cedula || '').replace(/"/g, '""')}"`,
                 `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}"`,
                 `"${vote.edad || 'N/A'}"`,
-                `"${vote.telefono}"`,
-                `"${vote.ubch}"`,
-                `"${vote.community}"`,
+                `"${(vote.telefono || '').replace(/"/g, '""')}"`,
+                `"${(vote.ubch || '').replace(/"/g, '""')}"`,
+                `"${(vote.community || '').replace(/"/g, '""')}"`,
                 `"${vote.voted ? 'Sí' : 'No'}"`
-            ].join(','))
+            ].join(';'))
         ];
-
         const csvString = csvRows.join('\r\n');
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", "listado_registros.csv");
+        link.setAttribute("download", `listado_registros-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();

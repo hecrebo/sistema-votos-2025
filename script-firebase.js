@@ -951,22 +951,23 @@ class VotingSystemFirebase {
     exportToCSV() {
         const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Votó'];
         const rows = this.votes.map(vote => [
-            vote.name,
-            vote.cedula,
-            vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : '',
-            vote.edad || '',
-            vote.ubch,
-            vote.community,
-            vote.voted ? 'Sí' : 'No'
+            `"${(vote.name || '').replace(/"/g, '""')}"`,
+            `"${(vote.cedula || '').replace(/"/g, '""')}"`,
+            `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
+            `"${vote.edad || ''}"`,
+            `"${(vote.ubch || '').replace(/"/g, '""')}"`,
+            `"${(vote.community || '').replace(/"/g, '""')}"`,
+            `"${vote.voted ? 'Sí' : 'No'}"`
         ]);
-        let csvContent = headers.join(',') + '\n';
+        let csvContent = headers.join(';') + '\r\n';
         rows.forEach(row => {
-            csvContent += row.map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(',') + '\n';
+            csvContent += row.join(';') + '\r\n';
         });
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', 'listado-personas.csv');
+        link.setAttribute('download', `listado-personas-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
