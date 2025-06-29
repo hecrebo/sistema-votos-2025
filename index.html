@@ -385,7 +385,6 @@
     
     <script src="firebase-config.js"></script>
     <script src="service-manager.js"></script>
-    <script src="user-management.js"></script>
     <script src="script.js"></script>
     
     <script>
@@ -894,10 +893,6 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
                 const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 
                 let menuHTML = '';
-                
-                if (currentUser.rol === 'superusuario' || currentUser.rol === 'admin') {
-                    menuHTML += '<a href="user-management.html" class="menu-item"><span class="icon">👥</span>Gestión de Usuarios</a>';
-                }
                 
                 menuHTML += '<a href="admin-panel.html" class="menu-item"><span class="icon">⚙️</span>Panel de Administración</a>';
                 menuHTML += '<a href="#" onclick="logout()" class="menu-item danger"><span class="icon">🚪</span>Cerrar Sesión</a>';

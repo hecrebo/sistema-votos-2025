@@ -150,7 +150,7 @@ const SYSTEM_CONFIG = {
         api: 'http://localhost:3000',
         login: 'login.html',
         main: 'index.html',
-        admin: 'user-management.html'
+        admin: 'admin-panel.html'
     },
     
     // Configuración de exportación
