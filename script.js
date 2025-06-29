@@ -771,7 +771,7 @@ class VotingSystem {
                     <p>UBCH: ${person.ubch}</p>
                     <p>Comunidad: ${person.community}</p>
                 </div>
-                <button class="btn btn-success" onclick="votingSystem.confirmVote(${person.id})">
+                <button class="btn btn-success" onclick="votingSystem.confirmVote('${person.id}')">
                     Confirmar Voto
                 </button>
             `;
@@ -1260,4 +1260,8 @@ function logout() {
   firebase.auth().signOut().then(() => {
     window.location.href = 'login.html';
   });
+}
+
+if (typeof window !== 'undefined') {
+    window.votingSystem = new VotingSystem();
 }
