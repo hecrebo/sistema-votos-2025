@@ -1792,4 +1792,42 @@ select:focus {
     margin: 0;
     font-size: 0.875rem;
     color: #9ca3af;
+}
+
+/* Unificar estilo del input de búsqueda de cédula en Confirmar Voto */
+#check-in-form .search-container input[type="text"],
+#check-in-form .search-container input[type="number"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    background: #fff;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+#check-in-form .search-container input[type="text"]:focus,
+#check-in-form .search-container input[type="number"]:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+#check-in-form .btn.btn-primary {
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.08);
+    transition: all 0.2s ease;
+}
+#check-in-form .btn.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
 } 
