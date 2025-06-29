@@ -1231,10 +1231,20 @@ class VotingSystem {
     }
 
     exportToCSV() {
+        // Exportar solo los registros filtrados y visibles en la página actual
         const headers = ["Nombre", "Cédula", "Sexo", "Edad", "Teléfono", "UBCH", "Comunidad", "Votó"];
+        const totalExport = this.paginatedVotes.length;
+        if (totalExport === 0) {
+            alert('No hay registros para exportar en la página actual.');
+            return;
+        }
+        if (totalExport > 1000) {
+            alert('Por favor, exporta menos de 1000 registros a la vez para evitar bloqueos del navegador. Usa la paginación o filtros.');
+            return;
+        }
         const csvRows = [
             headers.join(';'),
-            ...this.votes.map(vote => [
+            ...this.paginatedVotes.map(vote => [
                 `"${(vote.name || '').replace(/"/g, '""')}"`,
                 `"${(vote.cedula || '').replace(/"/g, '""')}"`,
                 `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}"`,
@@ -1251,7 +1261,7 @@ class VotingSystem {
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", `listado_registros-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.csv`);
+        link.setAttribute("download", `listado_registros-pagina${this.currentPage}-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
