@@ -924,8 +924,8 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
             });
         }
 
-        // Mostrar enlace Admin UBCH solo para superadmin
-        document.addEventListener('DOMContentLoaded', function() {
+        // Función para mostrar/ocultar el enlace Admin UBCH según el usuario
+        function updateAdminUBCHLink() {
             const currentUser = localStorage.getItem('currentUser');
             let isSuperAdmin = false;
             if (currentUser) {
@@ -942,7 +942,15 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
                     container.innerHTML = '';
                 }
             }
+        }
+
+        // Llamar al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            updateAdminUBCHLink();
         });
+
+        // Llamar después de login/logout (puedes llamar a updateAdminUBCHLink() después de cambiar de usuario)
+        // Por ejemplo, después de login/logout en tu código, agrega: updateAdminUBCHLink();
     </script>
 </body>
 </html>
