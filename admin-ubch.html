@@ -469,6 +469,7 @@
                 <div class="btn-group">
                     <button class="btn btn-success" onclick="exportData()">📊 Exportar Datos</button>
                     <button class="btn btn-info" onclick="refreshStats()">🔄 Actualizar Estadísticas</button>
+                    <button class="btn btn-warning" onclick="forceSyncWithMainSystem()">🔄 Sincronizar con Sistema Principal</button>
                 </div>
             </div>
         </div>
@@ -479,12 +480,122 @@
         let currentEditId = null;
         let ubchData = [];
         let communityData = [];
+        let syncInterval = null;
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             refreshStats();
+            startSyncWithMainSystem();
         });
+        
+        // Limpiar intervalo cuando se cierre la página
+        window.addEventListener('beforeunload', function() {
+            if (syncInterval) {
+                clearInterval(syncInterval);
+            }
+        });
+        
+        // Sistema de sincronización con el sistema principal
+        function startSyncWithMainSystem() {
+            // Sincronizar cada 5 segundos
+            syncInterval = setInterval(() => {
+                syncWithMainSystem();
+            }, 5000);
+            
+            // También sincronizar cuando la ventana vuelve a estar activa
+            window.addEventListener('focus', syncWithMainSystem);
+        }
+        
+        function syncWithMainSystem() {
+            try {
+                // Verificar si hay datos del sistema principal
+                const mainSystemUBCH = localStorage.getItem('ubchToCommunityMap');
+                
+                if (mainSystemUBCH) {
+                    const mainSystemData = JSON.parse(mainSystemUBCH);
+                    
+                    // Convertir formato del sistema principal al formato de administración
+                    const convertedUBCH = [];
+                    const convertedCommunities = [];
+                    let ubchId = 1;
+                    let communityId = 1;
+                    
+                    Object.keys(mainSystemData).forEach((ubchName, index) => {
+                        const ubchItem = {
+                            id: ubchId.toString(),
+                            code: `UBCH${String(ubchId).padStart(3, '0')}`,
+                            name: ubchName,
+                            description: `Unidad de Batalla Bolívar-Chávez ${ubchName}`
+                        };
+                        convertedUBCH.push(ubchItem);
+                        
+                        // Agregar comunidades
+                        mainSystemData[ubchName].forEach(communityName => {
+                            const communityItem = {
+                                id: communityId.toString(),
+                                ubchId: ubchId.toString(),
+                                ubchName: ubchName,
+                                code: `COM${String(communityId).padStart(3, '0')}`,
+                                name: communityName,
+                                description: `Comunidad ${communityName}`
+                            };
+                            convertedCommunities.push(communityItem);
+                            communityId++;
+                        });
+                        
+                        ubchId++;
+                    });
+                    
+                    // Solo actualizar si hay diferencias significativas
+                    const currentUBCHString = JSON.stringify(ubchData);
+                    const newUBCHString = JSON.stringify(convertedUBCH);
+                    
+                    if (currentUBCHString !== newUBCHString && convertedUBCH.length > 0) {
+                        console.log('Sincronizando datos desde el sistema principal...');
+                        ubchData = convertedUBCH;
+                        communityData = convertedCommunities;
+                        
+                        saveData();
+                        renderUBCHTable();
+                        renderCommunityTable();
+                        populateUBCHSelect();
+                        refreshStats();
+                        
+                        showMessage('Datos sincronizados desde el sistema principal', 'success', 'ubch');
+                    }
+                }
+            } catch (error) {
+                console.error('Error en sincronización con sistema principal:', error);
+            }
+        }
+        
+        // Función para sincronizar datos hacia el sistema principal
+        function syncToMainSystem() {
+            try {
+                // Convertir formato de administración al formato del sistema principal
+                const mainSystemFormat = {};
+                
+                ubchData.forEach(ubch => {
+                    const communitiesForUbch = communityData
+                        .filter(community => community.ubchId === ubch.id)
+                        .map(community => community.name);
+                    
+                    if (communitiesForUbch.length > 0) {
+                        mainSystemFormat[ubch.name] = communitiesForUbch;
+                    }
+                });
+                
+                // Guardar en el formato del sistema principal
+                localStorage.setItem('ubchToCommunityMap', JSON.stringify(mainSystemFormat));
+                
+                console.log('Datos sincronizados hacia el sistema principal:', mainSystemFormat);
+                return true;
+            } catch (error) {
+                console.error('Error sincronizando hacia sistema principal:', error);
+                return false;
+            }
+        }
         
         // Funciones de navegación
         function showTab(tabName) {
@@ -834,6 +945,9 @@
         function saveData() {
             localStorage.setItem('ubchData', JSON.stringify(ubchData));
             localStorage.setItem('communityData', JSON.stringify(communityData));
+            
+            // Sincronizar automáticamente con el sistema principal
+            syncToMainSystem();
         }
         
         function showMessage(message, type, section) {
@@ -939,6 +1053,11 @@
             URL.revokeObjectURL(url);
             
             showMessage('Datos exportados exitosamente', 'success', 'ubch');
+        }
+        
+        function forceSyncWithMainSystem() {
+            syncWithMainSystem();
+            showMessage('Sincronización con el sistema principal iniciada', 'success', 'ubch');
         }
     </script>
 </body>

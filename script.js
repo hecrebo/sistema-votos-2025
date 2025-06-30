@@ -423,34 +423,66 @@ class VotingSystem {
 
     async loadData() {
         try {
-            // Usar SyncManager si está disponible
-            if (window.syncManager) {
-                const allRecords = await window.syncManager.getAllRecords();
-                
-                // Combinar registros locales y remotos
-                this.votes = [
-                    ...allRecords.local,
-                    ...allRecords.remote
-                ];
-                
-                console.log(`📦 Datos cargados: ${allRecords.local.length} locales, ${allRecords.remote.length} remotos`);
-                
-                // Actualizar interfaz
-                this.renderCurrentPage();
-                return;
+            // Cargar datos de UBCH y comunidades desde la página de administración
+            await this.loadUBCHDataFromAdmin();
+            
+            // Cargar votos existentes
+            const savedVotes = localStorage.getItem('votes');
+            this.votes = savedVotes ? JSON.parse(savedVotes) : [];
+            
+            // Cargar configuración de UBCH (mantener compatibilidad)
+            const savedUbchData = localStorage.getItem('ubchToCommunityMap');
+            this.ubchToCommunityMap = savedUbchData ? JSON.parse(savedUbchData) : this.ubchToCommunityMap;
+            
+            // Sincronizar con Firebase si está disponible
+            if (window.syncManager && window.syncManager.isOnline) {
+                await this.syncData();
             }
-
-            // Método tradicional (fallback)
-            const response = await fetch(`${this.apiUrl}/votes`);
-            if (response.ok) {
-                this.votes = await response.json();
-            } else {
-                console.warn('No se pudo cargar desde servidor, usando localStorage');
-                this.loadFromLocalStorage();
-            }
+            
+            console.log('Datos cargados exitosamente');
         } catch (error) {
             console.error('Error cargando datos:', error);
-            this.loadFromLocalStorage();
+            this.showMessage('Error cargando datos', 'error', 'registration');
+        }
+    }
+
+    // Nueva función para cargar datos de UBCH desde la página de administración
+    async loadUBCHDataFromAdmin() {
+        try {
+            // Intentar cargar datos de la página de administración
+            const ubchData = localStorage.getItem('ubchData');
+            const communityData = localStorage.getItem('communityData');
+            
+            if (ubchData && communityData) {
+                const ubchList = JSON.parse(ubchData);
+                const communityList = JSON.parse(communityData);
+                
+                // Convertir el formato de la página de administración al formato del sistema principal
+                const newUbchToCommunityMap = {};
+                
+                ubchList.forEach(ubch => {
+                    const communitiesForUbch = communityList
+                        .filter(community => community.ubchId === ubch.id)
+                        .map(community => community.name);
+                    
+                    if (communitiesForUbch.length > 0) {
+                        newUbchToCommunityMap[ubch.name] = communitiesForUbch;
+                    }
+                });
+                
+                // Actualizar el mapa solo si hay datos válidos
+                if (Object.keys(newUbchToCommunityMap).length > 0) {
+                    this.ubchToCommunityMap = newUbchToCommunityMap;
+                    console.log('Datos de UBCH cargados desde página de administración:', this.ubchToCommunityMap);
+                } else {
+                    console.log('No se encontraron datos válidos de UBCH en la página de administración, usando datos por defecto');
+                }
+            } else {
+                console.log('No se encontraron datos de UBCH en la página de administración, usando datos por defecto');
+            }
+        } catch (error) {
+            console.error('Error cargando datos de UBCH desde administración:', error);
+            // Mantener datos por defecto en caso de error
         }
     }
 
