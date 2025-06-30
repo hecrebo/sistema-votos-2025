@@ -56,7 +56,7 @@
                     <button class="nav-btn" data-page="listado">Listado</button>
                     <button class="nav-btn" data-page="dashboard">Totales</button>
                     <button class="nav-btn" data-page="statistics">Estadísticas</button>
-                    <a href="admin-ubch.html" class="nav-btn admin-btn" style="text-decoration: none; color: inherit;">🏛️ Admin UBCH</a>
+                    <span id="admin-ubch-link-container"></span>
                 </nav>
                 <div class="user-info">
                     <span class="user-id" id="userId"></span>
@@ -923,6 +923,26 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
                     .catch(err => console.log('Error al registrar Service Worker:', err));
             });
         }
+
+        // Mostrar enlace Admin UBCH solo para superadmin
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('currentUser');
+            let isSuperAdmin = false;
+            if (currentUser) {
+                try {
+                    const user = JSON.parse(currentUser);
+                    isSuperAdmin = user.rol === 'superusuario';
+                } catch (e) {}
+            }
+            const container = document.getElementById('admin-ubch-link-container');
+            if (container) {
+                if (isSuperAdmin) {
+                    container.innerHTML = '<a href="admin-ubch.html" class="nav-btn admin-btn" style="text-decoration: none; color: inherit;">🏛️ Admin UBCH</a>';
+                } else {
+                    container.innerHTML = '';
+                }
+            }
+        });
     </script>
 </body>
 </html>
