@@ -729,11 +729,11 @@
             <div class="service-controls">
                 <button class="btn btn-primary" onclick="clearLogs()">🗑️ Limpiar Logs</button>
                 <button class="btn btn-warning" onclick="downloadLogs()">📥 Descargar</button>
-            </div>
+                            </div>
             <div class="log-container" id="system-logs">
                 <div class="log-entry log-info">Panel de administración iniciado</div>
-            </div>
-        </div>
+                            </div>
+                            </div>
         
         <div id="dashboard-visual"></div>
         
@@ -753,40 +753,40 @@
                         <option value="voted">Votaron</option>
                         <option value="not-voted">No votaron</option>
                     </select>
-                </div>
+                        </div>
                 <div class="users-actions">
                     <button class="btn btn-primary" onclick="exportUsersToCSV()">📥 Exportar CSV</button>
                     <button class="btn btn-secondary" onclick="exportUsersToPDF()">📄 Exportar PDF</button>
                     <button class="btn btn-warning" onclick="refreshUsersList()">🔄 Actualizar</button>
-                </div>
-            </div>
+                        </div>
+                        </div>
             <div class="users-stats">
                 <span id="users-total">Total: 0</span>
                 <span id="users-voted">Votaron: 0</span>
                 <span id="users-not-voted">No votaron: 0</span>
-            </div>
-            <div class="users-table-container">
+                    </div>
+                    <div class="users-table-container">
                 <table id="users-table" class="users-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
                             <th>Cédula</th>
                             <th>Teléfono</th>
                             <th>Sexo</th>
                             <th>Edad</th>
                             <th>UBCH</th>
                             <th>Comunidad</th>
-                            <th>Estado</th>
+                                    <th>Estado</th>
                             <th>Registrado por</th>
                             <th>Fecha Registro</th>
-                        </tr>
-                    </thead>
-                    <tbody id="users-table-body">
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
                         <tr>
                             <td colspan="10" class="loading-message">Cargando usuarios...</td>
                         </tr>
-                    </tbody>
-                </table>
+                            </tbody>
+                        </table>
             </div>
         </div>
     </div>
@@ -1111,14 +1111,14 @@
 
         // Renderizar tabla de usuarios
         function renderUsersTable() {
-            const tbody = document.getElementById('users-table-body');
-            tbody.innerHTML = '';
-            
+                const tbody = document.getElementById('users-table-body');
+                tbody.innerHTML = '';
+                
             if (filteredUsers.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="10" class="loading-message">No se encontraron usuarios</td></tr>';
-                return;
-            }
-            
+                    return;
+                }
+                
             filteredUsers.forEach(user => {
                 const tr = document.createElement('tr');
                 const sexoClass = user.sexo === 'M' ? 'masculino' : 'femenino';
@@ -1208,11 +1208,11 @@
         function exportUsersToCSV() {
             if (filteredUsers.length === 0) {
                 alert('No hay usuarios para exportar');
-                return;
-            }
-            
+                    return;
+                }
+                
             const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Estado', 'Registrado por', 'Fecha Registro'];
-            const csvContent = [
+                const csvContent = [
                 headers.join(';'),
                 ...filteredUsers.map(user => [
                     `"${(user.name || '').replace(/"/g, '""')}"`, // Escapar comillas dobles
@@ -1237,13 +1237,13 @@
             const blob = new Blob([BOM + csvContent], { 
                 type: 'text/csv;charset=utf-8;' 
             });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
             a.download = `usuarios-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
+                a.click();
+                URL.revokeObjectURL(url);
+                
             log('📥 Lista de usuarios exportada a CSV (formato español con acentos)', 'success');
         }
 

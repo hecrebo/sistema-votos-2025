@@ -145,6 +145,20 @@ class FirebaseSyncManager {
             const unsubscribe = votesCollection.onSnapshot(
                 (snapshot) => {
                     const votesData = [];
+                    const changes = snapshot.docChanges();
+                    
+                    // Procesar cambios para detectar eliminaciones
+                    changes.forEach((change) => {
+                        if (change.type === 'removed') {
+                            console.log('🗑️ Documento eliminado:', change.doc.id);
+                            // Disparar evento específico para eliminaciones
+                            window.dispatchEvent(new CustomEvent('voteDeleted', {
+                                detail: { voteId: change.doc.id, source: 'firebase' }
+                            }));
+                        }
+                    });
+                    
+                    // Obtener todos los documentos actuales
                     snapshot.forEach((doc) => {
                         votesData.push({
                             id: doc.id,

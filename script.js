@@ -324,6 +324,9 @@ class VotingSystem {
             this.loadVotesPage(1);
         }
 
+        // Configurar listeners de Firebase en tiempo real
+        this.setupFirebaseListeners();
+
         this.setupEventListeners();
         this.renderCurrentPage();
         this.loadPdfLibraries();
@@ -363,15 +366,33 @@ class VotingSystem {
         try {
             // Cargar datos de UBCH y comunidades desde Firebase
             await this.loadUBCHDataFromAdmin();
-            // Cargar votos desde Firebase (votesData en localStorage)
-            const votesData = localStorage.getItem('votesData');
-            this.votes = votesData ? JSON.parse(votesData) : [];
+            
+            // Cargar votos desde Firebase
+            if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+                try {
+                    console.log('📥 Cargando votos desde Firebase...');
+                    const firebaseVotes = await window.firebaseDB.firebaseSyncManager.loadVotesFromFirebase();
+                    this.votes = firebaseVotes;
+                    console.log(`✅ Votos cargados desde Firebase: ${this.votes.length} registros`);
+                } catch (firebaseError) {
+                    console.warn('⚠️ Error cargando votos desde Firebase, usando localStorage:', firebaseError);
+                    // Fallback a localStorage
+                    const votesData = localStorage.getItem('votesData');
+                    this.votes = votesData ? JSON.parse(votesData) : [];
+                }
+            } else {
+                // Fallback a localStorage si Firebase no está disponible
+                const votesData = localStorage.getItem('votesData');
+                this.votes = votesData ? JSON.parse(votesData) : [];
+            }
+            
             // Cargar configuración de UBCH (mantener compatibilidad)
             const savedUbchData = localStorage.getItem('ubchToCommunityMap');
             this.ubchToCommunityMap = savedUbchData ? JSON.parse(savedUbchData) : this.ubchToCommunityMap;
-            console.log('Datos cargados exitosamente');
+            
+            console.log('✅ Datos cargados exitosamente');
         } catch (error) {
-            console.error('Error cargando datos:', error);
+            console.error('❌ Error cargando datos:', error);
             this.showMessage('Error cargando datos', 'error', 'registration');
         }
     }
@@ -484,21 +505,51 @@ class VotingSystem {
         }
     }
 
-    // Configurar listeners para cambios en tiempo real
-    setupRealTimeListeners() {
+    // Configurar listeners de Firebase en tiempo real
+    setupFirebaseListeners() {
         if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
-            // Listener para cambios en UBCH
-            window.addEventListener('ubchDataUpdated', (event) => {
-                console.log('🔄 Datos de UBCH actualizados en tiempo real:', event.detail);
-                this.handleUBCHDataUpdate(event.detail.data);
-            });
-            
-            // Listener para cambios en Comunidades
-            window.addEventListener('communitiesDataUpdated', (event) => {
-                console.log('🔄 Datos de Comunidades actualizados en tiempo real:', event.detail);
-                this.handleCommunitiesDataUpdate(event.detail.data);
-            });
+            try {
+                console.log('🔄 Configurando listeners de Firebase...');
+                
+                // Iniciar sincronización en tiempo real
+                window.firebaseDB.firebaseSyncManager.syncUBCHRealTime();
+                window.firebaseDB.firebaseSyncManager.syncCommunitiesRealTime();
+                window.firebaseDB.firebaseSyncManager.syncVotesRealTime();
+                
+                // Configurar listeners para eventos
+                window.addEventListener('ubchDataUpdated', (event) => {
+                    console.log('🔄 Datos de UBCH actualizados en tiempo real:', event.detail);
+                    this.handleUBCHDataUpdate(event.detail.data);
+                });
+                
+                window.addEventListener('communitiesDataUpdated', (event) => {
+                    console.log('🔄 Datos de Comunidades actualizados en tiempo real:', event.detail);
+                    this.handleCommunitiesDataUpdate(event.detail.data);
+                });
+                
+                window.addEventListener('votesDataUpdated', (event) => {
+                    console.log('🔄 Datos de Votos actualizados en tiempo real:', event.detail);
+                    this.handleVotesDataUpdate(event.detail.data);
+                });
+                
+                window.addEventListener('voteDeleted', (event) => {
+                    console.log('🗑️ Voto eliminado en tiempo real:', event.detail);
+                    this.handleVoteDeleted(event.detail.voteId);
+                });
+                
+                console.log('✅ Listeners de Firebase configurados correctamente');
+            } catch (error) {
+                console.error('❌ Error configurando listeners de Firebase:', error);
+            }
+        } else {
+            console.warn('⚠️ Firebase no disponible para configurar listeners');
         }
+    }
+
+    // Configurar listeners para cambios en tiempo real (mantener compatibilidad)
+    setupRealTimeListeners() {
+        // Esta función ahora llama a setupFirebaseListeners
+        this.setupFirebaseListeners();
     }
 
     // Manejar actualización de datos UBCH
@@ -569,6 +620,57 @@ class VotingSystem {
             }
         } catch (error) {
             console.error('❌ Error actualizando datos de comunidades:', error);
+        }
+    }
+
+    // Manejar actualización de datos de votos
+    handleVotesDataUpdate(votesData) {
+        try {
+            // Actualizar la lista de votos
+            this.votes = votesData;
+            
+            // Actualizar localStorage
+            localStorage.setItem('votesData', JSON.stringify(this.votes));
+            
+            console.log('✅ Lista de votos actualizada en tiempo real:', this.votes.length, 'registros');
+            
+            // Actualizar interfaz según la página actual
+            if (this.currentPage === 'listado') {
+                this.renderVotesTable();
+            } else if (this.currentPage === 'dashboard') {
+                this.renderDashboardPage();
+            } else if (this.currentPage === 'statistics') {
+                this.renderStatisticsPage();
+            }
+        } catch (error) {
+            console.error('❌ Error manejando actualización de votos:', error);
+        }
+    }
+
+    // Manejar eliminación de votos en tiempo real
+    handleVoteDeleted(voteId) {
+        try {
+            console.log('🗑️ Procesando eliminación de voto:', voteId);
+            
+            // Eliminar de la lista local
+            this.votes = this.votes.filter(vote => vote.id !== voteId);
+            
+            // Actualizar localStorage
+            localStorage.setItem('votesData', JSON.stringify(this.votes));
+            
+            // Actualizar interfaz según la página actual
+            if (this.currentPage === 'listado') {
+                this.renderVotesTable();
+            } else if (this.currentPage === 'dashboard') {
+                this.renderDashboardPage();
+            } else if (this.currentPage === 'statistics') {
+                this.renderStatisticsPage();
+            }
+            
+            console.log('✅ Voto eliminado de la interfaz local');
+            
+        } catch (error) {
+            console.error('❌ Error procesando eliminación de voto:', error);
         }
     }
 
@@ -1234,13 +1336,22 @@ class VotingSystem {
                     console.log('🗑️ Eliminando registro de Firebase...');
                     await window.firebaseDB.firebaseSyncManager.deleteVote(this.voteToDelete);
                     console.log('✅ Registro eliminado de Firebase exitosamente');
+                    
+                    // Esperar un momento para que Firebase procese la eliminación
+                    await this.delay(500);
+                    
+                    // La interfaz se actualizará automáticamente por el listener de Firebase
+                    this.closeDeleteModal();
+                    this.showMessage('Registro eliminado correctamente', 'success', 'listado');
+                    return;
+                    
                 } catch (firebaseError) {
                     console.warn('⚠️ Error eliminando de Firebase, usando método tradicional:', firebaseError);
                     // Fallback al método tradicional
                 }
             }
 
-            // Eliminar de la lista local
+            // Fallback: Eliminar de la lista local
             this.votes = this.votes.filter(vote => vote.id !== this.voteToDelete);
             
             // Guardar en localStorage como respaldo

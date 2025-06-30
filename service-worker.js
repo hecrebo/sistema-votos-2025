@@ -19,7 +19,29 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // No intentar hacer fetch a localhost si no estamos en desarrollo
+  if (event.request.url.includes('localhost') && !self.location.hostname.includes('localhost')) {
+    console.log('🚫 Bloqueando fetch a localhost en producción:', event.request.url);
+    return;
+  }
+  
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    caches.match(event.request).then(response => {
+      if (response) {
+        return response;
+      }
+      
+      // Solo hacer fetch si no es una URL problemática
+      if (!event.request.url.includes('localhost:3000') && !event.request.url.includes('localhost:3001')) {
+        return fetch(event.request).catch(error => {
+          console.log('❌ Error en fetch:', error);
+          // Retornar una respuesta vacía en caso de error
+          return new Response('', { status: 404 });
+        });
+      }
+      
+      // Para URLs de localhost, retornar respuesta vacía
+      return new Response('', { status: 404 });
+    })
   );
 }); 

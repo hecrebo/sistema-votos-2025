@@ -142,15 +142,34 @@ class ServiceManager {
     
     async checkSyncService() {
         try {
-            // Verificar que el listener esté activo
-            if (window.votingSystem && window.votingSystem.unsubscribeListener) {
-                this.services.sync.status = 'online';
-                this.services.sync.lastCheck = Date.now();
-                this.services.sync.retries = 0;
+            // Verificar que Firebase esté disponible y configurado
+            if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+                // Verificar que los listeners estén activos
+                const hasListeners = window.firebaseDB.firebaseSyncManager.ubchListeners.size > 0 ||
+                                   window.firebaseDB.firebaseSyncManager.communityListeners.size > 0 ||
+                                   window.firebaseDB.firebaseSyncManager.votesListeners.size > 0;
                 
-                console.log('✅ Sincronización: Online');
+                if (hasListeners) {
+                    this.services.sync.status = 'online';
+                    this.services.sync.lastCheck = Date.now();
+                    this.services.sync.retries = 0;
+                    
+                    console.log('✅ Sincronización: Online');
+                } else {
+                    // Intentar iniciar listeners si no están activos
+                    console.log('🔄 Iniciando listeners de sincronización...');
+                    await window.firebaseDB.firebaseSyncManager.syncUBCHRealTime();
+                    await window.firebaseDB.firebaseSyncManager.syncCommunitiesRealTime();
+                    await window.firebaseDB.firebaseSyncManager.syncVotesRealTime();
+                    
+                    this.services.sync.status = 'online';
+                    this.services.sync.lastCheck = Date.now();
+                    this.services.sync.retries = 0;
+                    
+                    console.log('✅ Sincronización: Online (listeners iniciados)');
+                }
             } else {
-                throw new Error('Listener no está activo');
+                throw new Error('Firebase no está disponible');
             }
         } catch (error) {
             this.services.sync.status = 'offline';
@@ -221,13 +240,15 @@ class ServiceManager {
         
         try {
             // Reconfigurar Firebase
-            if (window.firebaseDB) {
-                // Reconfigurar listener
-                if (window.votingSystem && window.votingSystem.setupRealtimeListener) {
-                    window.votingSystem.setupRealtimeListener();
-                }
+            if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+                // Reiniciar listeners de Firebase
+                await window.firebaseDB.firebaseSyncManager.syncUBCHRealTime();
+                await window.firebaseDB.firebaseSyncManager.syncCommunitiesRealTime();
+                await window.firebaseDB.firebaseSyncManager.syncVotesRealTime();
                 
                 console.log('✅ Servicio Firebase reiniciado');
+            } else {
+                throw new Error('Firebase no está disponible');
             }
         } catch (error) {
             console.error('❌ Error reiniciando Firebase:', error);
@@ -238,12 +259,19 @@ class ServiceManager {
         console.log('🔄 Reiniciando servicio de base de datos...');
         
         try {
-            // Recargar datos
-            if (window.votingSystem && window.votingSystem.loadDataFromFirebase) {
-                await window.votingSystem.loadDataFromFirebase();
+            // Recargar datos desde Firebase
+            if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+                await window.firebaseDB.firebaseSyncManager.loadVotesFromFirebase();
+                await window.firebaseDB.firebaseSyncManager.loadUBCHFromFirebase();
+                await window.firebaseDB.firebaseSyncManager.loadCommunitiesFromFirebase();
+                
+                console.log('✅ Servicio de base de datos reiniciado');
+            } else if (window.votingSystem && window.votingSystem.loadData) {
+                await window.votingSystem.loadData();
+                console.log('✅ Servicio de base de datos reiniciado (fallback)');
+            } else {
+                throw new Error('No hay sistema de base de datos disponible');
             }
-            
-            console.log('✅ Servicio de base de datos reiniciado');
         } catch (error) {
             console.error('❌ Error reiniciando base de datos:', error);
         }
@@ -253,12 +281,26 @@ class ServiceManager {
         console.log('🔄 Reiniciando servicio de sincronización...');
         
         try {
-            // Reconfigurar sincronización
-            if (window.votingSystem && window.votingSystem.setupRealtimeListener) {
-                window.votingSystem.setupRealtimeListener();
+            // Reconfigurar sincronización con Firebase
+            if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+                // Limpiar listeners existentes
+                window.firebaseDB.firebaseSyncManager.ubchListeners.forEach(unsubscribe => unsubscribe());
+                window.firebaseDB.firebaseSyncManager.communityListeners.forEach(unsubscribe => unsubscribe());
+                window.firebaseDB.firebaseSyncManager.votesListeners.forEach(unsubscribe => unsubscribe());
+                
+                window.firebaseDB.firebaseSyncManager.ubchListeners.clear();
+                window.firebaseDB.firebaseSyncManager.communityListeners.clear();
+                window.firebaseDB.firebaseSyncManager.votesListeners.clear();
+                
+                // Reiniciar listeners
+                await window.firebaseDB.firebaseSyncManager.syncUBCHRealTime();
+                await window.firebaseDB.firebaseSyncManager.syncCommunitiesRealTime();
+                await window.firebaseDB.firebaseSyncManager.syncVotesRealTime();
+                
+                console.log('✅ Servicio de sincronización reiniciado');
+            } else {
+                throw new Error('Firebase no está disponible');
             }
-            
-            console.log('✅ Servicio de sincronización reiniciado');
         } catch (error) {
             console.error('❌ Error reiniciando sincronización:', error);
         }
