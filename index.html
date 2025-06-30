@@ -99,9 +99,13 @@
                         <form id="registration-form" class="registration-form" autocomplete="off">
                             <div class="form-group">
                                 <label for="ubch">UBCH (Unidad de Batalla Bolívar-Chávez)</label>
-                                <select id="ubch" name="ubch" required>
-                                    <option value="">Selecciona una UBCH</option>
-                                </select>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <select id="ubch" name="ubch" required>
+                                        <option value="">Selecciona una UBCH</option>
+                                    </select>
+                                    <button type="button" id="refresh-ubch-btn" class="btn btn-info" title="Refrescar UBCH">🔄</button>
+                                </div>
+                                <div id="ubch-warning" class="message warning" style="display:none; margin-top: 8px;"></div>
                             </div>
                             <div class="form-group">
                                 <label for="community">Comunidad vinculada a la UBCH</label>
@@ -951,6 +955,38 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
 
         // Llamar después de login/logout (puedes llamar a updateAdminUBCHLink() después de cambiar de usuario)
         // Por ejemplo, después de login/logout en tu código, agrega: updateAdminUBCHLink();
+
+        // Función para refrescar la lista de UBCH
+        function refreshUBCHList() {
+            if (window.votingSystem && typeof window.votingSystem.loadUBCHDataFromAdmin === 'function') {
+                window.votingSystem.loadUBCHDataFromAdmin();
+                window.votingSystem.renderRegistrationPage();
+                checkUBCHWarning();
+            }
+        }
+
+        // Mostrar advertencia si no hay UBCH
+        function checkUBCHWarning() {
+            const ubchSelect = document.getElementById('ubch');
+            const warningDiv = document.getElementById('ubch-warning');
+            if (ubchSelect && warningDiv) {
+                if (ubchSelect.options.length <= 1) {
+                    warningDiv.style.display = 'block';
+                    warningDiv.textContent = 'No hay UBCH disponibles. Por favor, sincroniza desde el panel de administración.';
+                } else {
+                    warningDiv.style.display = 'none';
+                }
+            }
+        }
+
+        // Listener para el botón de refrescar UBCH
+        document.addEventListener('DOMContentLoaded', function() {
+            const refreshBtn = document.getElementById('refresh-ubch-btn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', refreshUBCHList);
+            }
+            checkUBCHWarning();
+        });
     </script>
 </body>
 </html>
