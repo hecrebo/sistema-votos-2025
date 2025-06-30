@@ -30,16 +30,14 @@ self.addEventListener('fetch', event => {
       if (response) {
         return response;
       }
-      
-      // Solo hacer fetch si no es una URL problemática
-      if (!event.request.url.includes('localhost:3000') && !event.request.url.includes('localhost:3001')) {
+      // Solo hacer fetch si no es una URL de localhost
+      if (!event.request.url.includes('localhost')) {
         return fetch(event.request).catch(error => {
           console.log('❌ Error en fetch:', error);
           // Retornar una respuesta vacía en caso de error
           return new Response('', { status: 404 });
         });
       }
-      
       // Para URLs de localhost, retornar respuesta vacía
       return new Response('', { status: 404 });
     })
