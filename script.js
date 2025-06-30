@@ -1359,3 +1359,31 @@ function logout() {
 if (typeof window !== 'undefined') {
     window.votingSystem = new VotingSystem();
 }
+
+// Forzar actualización del favicon
+function forceFaviconUpdate() {
+    const timestamp = new Date().getTime();
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) {
+        favicon.href = `favicon.ico/favicon.ico?v=${timestamp}`;
+    }
+    
+    // Limpiar caché del navegador para favicon
+    if ('caches' in window) {
+        caches.keys().then(names => {
+            names.forEach(name => {
+                if (name.includes('favicon') || name.includes('icon')) {
+                    caches.delete(name);
+                }
+            });
+        });
+    }
+}
+
+// Ejecutar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    forceFaviconUpdate();
+    
+    // También forzar actualización después de un breve delay
+    setTimeout(forceFaviconUpdate, 1000);
+});
