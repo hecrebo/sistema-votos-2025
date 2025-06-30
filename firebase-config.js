@@ -348,6 +348,57 @@ class FirebaseSyncManager {
         }
     }
 
+    // Cargar TODOS los votos (para estadísticas)
+    async getAllVotes() {
+        try {
+            console.log('📥 Cargando TODOS los Votos desde Firebase para estadísticas...');
+            const snapshot = await votesCollection.get();
+            const votesData = [];
+            snapshot.forEach((doc) => {
+                votesData.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            console.log(`✅ Todos los Votos cargados: ${votesData.length} registros`);
+            return votesData;
+
+        } catch (error) {
+            console.error('❌ Error cargando todos los Votos desde Firebase:', error);
+            return [];
+        }
+    }
+
+    // Cargar votos desde Firebase (paginado)
+    async getVotesPage(pageSize, lastVisibleDoc = null) {
+        try {
+            console.log(`📥 Cargando página de Votos desde Firebase...`);
+            let query = votesCollection.orderBy('registeredAt', 'desc').limit(pageSize);
+
+            if (lastVisibleDoc) {
+                query = query.startAfter(lastVisibleDoc);
+            }
+
+            const snapshot = await query.get();
+            const votesData = [];
+            snapshot.forEach((doc) => {
+                votesData.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+            console.log(`✅ Página de Votos cargada: ${votesData.length} registros`);
+            
+            return { votes: votesData, lastDoc: lastDoc };
+
+        } catch (error) {
+            console.error('❌ Error cargando página de Votos desde Firebase:', error);
+            return { votes: [], lastDoc: null };
+        }
+    }
+
     // Cargar votos desde Firebase (fallback)
     async loadVotesFromFirebase() {
         try {

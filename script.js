@@ -1415,48 +1415,58 @@ class VotingSystem {
         document.getElementById('progress-text').textContent = `${totalVoted} de ${totalRegistered} personas han votado.`;
     }
 
-    renderStatisticsPage() {
-        const votedVotes = this.votes.filter(vote => vote.voted);
-        
-        // Estadísticas por UBCH
-        const ubchStats = {};
-        votedVotes.forEach(vote => {
-            ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
-        });
-
-        // Estadísticas por Comunidad
-        const communityStats = {};
-        votedVotes.forEach(vote => {
-            communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
-        });
-
-        // Estadísticas por Sexo
-        const sexoStats = {};
-        votedVotes.forEach(vote => {
-            const sexo = vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'No especificado';
-            sexoStats[sexo] = (sexoStats[sexo] || 0) + 1;
-        });
-
-        // Estadísticas por Rango de Edad
-        const edadStats = {};
-        votedVotes.forEach(vote => {
-            const edad = vote.edad || 0;
-            let rango = 'No especificado';
+    async renderStatisticsPage() {
+        this.setLoadingState('statistics', true); // Mostrar carga
+        try {
+            const allVotes = await window.firebaseDB.firebaseSyncManager.getAllVotes();
+            const votedVotes = allVotes.filter(vote => vote.voted);
             
-            if (edad >= 16 && edad <= 25) rango = '16-25 años';
-            else if (edad >= 26 && edad <= 35) rango = '26-35 años';
-            else if (edad >= 36 && edad <= 45) rango = '36-45 años';
-            else if (edad >= 46 && edad <= 55) rango = '46-55 años';
-            else if (edad >= 56 && edad <= 65) rango = '56-65 años';
-            else if (edad >= 66) rango = '66+ años';
-            
-            edadStats[rango] = (edadStats[rango] || 0) + 1;
-        });
+            // Estadísticas por UBCH
+            const ubchStats = {};
+            votedVotes.forEach(vote => {
+                ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
+            });
 
-        this.renderStatsList('ubch-stats', ubchStats, 'ubch');
-        this.renderStatsList('community-stats', communityStats, 'community');
-        this.renderStatsList('sexo-stats', sexoStats, 'sexo');
-        this.renderStatsList('edad-stats', edadStats, 'edad');
+            // Estadísticas por Comunidad
+            const communityStats = {};
+            votedVotes.forEach(vote => {
+                communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
+            });
+
+            // Estadísticas por Sexo
+            const sexoStats = {};
+            votedVotes.forEach(vote => {
+                const sexo = vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'No especificado';
+                sexoStats[sexo] = (sexoStats[sexo] || 0) + 1;
+            });
+
+            // Estadísticas por Rango de Edad
+            const edadStats = {};
+            votedVotes.forEach(vote => {
+                const edad = vote.edad || 0;
+                let rango = 'No especificado';
+                
+                if (edad >= 16 && edad <= 25) rango = '16-25 años';
+                else if (edad >= 26 && edad <= 35) rango = '26-35 años';
+                else if (edad >= 36 && edad <= 45) rango = '36-45 años';
+                else if (edad >= 46 && edad <= 55) rango = '46-55 años';
+                else if (edad >= 56 && edad <= 65) rango = '56-65 años';
+                else if (edad >= 66) rango = '66+ años';
+                
+                edadStats[rango] = (edadStats[rango] || 0) + 1;
+            });
+
+            this.renderStatsList('ubch-stats', ubchStats, 'ubch');
+            this.renderStatsList('community-stats', communityStats, 'community');
+            this.renderStatsList('sexo-stats', sexoStats, 'sexo');
+            this.renderStatsList('edad-stats', edadStats, 'edad');
+
+        } catch (error) {
+            console.error('Error al renderizar estadísticas:', error);
+            this.showMessage('No se pudieron cargar las estadísticas.', 'error', 'statistics');
+        } finally {
+            this.setLoadingState('statistics', false); // Ocultar carga
+        }
     }
 
     renderStatsList(containerId, stats, type) {
@@ -1679,6 +1689,7 @@ class VotingSystem {
         const listadoTableBody = document.querySelector('#registros-table tbody');
         const saveEditBtn = document.getElementById('save-edit');
         const confirmDeleteBtn = document.getElementById('confirm-delete');
+        const statsContainer = document.getElementById('statistics-page');
 
         // Botón de Registro
         if (page === 'registration' && registerBtn) {
@@ -1713,6 +1724,28 @@ class VotingSystem {
         if (page === 'delete-modal' && confirmDeleteBtn) {
             confirmDeleteBtn.disabled = loading;
             confirmDeleteBtn.textContent = loading ? 'Eliminando...' : 'Confirmar';
+        }
+
+        // Página de Estadísticas
+        if (page === 'statistics' && statsContainer) {
+            if (loading) {
+                statsContainer.querySelector('.stats-grid').style.display = 'none';
+                // Opcional: Mostrar un spinner
+                let loader = statsContainer.querySelector('.loading-message');
+                if (!loader) {
+                    loader = document.createElement('div');
+                    loader.className = 'loading-message';
+                    loader.textContent = 'Calculando estadísticas...';
+                    statsContainer.appendChild(loader);
+                }
+                loader.style.display = 'block';
+            } else {
+                statsContainer.querySelector('.stats-grid').style.display = 'grid';
+                const loader = statsContainer.querySelector('.loading-message');
+                if (loader) {
+                    loader.style.display = 'none';
+                }
+            }
         }
     }
 
