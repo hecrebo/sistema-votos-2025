@@ -914,6 +914,14 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
         document.addEventListener('DOMContentLoaded', function() {
             setupMobileMenu();
         });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('Service Worker registrado:', reg))
+                    .catch(err => console.log('Error al registrar Service Worker:', err));
+            });
+        }
     </script>
 </body>
 </html>
