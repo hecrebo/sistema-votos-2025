@@ -43,9 +43,9 @@
    "density": "4.0"
   },
   {
-   "src": "/logo.jpg",
+   "src": "/favicon.ico/icon-512x512.png",
    "sizes": "512x512",
-   "type": "image/jpeg"
+   "type": "image/png"
   }
  ]
 }
