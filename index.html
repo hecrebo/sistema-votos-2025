@@ -987,6 +987,24 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
             }
             checkUBCHWarning();
         });
+
+        // Refrescar UBCH automáticamente al cargar la página y al volver a la pestaña
+        function autoRefreshUBCH() {
+            if (window.votingSystem && typeof window.votingSystem.loadUBCHDataFromAdmin === 'function') {
+                window.votingSystem.loadUBCHDataFromAdmin();
+                window.votingSystem.renderRegistrationPage();
+                checkUBCHWarning();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            autoRefreshUBCH();
+            // ... ya existen otros listeners aquí ...
+        });
+
+        window.addEventListener('focus', function() {
+            autoRefreshUBCH();
+        });
     </script>
 </body>
 </html>
