@@ -575,24 +575,22 @@
             try {
                 // Convertir formato de administración al formato del sistema principal
                 const mainSystemFormat = {};
-                
                 ubchData.forEach(ubch => {
                     const communitiesForUbch = communityData
                         .filter(community => community.ubchId === ubch.id)
                         .map(community => community.name);
-                    
                     if (communitiesForUbch.length > 0) {
                         mainSystemFormat[ubch.name] = communitiesForUbch;
                     }
                 });
-                
                 // Guardar en el formato del sistema principal
                 localStorage.setItem('ubchToCommunityMap', JSON.stringify(mainSystemFormat));
-                
                 console.log('Datos sincronizados hacia el sistema principal:', mainSystemFormat);
+                showMessage('✅ Sincronización exitosa con el sistema principal', 'success', 'ubch');
                 return true;
             } catch (error) {
                 console.error('Error sincronizando hacia sistema principal:', error);
+                showMessage('❌ Error al sincronizar con el sistema principal', 'error', 'ubch');
                 return false;
             }
         }
