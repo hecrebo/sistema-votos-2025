@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración UBCH - Sistema de Votos 2025</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico/favicon.ico?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico/favicon-32x32.png?v=2">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.ico/favicon-16x16.png?v=2">
+    
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="config.js"></script>
+    
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .admin-header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .admin-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .admin-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .admin-tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: #6c757d;
+        }
+        
+        .admin-tab.active {
+            background: white;
+            color: #007bff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .admin-tab:hover:not(.active) {
+            background: rgba(255,255,255,0.5);
+        }
+        
+        .admin-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .admin-section {
+            display: none;
+        }
+        
+        .admin-section.active {
+            display: block;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-2px);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-tabs {
+                flex-direction: column;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="back-button">
+        <a href="index.html" class="btn btn-secondary">← Volver al Sistema</a>
+    </div>
+    
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>🏛️ Administración UBCH y Comunidades</h1>
+            <p>Gestiona las UBCH y comunidades del sistema de votos</p>
+        </div>
+        
+        <div class="admin-tabs">
+            <button class="admin-tab active" onclick="showTab('ubch')">🏛️ Gestionar UBCH</button>
+            <button class="admin-tab" onclick="showTab('communities')">🏘️ Gestionar Comunidades</button>
+            <button class="admin-tab" onclick="showTab('stats')">📊 Estadísticas</button>
+        </div>
+        
+        <!-- Sección UBCH -->
+        <div id="ubch-section" class="admin-section active">
+            <div class="admin-content">
+                <h2>🏛️ Gestión de UBCH</h2>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="ubch-name">Nombre de la UBCH</label>
+                        <input type="text" id="ubch-name" placeholder="Ej: UBCH San José">
+                    </div>
+                    <div class="form-group">
+                        <label for="ubch-code">Código UBCH</label>
+                        <input type="text" id="ubch-code" placeholder="Ej: UBCH001">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ubch-description">Descripción</label>
+                    <textarea id="ubch-description" rows="3" placeholder="Descripción de la UBCH..."></textarea>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="addUBCH()">➕ Agregar UBCH</button>
+                    <button class="btn btn-warning" onclick="editUBCH()" id="edit-ubch-btn" style="display: none;">✏️ Editar UBCH</button>
+                    <button class="btn btn-secondary" onclick="cancelEdit()" id="cancel-ubch-btn" style="display: none;">❌ Cancelar</button>
+                </div>
+                
+                <div id="ubch-message" class="message"></div>
+                
+                <div class="search-box">
+                    <input type="text" id="ubch-search" placeholder="🔍 Buscar UBCH..." onkeyup="searchUBCH()">
+                </div>
+                
+                <table class="data-table" id="ubch-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Comunidades</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ubch-tbody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Sección Comunidades -->
+        <div id="communities-section" class="admin-section">
+            <div class="admin-content">
+                <h2>🏘️ Gestión de Comunidades</h2>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="community-ubch">UBCH Padre</label>
+                        <select id="community-ubch" required>
+                            <option value="">Selecciona una UBCH</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="community-name">Nombre de la Comunidad</label>
+                        <input type="text" id="community-name" placeholder="Ej: Barrio San José">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="community-code">Código de Comunidad</label>
+                    <input type="text" id="community-code" placeholder="Ej: COM001">
+                </div>
+                
+                <div class="form-group">
+                    <label for="community-description">Descripción</label>
+                    <textarea id="community-description" rows="3" placeholder="Descripción de la comunidad..."></textarea>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="addCommunity()">➕ Agregar Comunidad</button>
+                    <button class="btn btn-warning" onclick="editCommunity()" id="edit-community-btn" style="display: none;">✏️ Editar Comunidad</button>
+                    <button class="btn btn-secondary" onclick="cancelEdit()" id="cancel-community-btn" style="display: none;">❌ Cancelar</button>
+                </div>
+                
+                <div id="community-message" class="message"></div>
+                
+                <div class="search-box">
+                    <input type="text" id="community-search" placeholder="🔍 Buscar Comunidad..." onkeyup="searchCommunity()">
+                </div>
+                
+                <table class="data-table" id="community-table">
+                    <thead>
+                        <tr>
+                            <th>UBCH</th>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="community-tbody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Sección Estadísticas -->
+        <div id="stats-section" class="admin-section">
+            <div class="admin-content">
+                <h2>📊 Estadísticas del Sistema</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-ubch">0</div>
+                        <div class="stat-label">Total UBCH</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-communities">0</div>
+                        <div class="stat-label">Total Comunidades</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-registrations">0</div>
+                        <div class="stat-label">Total Registros</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="avg-communities-per-ubch">0</div>
+                        <div class="stat-label">Promedio Comunidades/UBCH</div>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="exportData()">📊 Exportar Datos</button>
+                    <button class="btn btn-info" onclick="refreshStats()">🔄 Actualizar Estadísticas</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentEditId = null;
+        let ubchData = [];
+        let communityData = [];
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            refreshStats();
+        });
+        
+        // Funciones de navegación
+        function showTab(tabName) {
+            // Ocultar todas las secciones
+            document.querySelectorAll('.admin-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Desactivar todas las pestañas
+            document.querySelectorAll('.admin-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Mostrar sección seleccionada
+            document.getElementById(tabName + '-section').classList.add('active');
+            
+            // Activar pestaña seleccionada
+            event.target.classList.add('active');
+        }
+        
+        // Funciones de carga de datos
+        async function loadData() {
+            try {
+                // Cargar datos desde localStorage o Firebase
+                const storedUBCH = localStorage.getItem('ubchData');
+                const storedCommunities = localStorage.getItem('communityData');
+                
+                ubchData = storedUBCH ? JSON.parse(storedUBCH) : getDefaultUBCH();
+                communityData = storedCommunities ? JSON.parse(storedCommunities) : getDefaultCommunities();
+                
+                renderUBCHTable();
+                renderCommunityTable();
+                populateUBCHSelect();
+                
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+                showMessage('Error cargando datos', 'error', 'ubch');
+            }
+        }
+        
+        function getDefaultUBCH() {
+            return [
+                { id: '1', code: 'UBCH001', name: 'UBCH San José', description: 'Unidad de Batalla Bolívar-Chávez San José' },
+                { id: '2', code: 'UBCH002', name: 'UBCH La Paz', description: 'Unidad de Batalla Bolívar-Chávez La Paz' },
+                { id: '3', code: 'UBCH003', name: 'UBCH El Carmen', description: 'Unidad de Batalla Bolívar-Chávez El Carmen' }
+            ];
+        }
+        
+        function getDefaultCommunities() {
+            return [
+                { id: '1', ubchId: '1', ubchName: 'UBCH San José', code: 'COM001', name: 'Barrio San José', description: 'Comunidad del Barrio San José' },
+                { id: '2', ubchId: '1', ubchName: 'UBCH San José', code: 'COM002', name: 'Urbanización Libertador', description: 'Urbanización Libertador' },
+                { id: '3', ubchId: '2', ubchName: 'UBCH La Paz', code: 'COM003', name: 'Barrio La Paz', description: 'Comunidad del Barrio La Paz' },
+                { id: '4', ubchId: '3', ubchName: 'UBCH El Carmen', code: 'COM004', name: 'Barrio El Carmen', description: 'Comunidad del Barrio El Carmen' }
+            ];
+        }
+        
+        // Funciones de renderizado
+        function renderUBCHTable() {
+            const tbody = document.getElementById('ubch-tbody');
+            tbody.innerHTML = '';
+            
+            ubchData.forEach(ubch => {
+                const communities = communityData.filter(c => c.ubchId === ubch.id).length;
+                const row = `
+                    <tr>
+                        <td>${ubch.code}</td>
+                        <td>${ubch.name}</td>
+                        <td>${ubch.description}</td>
+                        <td>${communities}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-warning btn-sm" onclick="startEditUBCH('${ubch.id}')">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteUBCH('${ubch.id}')">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+        
+        function renderCommunityTable() {
+            const tbody = document.getElementById('community-tbody');
+            tbody.innerHTML = '';
+            
+            communityData.forEach(community => {
+                const row = `
+                    <tr>
+                        <td>${community.ubchName}</td>
+                        <td>${community.code}</td>
+                        <td>${community.name}</td>
+                        <td>${community.description}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-warning btn-sm" onclick="startEditCommunity('${community.id}')">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteCommunity('${community.id}')">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+        
+        function populateUBCHSelect() {
+            const select = document.getElementById('community-ubch');
+            select.innerHTML = '<option value="">Selecciona una UBCH</option>';
+            
+            ubchData.forEach(ubch => {
+                select.innerHTML += `<option value="${ubch.id}">${ubch.name} (${ubch.code})</option>`;
+            });
+        }
+        
+        // Funciones de UBCH
+        function addUBCH() {
+            const name = document.getElementById('ubch-name').value.trim();
+            const code = document.getElementById('ubch-code').value.trim();
+            const description = document.getElementById('ubch-description').value.trim();
+            
+            if (!name || !code) {
+                showMessage('Por favor completa todos los campos obligatorios', 'error', 'ubch');
+                return;
+            }
+            
+            if (ubchData.some(u => u.code === code)) {
+                showMessage('Ya existe una UBCH con ese código', 'error', 'ubch');
+                return;
+            }
+            
+            const newUBCH = {
+                id: Date.now().toString(),
+                code: code,
+                name: name,
+                description: description
+            };
+            
+            ubchData.push(newUBCH);
+            saveData();
+            renderUBCHTable();
+            populateUBCHSelect();
+            clearUBCHForm();
+            showMessage('UBCH agregada exitosamente', 'success', 'ubch');
+        }
+        
+        function startEditUBCH(id) {
+            const ubch = ubchData.find(u => u.id === id);
+            if (!ubch) return;
+            
+            currentEditId = id;
+            document.getElementById('ubch-name').value = ubch.name;
+            document.getElementById('ubch-code').value = ubch.code;
+            document.getElementById('ubch-description').value = ubch.description;
+            
+            document.getElementById('edit-ubch-btn').style.display = 'inline-block';
+            document.getElementById('cancel-ubch-btn').style.display = 'inline-block';
+            document.querySelector('button[onclick="addUBCH()"]').style.display = 'none';
+        }
+        
+        function editUBCH() {
+            if (!currentEditId) return;
+            
+            const name = document.getElementById('ubch-name').value.trim();
+            const code = document.getElementById('ubch-code').value.trim();
+            const description = document.getElementById('ubch-description').value.trim();
+            
+            if (!name || !code) {
+                showMessage('Por favor completa todos los campos obligatorios', 'error', 'ubch');
+                return;
+            }
+            
+            const existingUBCH = ubchData.find(u => u.code === code && u.id !== currentEditId);
+            if (existingUBCH) {
+                showMessage('Ya existe una UBCH con ese código', 'error', 'ubch');
+                return;
+            }
+            
+            const ubchIndex = ubchData.findIndex(u => u.id === currentEditId);
+            if (ubchIndex !== -1) {
+                ubchData[ubchIndex] = {
+                    ...ubchData[ubchIndex],
+                    name: name,
+                    code: code,
+                    description: description
+                };
+                
+                // Actualizar comunidades asociadas
+                communityData.forEach(community => {
+                    if (community.ubchId === currentEditId) {
+                        community.ubchName = name;
+                    }
+                });
+                
+                saveData();
+                renderUBCHTable();
+                renderCommunityTable();
+                populateUBCHSelect();
+                cancelEdit();
+                showMessage('UBCH actualizada exitosamente', 'success', 'ubch');
+            }
+        }
+        
+        function deleteUBCH(id) {
+            if (!confirm('¿Estás seguro de que quieres eliminar esta UBCH? Esto también eliminará todas las comunidades asociadas.')) {
+                return;
+            }
+            
+            ubchData = ubchData.filter(u => u.id !== id);
+            communityData = communityData.filter(c => c.ubchId !== id);
+            
+            saveData();
+            renderUBCHTable();
+            renderCommunityTable();
+            populateUBCHSelect();
+            showMessage('UBCH eliminada exitosamente', 'success', 'ubch');
+        }
+        
+        // Funciones de Comunidades
+        function addCommunity() {
+            const ubchId = document.getElementById('community-ubch').value;
+            const name = document.getElementById('community-name').value.trim();
+            const code = document.getElementById('community-code').value.trim();
+            const description = document.getElementById('community-description').value.trim();
+            
+            if (!ubchId || !name || !code) {
+                showMessage('Por favor completa todos los campos obligatorios', 'error', 'community');
+                return;
+            }
+            
+            if (communityData.some(c => c.code === code)) {
+                showMessage('Ya existe una comunidad con ese código', 'error', 'community');
+                return;
+            }
+            
+            const ubch = ubchData.find(u => u.id === ubchId);
+            const newCommunity = {
+                id: Date.now().toString(),
+                ubchId: ubchId,
+                ubchName: ubch.name,
+                code: code,
+                name: name,
+                description: description
+            };
+            
+            communityData.push(newCommunity);
+            saveData();
+            renderCommunityTable();
+            renderUBCHTable();
+            clearCommunityForm();
+            showMessage('Comunidad agregada exitosamente', 'success', 'community');
+        }
+        
+        function startEditCommunity(id) {
+            const community = communityData.find(c => c.id === id);
+            if (!community) return;
+            
+            currentEditId = id;
+            document.getElementById('community-ubch').value = community.ubchId;
+            document.getElementById('community-name').value = community.name;
+            document.getElementById('community-code').value = community.code;
+            document.getElementById('community-description').value = community.description;
+            
+            document.getElementById('edit-community-btn').style.display = 'inline-block';
+            document.getElementById('cancel-community-btn').style.display = 'inline-block';
+            document.querySelector('button[onclick="addCommunity()"]').style.display = 'none';
+        }
+        
+        function editCommunity() {
+            if (!currentEditId) return;
+            
+            const ubchId = document.getElementById('community-ubch').value;
+            const name = document.getElementById('community-name').value.trim();
+            const code = document.getElementById('community-code').value.trim();
+            const description = document.getElementById('community-description').value.trim();
+            
+            if (!ubchId || !name || !code) {
+                showMessage('Por favor completa todos los campos obligatorios', 'error', 'community');
+                return;
+            }
+            
+            const existingCommunity = communityData.find(c => c.code === code && c.id !== currentEditId);
+            if (existingCommunity) {
+                showMessage('Ya existe una comunidad con ese código', 'error', 'community');
+                return;
+            }
+            
+            const ubch = ubchData.find(u => u.id === ubchId);
+            const communityIndex = communityData.findIndex(c => c.id === currentEditId);
+            if (communityIndex !== -1) {
+                communityData[communityIndex] = {
+                    ...communityData[communityIndex],
+                    ubchId: ubchId,
+                    ubchName: ubch.name,
+                    name: name,
+                    code: code,
+                    description: description
+                };
+                
+                saveData();
+                renderCommunityTable();
+                renderUBCHTable();
+                cancelEdit();
+                showMessage('Comunidad actualizada exitosamente', 'success', 'community');
+            }
+        }
+        
+        function deleteCommunity(id) {
+            if (!confirm('¿Estás seguro de que quieres eliminar esta comunidad?')) {
+                return;
+            }
+            
+            communityData = communityData.filter(c => c.id !== id);
+            saveData();
+            renderCommunityTable();
+            renderUBCHTable();
+            showMessage('Comunidad eliminada exitosamente', 'success', 'community');
+        }
+        
+        // Funciones auxiliares
+        function cancelEdit() {
+            currentEditId = null;
+            clearUBCHForm();
+            clearCommunityForm();
+            
+            document.getElementById('edit-ubch-btn').style.display = 'none';
+            document.getElementById('cancel-ubch-btn').style.display = 'none';
+            document.getElementById('edit-community-btn').style.display = 'none';
+            document.getElementById('cancel-community-btn').style.display = 'none';
+            
+            document.querySelector('button[onclick="addUBCH()"]').style.display = 'inline-block';
+            document.querySelector('button[onclick="addCommunity()"]').style.display = 'inline-block';
+        }
+        
+        function clearUBCHForm() {
+            document.getElementById('ubch-name').value = '';
+            document.getElementById('ubch-code').value = '';
+            document.getElementById('ubch-description').value = '';
+        }
+        
+        function clearCommunityForm() {
+            document.getElementById('community-ubch').value = '';
+            document.getElementById('community-name').value = '';
+            document.getElementById('community-code').value = '';
+            document.getElementById('community-description').value = '';
+        }
+        
+        function saveData() {
+            localStorage.setItem('ubchData', JSON.stringify(ubchData));
+            localStorage.setItem('communityData', JSON.stringify(communityData));
+        }
+        
+        function showMessage(message, type, section) {
+            const messageDiv = document.getElementById(section + '-message');
+            messageDiv.textContent = message;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        function searchUBCH() {
+            const searchTerm = document.getElementById('ubch-search').value.toLowerCase();
+            const tbody = document.getElementById('ubch-tbody');
+            tbody.innerHTML = '';
+            
+            const filteredUBCH = ubchData.filter(ubch => 
+                ubch.name.toLowerCase().includes(searchTerm) ||
+                ubch.code.toLowerCase().includes(searchTerm) ||
+                ubch.description.toLowerCase().includes(searchTerm)
+            );
+            
+            filteredUBCH.forEach(ubch => {
+                const communities = communityData.filter(c => c.ubchId === ubch.id).length;
+                const row = `
+                    <tr>
+                        <td>${ubch.code}</td>
+                        <td>${ubch.name}</td>
+                        <td>${ubch.description}</td>
+                        <td>${communities}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-warning btn-sm" onclick="startEditUBCH('${ubch.id}')">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteUBCH('${ubch.id}')">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+        
+        function searchCommunity() {
+            const searchTerm = document.getElementById('community-search').value.toLowerCase();
+            const tbody = document.getElementById('community-tbody');
+            tbody.innerHTML = '';
+            
+            const filteredCommunities = communityData.filter(community => 
+                community.name.toLowerCase().includes(searchTerm) ||
+                community.code.toLowerCase().includes(searchTerm) ||
+                community.ubchName.toLowerCase().includes(searchTerm) ||
+                community.description.toLowerCase().includes(searchTerm)
+            );
+            
+            filteredCommunities.forEach(community => {
+                const row = `
+                    <tr>
+                        <td>${community.ubchName}</td>
+                        <td>${community.code}</td>
+                        <td>${community.name}</td>
+                        <td>${community.description}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-warning btn-sm" onclick="startEditCommunity('${community.id}')">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteCommunity('${community.id}')">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+        
+        function refreshStats() {
+            document.getElementById('total-ubch').textContent = ubchData.length;
+            document.getElementById('total-communities').textContent = communityData.length;
+            
+            // Contar registros (simulado)
+            const registrations = JSON.parse(localStorage.getItem('registrations') || '[]');
+            document.getElementById('total-registrations').textContent = registrations.length;
+            
+            const avgCommunities = ubchData.length > 0 ? (communityData.length / ubchData.length).toFixed(1) : 0;
+            document.getElementById('avg-communities-per-ubch').textContent = avgCommunities;
+        }
+        
+        function exportData() {
+            const data = {
+                ubch: ubchData,
+                communities: communityData,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ubch-communities-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showMessage('Datos exportados exitosamente', 'success', 'ubch');
+        }
+    </script>
+</body>
+</html> 
