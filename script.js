@@ -2,7 +2,6 @@
 
 class VotingSystem {
     constructor() {
-        this.apiUrl = 'http://localhost:3000';
         this.currentPage = 'registration';
         this.userId = this.generateUserId();
         
@@ -75,6 +74,16 @@ class VotingSystem {
         this.pageSize = 20;
         this.totalPages = 1;
         this.paginatedVotes = [];
+        this.lastVisibleDoc = null; // Para paginación de Firestore
+        this.pageCursors = [null]; // Almacena el cursor del inicio de cada página
+        
+        // Listener global para sincronización en tiempo real de votos
+        window.addEventListener('votesDataUpdated', (event) => {
+            // Con la paginación del servidor, la actualización en tiempo real es más compleja.
+            // Por ahora, recargaremos la página actual para reflejar los cambios.
+            console.log('🔄 Datos de votos actualizados, recargando vista...');
+            this.loadVotesPage(this.currentPage);
+        });
         
         this.init();
     }
@@ -187,25 +196,25 @@ class VotingSystem {
             voted: false
         };
 
-        // Usar SyncManager si está disponible, sino método tradicional
-        if (window.syncManager) {
+        // Prioridad 1: Usar Firebase SyncManager si está disponible
+        if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
             try {
-                // Agregar a la cola local del SyncManager
-                const localRecord = window.syncManager.addLocalRecord(newVote);
+                console.log('🚀 Guardando registro en Firebase...');
                 
-                // Agregar también a la lista local para mostrar inmediatamente
-                this.votes.push(localRecord);
+                // Guardar en Firebase
+                const firebaseId = await window.firebaseDB.firebaseSyncManager.saveVote(newVote);
                 
-                // Mostrar mensaje según estado de conexión
-                if (window.syncManager.isOnline) {
-                    this.showMessage('✅ Registro guardado y sincronizado', 'success', 'registration');
-                } else {
-                    this.showMessage('📱 Registro guardado localmente (se sincronizará cuando haya conexión)', 'info', 'registration');
-                }
+                // Actualizar ID con el de Firebase
+                newVote.id = firebaseId;
                 
-                return localRecord;
-            } catch (error) {
-                console.error('Error con SyncManager:', error);
+                // Agregar a la lista local para mostrar inmediatamente
+                this.votes.push(newVote);
+                
+                console.log('✅ Registro guardado en Firebase exitosamente');
+                return newVote;
+                
+            } catch (firebaseError) {
+                console.warn('⚠️ Error guardando en Firebase, usando método tradicional:', firebaseError);
                 // Fallback al método tradicional
             }
         }
@@ -303,36 +312,23 @@ class VotingSystem {
     }
 
     async init() {
-        try {
-            // Intentar cargar datos del servidor JSON
-            await this.loadData();
-            this.showMessage('Conectado al servidor. Los datos se comparten entre todas las computadoras.', 'success', 'registration');
-            
-            // Iniciar sincronización automática
-            this.startAutoSync();
-        } catch (error) {
-            console.warn('No se pudo conectar al servidor, usando localStorage:', error);
-            // Si falla, usar localStorage como respaldo
-        this.useLocalStorage = true;
-            this.offlineMode = true;
-        this.loadFromLocalStorage();
-            this.showMessage('Modo offline activado. Los datos solo se guardan en esta computadora.', 'warning', 'registration');
-        }
+        // Cargar datos de Firebase y configuraciones locales
+        await this.loadData();
         
+        // Cargar votos desde el respaldo local de Firebase si existen
+        const votesData = localStorage.getItem('votesData');
+        if (votesData) {
+            this.votes = JSON.parse(votesData);
+        } else {
+            // Si no hay nada en local, intentar cargar la primera página desde Firestore
+            this.loadVotesPage(1);
+        }
+
         this.setupEventListeners();
         this.renderCurrentPage();
         this.loadPdfLibraries();
-        
-        // Mostrar información del usuario
         this.displayUserInfo();
-        
-        // Actualizar indicador de sincronización
-        this.updateSyncStatus('Iniciando...', 'info');
-        
-        // Actualizar indicador cada 10 segundos
-        setInterval(() => {
-            this.updateSyncStatus('', 'info');
-        }, 10000);
+        this.updateSyncStatus('Conectado a Firebase', 'success');
     }
 
     // Mostrar información del usuario
@@ -340,40 +336,6 @@ class VotingSystem {
         const userInfo = document.getElementById('userId');
         if (userInfo && this.currentUser) {
             userInfo.textContent = `${this.currentUser.username} (${this.currentUser.rol})`;
-        }
-    }
-
-    // Iniciar sincronización automática
-    startAutoSync() {
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-        }
-        
-        // Sincronizar cada 30 segundos
-        this.syncInterval = setInterval(() => {
-            if (this.syncEnabled && !this.offlineMode) {
-                this.syncData();
-            }
-        }, 30000);
-    }
-
-    // Sincronizar datos
-    async syncData() {
-        try {
-            const response = await fetch(`${this.apiUrl}/votes`);
-            const serverVotes = await response.json();
-            
-            // Comparar con datos locales
-            if (JSON.stringify(serverVotes) !== JSON.stringify(this.votes)) {
-                this.votes = serverVotes;
-                this.updateSyncStatus('Sincronizado', 'success');
-                this.renderCurrentPage(); // Actualizar vista si es necesario
-            }
-            
-            this.lastSyncTime = Date.now();
-        } catch (error) {
-            console.warn('Error en sincronización:', error);
-            this.updateSyncStatus('Error de sincronización', 'error');
         }
     }
 
@@ -386,35 +348,11 @@ class VotingSystem {
         
         if (!syncIndicator) return;
         
-        // Usar SyncManager si está disponible
-        if (window.syncManager) {
-            const stats = window.syncManager.getSyncStats();
-            
-            if (stats.isOnline) {
-                syncIndicator.textContent = '🌐';
-                syncText.textContent = stats.pending > 0 ? `Sincronizando (${stats.pending} pendientes)` : 'Sincronizado';
-                
-                if (stats.pending > 0) {
-                    syncSpinner.style.display = 'inline-block';
-                    syncCheck.style.display = 'none';
-                } else {
-                    syncSpinner.style.display = 'none';
-                    syncCheck.style.display = 'inline-block';
-                    syncCheck.textContent = '✅';
-                }
-            } else {
-                syncIndicator.textContent = '📴';
-                syncText.textContent = `Offline (${stats.pending} pendientes)`;
-                syncSpinner.style.display = 'none';
-                syncCheck.style.display = 'none';
-            }
-        } else {
             // Método tradicional
             syncIndicator.textContent = type === 'success' ? '✅' : '❌';
             syncIndicator.className = `sync-indicator ${type}`;
             syncText.textContent = message;
             syncText.className = `sync-text ${type}`;
-        }
     }
 
     generateUserId() {
@@ -423,22 +361,14 @@ class VotingSystem {
 
     async loadData() {
         try {
-            // Cargar datos de UBCH y comunidades desde la página de administración
+            // Cargar datos de UBCH y comunidades desde Firebase
             await this.loadUBCHDataFromAdmin();
-            
-            // Cargar votos existentes
-            const savedVotes = localStorage.getItem('votes');
-            this.votes = savedVotes ? JSON.parse(savedVotes) : [];
-            
+            // Cargar votos desde Firebase (votesData en localStorage)
+            const votesData = localStorage.getItem('votesData');
+            this.votes = votesData ? JSON.parse(votesData) : [];
             // Cargar configuración de UBCH (mantener compatibilidad)
             const savedUbchData = localStorage.getItem('ubchToCommunityMap');
             this.ubchToCommunityMap = savedUbchData ? JSON.parse(savedUbchData) : this.ubchToCommunityMap;
-            
-            // Sincronizar con Firebase si está disponible
-            if (window.syncManager && window.syncManager.isOnline) {
-                await this.syncData();
-            }
-            
             console.log('Datos cargados exitosamente');
         } catch (error) {
             console.error('Error cargando datos:', error);
@@ -449,7 +379,71 @@ class VotingSystem {
     // Nueva función para cargar datos de UBCH desde la página de administración
     async loadUBCHDataFromAdmin() {
         try {
-            // Intentar cargar datos de la página de administración
+            console.log('🔄 Cargando datos de UBCH...');
+            
+            // Prioridad 1: Intentar cargar desde Firebase en tiempo real
+            if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+                try {
+                    // Verificar si ya tenemos datos sincronizados
+                    const ubchData = localStorage.getItem('ubchData');
+                    const communitiesData = localStorage.getItem('communitiesData');
+                    
+                    if (ubchData && communitiesData) {
+                        const ubchList = JSON.parse(ubchData);
+                        const communityList = JSON.parse(communitiesData);
+                        
+                        // Convertir formato Firebase al formato del sistema
+                        const newUbchToCommunityMap = {};
+                        
+                        ubchList.forEach(ubch => {
+                            const communitiesForUbch = communityList
+                                .filter(community => community.ubchId === ubch.id)
+                                .map(community => community.name);
+                            
+                            if (communitiesForUbch.length > 0) {
+                                newUbchToCommunityMap[ubch.name] = communitiesForUbch;
+                            }
+                        });
+                        
+                        // Actualizar el mapa si hay datos válidos
+                        if (Object.keys(newUbchToCommunityMap).length > 0) {
+                            this.ubchToCommunityMap = newUbchToCommunityMap;
+                            console.log('✅ Datos de UBCH cargados desde Firebase:', this.ubchToCommunityMap);
+                            return;
+                        }
+                    }
+                    
+                    // Si no hay datos en localStorage, cargar desde Firebase
+                    console.log('📥 Cargando datos desde Firebase...');
+                    const firebaseUbchData = await window.firebaseDB.firebaseSyncManager.loadUBCHFromFirebase();
+                    const firebaseCommunitiesData = await window.firebaseDB.firebaseSyncManager.loadCommunitiesFromFirebase();
+                    
+                    if (firebaseUbchData.length > 0 && firebaseCommunitiesData.length > 0) {
+                        const newUbchToCommunityMap = {};
+                        
+                        firebaseUbchData.forEach(ubch => {
+                            const communitiesForUbch = firebaseCommunitiesData
+                                .filter(community => community.ubchId === ubch.id)
+                                .map(community => community.name);
+                            
+                            if (communitiesForUbch.length > 0) {
+                                newUbchToCommunityMap[ubch.name] = communitiesForUbch;
+                            }
+                        });
+                        
+                        if (Object.keys(newUbchToCommunityMap).length > 0) {
+                            this.ubchToCommunityMap = newUbchToCommunityMap;
+                            console.log('✅ Datos de UBCH cargados desde Firebase:', this.ubchToCommunityMap);
+                            return;
+                        }
+                    }
+                    
+                } catch (firebaseError) {
+                    console.warn('⚠️ Error cargando desde Firebase, intentando localStorage:', firebaseError);
+                }
+            }
+            
+            // Prioridad 2: Intentar cargar datos de la página de administración (localStorage)
             const ubchData = localStorage.getItem('ubchData');
             const communityData = localStorage.getItem('communityData');
             
@@ -473,46 +467,128 @@ class VotingSystem {
                 // Actualizar el mapa solo si hay datos válidos
                 if (Object.keys(newUbchToCommunityMap).length > 0) {
                     this.ubchToCommunityMap = newUbchToCommunityMap;
-                    console.log('Datos de UBCH cargados desde página de administración:', this.ubchToCommunityMap);
+                    console.log('✅ Datos de UBCH cargados desde localStorage:', this.ubchToCommunityMap);
                 } else {
-                    console.log('No se encontraron datos válidos de UBCH en la página de administración, usando datos por defecto');
+                    console.log('⚠️ No se encontraron datos válidos de UBCH, usando datos por defecto');
                 }
             } else {
-                console.log('No se encontraron datos de UBCH en la página de administración, usando datos por defecto');
+                console.log('⚠️ No se encontraron datos de UBCH, usando datos por defecto');
             }
+            
+            // Configurar listeners para cambios en tiempo real
+            this.setupRealTimeListeners();
+            
         } catch (error) {
-            console.error('Error cargando datos de UBCH desde administración:', error);
+            console.error('❌ Error cargando datos de UBCH:', error);
             // Mantener datos por defecto en caso de error
         }
     }
 
+    // Configurar listeners para cambios en tiempo real
+    setupRealTimeListeners() {
+        if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+            // Listener para cambios en UBCH
+            window.addEventListener('ubchDataUpdated', (event) => {
+                console.log('🔄 Datos de UBCH actualizados en tiempo real:', event.detail);
+                this.handleUBCHDataUpdate(event.detail.data);
+            });
+            
+            // Listener para cambios en Comunidades
+            window.addEventListener('communitiesDataUpdated', (event) => {
+                console.log('🔄 Datos de Comunidades actualizados en tiempo real:', event.detail);
+                this.handleCommunitiesDataUpdate(event.detail.data);
+            });
+        }
+    }
+
+    // Manejar actualización de datos UBCH
+    handleUBCHDataUpdate(ubchData) {
+        try {
+            const communitiesData = JSON.parse(localStorage.getItem('communitiesData') || '[]');
+            
+            if (ubchData.length > 0 && communitiesData.length > 0) {
+                const newUbchToCommunityMap = {};
+                
+                ubchData.forEach(ubch => {
+                    const communitiesForUbch = communitiesData
+                        .filter(community => community.ubchId === ubch.id)
+                        .map(community => community.name);
+                    
+                    if (communitiesForUbch.length > 0) {
+                        newUbchToCommunityMap[ubch.name] = communitiesForUbch;
+                    }
+                });
+                
+                if (Object.keys(newUbchToCommunityMap).length > 0) {
+                    this.ubchToCommunityMap = newUbchToCommunityMap;
+                    console.log('✅ Mapa UBCH actualizado en tiempo real:', this.ubchToCommunityMap);
+                    
+                    // Actualizar interfaz si estamos en la página de registro
+                    if (this.currentPage === 'registration') {
+                        this.renderRegistrationPage();
+                    }
+                    
+                    // Actualizar filtros si estamos en la página de listado
+                    if (this.currentPage === 'listado') {
+                        this.populateUBCHFilter();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error actualizando datos UBCH:', error);
+        }
+    }
+
+    // Manejar actualización de datos de Comunidades
+    handleCommunitiesDataUpdate(communitiesData) {
+        try {
+            const ubchData = JSON.parse(localStorage.getItem('ubchData') || '[]');
+            
+            if (communitiesData.length > 0 && ubchData.length > 0) {
+                const newUbchToCommunityMap = {};
+                
+                ubchData.forEach(ubch => {
+                    const communitiesForUbch = communitiesData
+                        .filter(community => community.ubchId === ubch.id)
+                        .map(community => community.name);
+                    
+                    if (communitiesForUbch.length > 0) {
+                        newUbchToCommunityMap[ubch.name] = communitiesForUbch;
+                    }
+                });
+                
+                if (Object.keys(newUbchToCommunityMap).length > 0) {
+                    this.ubchToCommunityMap = newUbchToCommunityMap;
+                    console.log('✅ Mapa UBCH actualizado por cambios en comunidades:', this.ubchToCommunityMap);
+                    
+                    // Actualizar interfaz si estamos en la página de registro
+                    if (this.currentPage === 'registration') {
+                        this.renderRegistrationPage();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error actualizando datos de comunidades:', error);
+        }
+    }
+
     loadFromLocalStorage() {
-        // Usar datos por defecto de UBCH si no hay datos guardados
+        // Solo respaldo offline
         const savedUbchData = localStorage.getItem('ubchToCommunityMap');
         this.ubchToCommunityMap = savedUbchData ? JSON.parse(savedUbchData) : this.ubchToCommunityMap;
-        
-        this.votes = JSON.parse(localStorage.getItem('votes')) || [];
+        this.votes = JSON.parse(localStorage.getItem('votesData')) || [];
         this.candidates = JSON.parse(localStorage.getItem('candidates')) || [];
     }
 
     async saveData() {
         if (this.useLocalStorage) {
+            // Solo respaldo offline
             localStorage.setItem('ubchToCommunityMap', JSON.stringify(this.ubchToCommunityMap));
-            localStorage.setItem('votes', JSON.stringify(this.votes));
+            localStorage.setItem('votesData', JSON.stringify(this.votes));
             localStorage.setItem('candidates', JSON.stringify(this.candidates));
         } else {
-            try {
-                // Actualizar votos
-                await fetch(`${this.apiUrl}/votes`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.votes)
-                });
-            } catch (error) {
-                console.error('Error al guardar en servidor:', error);
-                this.useLocalStorage = true;
-                this.saveData();
-            }
+            // No guardar en backend local ni usar SyncManager
+            // Firebase maneja la persistencia
         }
     }
 
@@ -847,13 +923,11 @@ class VotingSystem {
                 <div class="search-result-info">
                     <h4>${person.name}</h4>
                     <p>Cédula: ${person.cedula}</p>
-                    <p>Sexo: ${person.sexo === 'M' ? 'Masculino' : person.sexo === 'F' ? 'Femenino' : 'N/A'}</p>
-                    <p>Edad: ${person.edad || 'N/A'} años</p>
                     <p>UBCH: ${person.ubch}</p>
-                    <p>Comunidad: ${person.community}</p>
                 </div>
-                <button class="btn btn-success" onclick="votingSystem.confirmVote('${person.id}')">
-                    Confirmar Voto
+                <button id="confirm-vote-${person.id}" class="btn btn-success" onclick="votingSystem.confirmVote('${person.id}')">
+                    <span class="btn-text">Confirmar Voto</span>
+                    <span class="btn-loading" style="display: none;">Confirmando...</span>
                 </button>
             `;
             container.appendChild(div);
@@ -861,56 +935,111 @@ class VotingSystem {
     }
 
     async confirmVote(personId) {
+        const confirmBtn = document.getElementById(`confirm-vote-${personId}`);
+        if(confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.querySelector('.btn-text').style.display = 'none';
+            confirmBtn.querySelector('.btn-loading').style.display = 'inline-block';
+        }
+
         try {
             const person = this.votes.find(v => v.id === personId);
-            if (!person) return;
+            if (!person) {
+                this.showMessage('Persona no encontrada', 'error', 'check-in');
+                return;
+            }
 
+            // Actualizar datos del voto
             person.voted = true;
             person.voteTimestamp = new Date().toISOString();
-            
+            person.updatedAt = new Date().toISOString();
+            person.updatedBy = this.currentUser.username;
+
+            // Prioridad 1: Actualizar en Firebase si está disponible
+            if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+                try {
+                    console.log('✅ Confirmando voto en Firebase...');
+                    await window.firebaseDB.firebaseSyncManager.saveVote(person);
+                    console.log('✅ Voto confirmado en Firebase exitosamente');
+                } catch (firebaseError) {
+                    console.warn('⚠️ Error confirmando voto en Firebase, usando método tradicional:', firebaseError);
+                    // Fallback al método tradicional
+                }
+            }
+
+            // Guardar en localStorage como respaldo
             await this.saveData();
             
+            // Mostrar mensaje de éxito
             this.showMessage('¡Voto confirmado con éxito!', 'success', 'check-in');
+            
+            // Limpiar formulario de búsqueda
             document.getElementById('cedula-search').value = '';
             document.getElementById('search-results').innerHTML = '';
             
         } catch (error) {
             console.error('Error al confirmar voto:', error);
             this.showMessage('Error al confirmar el voto. Inténtalo de nuevo.', 'error', 'check-in');
+            // Rehabilitar el botón en caso de error
+            if(confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.querySelector('.btn-text').style.display = 'inline';
+                confirmBtn.querySelector('.btn-loading').style.display = 'none';
+            }
         }
     }
 
     renderListPage() {
         this.currentPage = 1;
-        this.renderVotesTable();
+        this.pageCursors = [null]; // Reiniciar cursores
+        this.loadVotesPage(1); // Cargar la primera página desde Firestore
+    }
+
+    async loadVotesPage(pageNumber) {
+        this.setLoadingState('listado', true);
+        try {
+            const cursor = this.pageCursors[pageNumber - 1];
+            const { votes, lastDoc } = await window.firebaseDB.firebaseSyncManager.getVotesPage(this.pageSize, cursor);
+
+            if (votes.length > 0) {
+                this.paginatedVotes = votes;
+                this.currentPage = pageNumber;
+                
+                // Guardar el cursor para la *siguiente* página, si no existe ya
+                if (lastDoc && this.pageCursors.length === pageNumber) {
+                    this.pageCursors.push(lastDoc);
+                }
+            } else if (pageNumber > 1) {
+                // Si pedimos una página que no existe (y no es la primera), no hacemos nada.
+                console.log("No hay más registros.");
+                return;
+            } else {
+                // Si la primera página está vacía
+                this.paginatedVotes = [];
+            }
+
+            this.renderVotesTable();
+
+        } catch (error) {
+            console.error('Error cargando la página de votos:', error);
+            this.showMessage('Error al cargar registros.', 'error', 'listado');
+        } finally {
+            this.setLoadingState('listado', false);
+        }
     }
 
     renderVotesTable() {
         const tbody = document.querySelector('#registros-table tbody');
         tbody.innerHTML = '';
 
-        // Poblar el selector de UBCH con las UBCH disponibles
         this.populateUBCHFilter();
-
-        // Filtrar votos según filtros activos
-        let filteredVotes = this.votes;
-        const activeFilterBtn = document.querySelector('.filter-btn.active');
-        const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
-        if (activeFilterBtn) {
-            const filter = activeFilterBtn.dataset.filter;
-            if (filter === 'voted') filteredVotes = filteredVotes.filter(v => v.voted);
-            if (filter === 'not-voted') filteredVotes = filteredVotes.filter(v => !v.voted);
+        
+        if (this.paginatedVotes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="no-records">No hay registros para mostrar.</td></tr>';
+            this.updateFilterCounter(0);
+            this.renderPaginationControls(false); // No mostrar paginación
+            return;
         }
-        if (selectedUBCH) {
-            filteredVotes = filteredVotes.filter(v => v.ubch === selectedUBCH);
-        }
-
-        // Paginación
-        this.totalPages = Math.max(1, Math.ceil(filteredVotes.length / this.pageSize));
-        if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
-        const startIdx = (this.currentPage - 1) * this.pageSize;
-        const endIdx = startIdx + this.pageSize;
-        this.paginatedVotes = filteredVotes.slice(startIdx, endIdx);
 
         this.paginatedVotes.forEach(vote => {
             const tr = document.createElement('tr');
@@ -939,65 +1068,45 @@ class VotingSystem {
             tbody.appendChild(tr);
         });
 
-        // Actualizar contador
-        this.updateFilterCounter(filteredVotes.length);
-        // Renderizar controles de paginación
-        this.renderPaginationControls(filteredVotes.length);
+        // La paginación ahora es más simple, solo controla siguiente y anterior.
+        // El número total de páginas ya no se conoce de antemano.
+        this.renderPaginationControls(true);
     }
-
-    renderPaginationControls(totalItems) {
+    
+    renderPaginationControls(hasNextPage) {
         const container = document.getElementById('pagination-controls');
         if (!container) return;
         container.innerHTML = '';
-        if (totalItems === 0) return;
 
-        // Botones de navegación
-        const btnFirst = document.createElement('button');
-        btnFirst.textContent = '«';
-        btnFirst.disabled = this.currentPage === 1;
-        btnFirst.onclick = () => { this.currentPage = 1; this.renderVotesTable(); };
+        const hasPreviousPage = this.currentPage > 1;
+        const hasMoreData = this.paginatedVotes.length === this.pageSize;
 
+        // Botón Anterior
         const btnPrev = document.createElement('button');
-        btnPrev.textContent = '‹';
-        btnPrev.disabled = this.currentPage === 1;
-        btnPrev.onclick = () => { this.currentPage--; this.renderVotesTable(); };
-
-        const btnNext = document.createElement('button');
-        btnNext.textContent = '›';
-        btnNext.disabled = this.currentPage === this.totalPages;
-        btnNext.onclick = () => { this.currentPage++; this.renderVotesTable(); };
-
-        const btnLast = document.createElement('button');
-        btnLast.textContent = '»';
-        btnLast.disabled = this.currentPage === this.totalPages;
-        btnLast.onclick = () => { this.currentPage = this.totalPages; this.renderVotesTable(); };
+        btnPrev.textContent = '‹ Anterior';
+        btnPrev.disabled = !hasPreviousPage;
+        btnPrev.onclick = () => {
+            if (this.currentPage > 1) {
+                this.loadVotesPage(this.currentPage - 1);
+            }
+        };
 
         // Info de página
         const pageInfo = document.createElement('span');
         pageInfo.className = 'page-info';
-        pageInfo.textContent = `Página ${this.currentPage} de ${this.totalPages}`;
+        pageInfo.textContent = `Página ${this.currentPage}`;
 
-        // Selector de tamaño de página
-        const pageSizeSelect = document.createElement('select');
-        [10, 20, 50, 100].forEach(size => {
-            const opt = document.createElement('option');
-            opt.value = size;
-            opt.textContent = `${size} por página`;
-            if (size === this.pageSize) opt.selected = true;
-            pageSizeSelect.appendChild(opt);
-        });
-        pageSizeSelect.onchange = (e) => {
-            this.pageSize = parseInt(e.target.value);
-            this.currentPage = 1;
-            this.renderVotesTable();
+        // Botón Siguiente
+        const btnNext = document.createElement('button');
+        btnNext.textContent = 'Siguiente ›';
+        btnNext.disabled = !hasMoreData;
+        btnNext.onclick = () => {
+            this.loadVotesPage(this.currentPage + 1);
         };
-
-        container.appendChild(btnFirst);
+        
         container.appendChild(btnPrev);
         container.appendChild(pageInfo);
         container.appendChild(btnNext);
-        container.appendChild(btnLast);
-        container.appendChild(pageSizeSelect);
     }
 
     // Poblar el selector de filtro por UBCH
@@ -1116,14 +1225,39 @@ class VotingSystem {
 
     async confirmDelete() {
         if (!this.voteToDelete) return;
+        this.setLoadingState('delete-modal', true); // Deshabilitar botón
 
         try {
+            // Prioridad 1: Eliminar de Firebase si está disponible
+            if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+                try {
+                    console.log('🗑️ Eliminando registro de Firebase...');
+                    await window.firebaseDB.firebaseSyncManager.deleteVote(this.voteToDelete);
+                    console.log('✅ Registro eliminado de Firebase exitosamente');
+                } catch (firebaseError) {
+                    console.warn('⚠️ Error eliminando de Firebase, usando método tradicional:', firebaseError);
+                    // Fallback al método tradicional
+                }
+            }
+
+            // Eliminar de la lista local
             this.votes = this.votes.filter(vote => vote.id !== this.voteToDelete);
+            
+            // Guardar en localStorage como respaldo
             await this.saveData();
+            
+            // Actualizar interfaz
             this.renderVotesTable();
             this.closeDeleteModal();
+            
+            // Mostrar mensaje de éxito
+            this.showMessage('Registro eliminado correctamente', 'success', 'listado');
+            
         } catch (error) {
             console.error('Error al eliminar:', error);
+            this.showMessage('Error al eliminar el registro: ' + error.message, 'error', 'listado');
+        } finally {
+            this.setLoadingState('delete-modal', false); // Rehabilitar botón
         }
     }
 
@@ -1204,6 +1338,7 @@ class VotingSystem {
 
     async handleEditSubmit(event) {
         event.preventDefault();
+        this.setLoadingState('edit-modal', true); // Deshabilitar botón
 
         if (!this.voteToEdit) {
             this.showMessage('Error: No hay registro seleccionado para editar', 'error', 'listado');
@@ -1230,29 +1365,41 @@ class VotingSystem {
         }
 
         try {
-            // Actualizar el registro en la lista local
+            // Encontrar el registro a editar
             const voteIndex = this.votes.findIndex(v => v.id === this.voteToEdit);
-            if (voteIndex !== -1) {
-                this.votes[voteIndex] = {
-                    ...this.votes[voteIndex],
-                    ...editData
-                };
-                
-                // Guardar en localStorage
-                await this.saveData();
-                
-                // Cerrar el modal
-                this.closeEditModal();
-                
-                // Actualizar la tabla
-                this.renderVotesTable();
-                
-                // Mostrar mensaje de éxito
-                this.showMessage('Registro actualizado correctamente', 'success', 'listado');
+            if (voteIndex === -1) {
+                this.showMessage('Registro no encontrado', 'error', 'listado');
+                return;
             }
+
+            // Preparar datos actualizados
+            const updatedVote = {
+                ...this.votes[voteIndex],
+                ...editData,
+                updatedAt: new Date().toISOString(),
+                updatedBy: this.currentUser.username
+            };
+
+            // Actualizar en la lista local
+            this.votes[voteIndex] = updatedVote;
+            
+            // Guardar en localStorage como respaldo
+            await this.saveData();
+            
+            // Cerrar el modal
+            this.closeEditModal();
+            
+            // Actualizar la tabla
+            this.renderVotesTable();
+            
+            // Mostrar mensaje de éxito
+            this.showMessage('Registro actualizado correctamente', 'success', 'listado');
+            
         } catch (error) {
             console.error('Error al actualizar registro:', error);
             this.showMessage('Error al actualizar el registro: ' + error.message, 'error', 'listado');
+        } finally {
+            this.setLoadingState('edit-modal', false); // Rehabilitar botón
         }
     }
 
@@ -1527,19 +1674,45 @@ class VotingSystem {
     }
 
     setLoadingState(page, loading) {
-        const form = document.getElementById(`${page}-form`);
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const btnText = submitBtn.querySelector('.btn-text');
-        const btnLoading = submitBtn.querySelector('.btn-loading');
+        const registerBtn = document.getElementById('register-btn');
+        const checkInBtn = document.querySelector('#check-in-form button[type="submit"]');
+        const listadoTableBody = document.querySelector('#registros-table tbody');
+        const saveEditBtn = document.getElementById('save-edit');
+        const confirmDeleteBtn = document.getElementById('confirm-delete');
 
-        if (loading) {
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'inline';
-            submitBtn.disabled = true;
-        } else {
-            btnText.style.display = 'inline';
-            btnLoading.style.display = 'none';
-            submitBtn.disabled = false;
+        // Botón de Registro
+        if (page === 'registration' && registerBtn) {
+            registerBtn.disabled = loading;
+            registerBtn.querySelector('.btn-text').style.display = loading ? 'none' : 'inline';
+            registerBtn.querySelector('.btn-loading').style.display = loading ? 'inline-block' : 'none';
+        }
+
+        // Botón de Búsqueda en Check-in
+        if (page === 'check-in' && checkInBtn) {
+            checkInBtn.disabled = loading;
+            checkInBtn.querySelector('.btn-text').style.display = loading ? 'none' : 'inline';
+            checkInBtn.querySelector('.btn-loading').style.display = loading ? 'inline-block' : 'none';
+        }
+        
+        // Tabla de Listado
+        if (page === 'listado' && listadoTableBody) {
+            if (loading) {
+                listadoTableBody.innerHTML = '<tr><td colspan="8" class="loading-message">Cargando registros...</td></tr>';
+            } else if (listadoTableBody.querySelector('.loading-message')) {
+                // No limpiar aquí, renderVotesTable lo hará
+            }
+        }
+
+        // Botón de Guardar en Modal de Edición
+        if (page === 'edit-modal' && saveEditBtn) {
+            saveEditBtn.disabled = loading;
+            saveEditBtn.textContent = loading ? 'Guardando...' : 'Guardar Cambios';
+        }
+
+        // Botón de Confirmar en Modal de Eliminación
+        if (page === 'delete-modal' && confirmDeleteBtn) {
+            confirmDeleteBtn.disabled = loading;
+            confirmDeleteBtn.textContent = loading ? 'Eliminando...' : 'Confirmar';
         }
     }
 
