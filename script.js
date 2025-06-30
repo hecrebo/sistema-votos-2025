@@ -1862,13 +1862,17 @@ class VotingSystem {
 
     showMessage(message, type, page) {
         const messageDiv = document.getElementById(`${page}-message`);
-        messageDiv.textContent = message;
-        messageDiv.className = `message ${type}`;
-        messageDiv.style.display = 'block';
-
-        setTimeout(() => {
-            messageDiv.style.display = 'none';
-        }, 5000);
+        if (messageDiv) {
+            messageDiv.textContent = message;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        } else {
+            // Fallback: mostrar alerta si el div no existe
+            alert(message);
+        }
     }
 }
 
