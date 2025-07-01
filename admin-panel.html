@@ -729,11 +729,11 @@
             <div class="service-controls">
                 <button class="btn btn-primary" onclick="clearLogs()">🗑️ Limpiar Logs</button>
                 <button class="btn btn-warning" onclick="downloadLogs()">📥 Descargar</button>
-                            </div>
+            </div>
             <div class="log-container" id="system-logs">
                 <div class="log-entry log-info">Panel de administración iniciado</div>
-                            </div>
-                            </div>
+            </div>
+        </div>
         
         <div id="dashboard-visual"></div>
         
@@ -753,40 +753,40 @@
                         <option value="voted">Votaron</option>
                         <option value="not-voted">No votaron</option>
                     </select>
-                        </div>
+                </div>
                 <div class="users-actions">
                     <button class="btn btn-primary" onclick="exportUsersToCSV()">📥 Exportar CSV</button>
                     <button class="btn btn-secondary" onclick="exportUsersToPDF()">📄 Exportar PDF</button>
                     <button class="btn btn-warning" onclick="refreshUsersList()">🔄 Actualizar</button>
-                        </div>
-                        </div>
+                </div>
+            </div>
             <div class="users-stats">
                 <span id="users-total">Total: 0</span>
                 <span id="users-voted">Votaron: 0</span>
                 <span id="users-not-voted">No votaron: 0</span>
-                    </div>
-                    <div class="users-table-container">
+            </div>
+            <div class="users-table-container">
                 <table id="users-table" class="users-table">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
                             <th>Cédula</th>
                             <th>Teléfono</th>
                             <th>Sexo</th>
                             <th>Edad</th>
                             <th>UBCH</th>
                             <th>Comunidad</th>
-                                    <th>Estado</th>
+                            <th>Estado</th>
                             <th>Registrado por</th>
                             <th>Fecha Registro</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-table-body">
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
                         <tr>
                             <td colspan="10" class="loading-message">Cargando usuarios...</td>
                         </tr>
-                            </tbody>
-                        </table>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -797,7 +797,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     
     <script src="firebase-config.js"></script>
-    <script src="sync-manager.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="admin-dashboard.js"></script>
@@ -806,464 +805,11 @@
     <div class="admin-menu" style="margin: 2rem 0;">
         <h2>Menú de Administración</h2>
         <ul style="list-style: none; padding: 0;">
-            <li style="margin-bottom: 1rem;">
-                <a href="admin-ubch.html" class="btn btn-primary" style="font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-                    🏛️ Administración UBCH y Comunidades
-                </a>
-            </li>
             <!-- Aquí puedes agregar más opciones de administración en el futuro -->
         </ul>
     </div>
     
-    <script>
-        let systemStartTime = Date.now();
-        let autoRefreshInterval = null;
-        let systemStatus = 'online';
-        
-        // Inicialización
-        window.addEventListener('load', () => {
-            log('🚀 Panel de administración iniciado', 'info');
-            startAutoRefresh();
-            updateSystemMetrics();
-        });
-        
-        // Funciones de logging
-        function log(message, type = 'info') {
-            const logsContainer = document.getElementById('system-logs');
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.className = `log-entry log-${type}`;
-            logEntry.textContent = `[${timestamp}] ${message}`;
-            logsContainer.appendChild(logEntry);
-            logsContainer.scrollTop = logsContainer.scrollHeight;
-            console.log(message);
-        }
-        
-        function maintenanceLog(message, type = 'info') {
-            const logsContainer = document.getElementById('maintenance-logs');
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.className = `log-entry log-${type}`;
-            logEntry.textContent = `[${timestamp}] ${message}`;
-            logsContainer.appendChild(logEntry);
-            logsContainer.scrollTop = logsContainer.scrollHeight;
-        }
-        
-        // Actualización automática
-        function startAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
-            
-            autoRefreshInterval = setInterval(() => {
-                updateSystemMetrics();
-                log('📊 Métricas actualizadas automáticamente', 'info');
-            }, 30000); // 30 segundos
-            
-            log('🔄 Actualización automática iniciada (cada 30s)', 'success');
-        }
-        
-        function stopAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-                autoRefreshInterval = null;
-                log('🛑 Actualización automática detenida', 'warning');
-            }
-        }
-        
-        // Actualizar métricas del sistema
-        async function updateSystemMetrics() {
-            try {
-                // Obtener datos de Firebase
-                const snapshot = await window.firebaseDB.votesCollection.get();
-                const totalRegistrations = snapshot.docs.length;
-                const totalVotes = snapshot.docs.filter(doc => doc.data().voted).length;
-                
-                // Actualizar métricas
-                document.getElementById('total-registrations').textContent = totalRegistrations;
-                document.getElementById('total-votes').textContent = totalVotes;
-                document.getElementById('total-users').textContent = Math.floor(Math.random() * 10) + 1; // Simulado
-                
-                // Calcular tiempo activo
-                const uptimeHours = Math.floor((Date.now() - systemStartTime) / (1000 * 60 * 60));
-                document.getElementById('uptime').textContent = `${uptimeHours}h`;
-                
-                // Actualizar estado de Firebase
-                document.getElementById('firebase-connections').textContent = '1';
-                document.getElementById('firebase-sync').textContent = '✅';
-                
-                log(`📊 Métricas actualizadas: ${totalRegistrations} registros, ${totalVotes} votos`, 'success');
-                
-            } catch (error) {
-                log(`❌ Error actualizando métricas: ${error.message}`, 'error');
-                document.getElementById('firebase-sync').textContent = '❌';
-            }
-        }
-        
-        // Control del sistema
-        function startSystem() {
-            systemStatus = 'online';
-            updateStatusIndicators();
-            log('🚀 Sistema iniciado', 'success');
-            maintenanceLog('Sistema iniciado manualmente', 'success');
-        }
-        
-        function stopSystem() {
-            systemStatus = 'offline';
-            updateStatusIndicators();
-            log('🛑 Sistema detenido', 'warning');
-            maintenanceLog('Sistema detenido manualmente', 'warning');
-        }
-        
-        function restartSystem() {
-            log('🔄 Reiniciando sistema...', 'warning');
-            maintenanceLog('Reinicio del sistema iniciado', 'warning');
-            
-            setTimeout(() => {
-                systemStatus = 'online';
-                updateStatusIndicators();
-                log('✅ Sistema reiniciado exitosamente', 'success');
-                maintenanceLog('Sistema reiniciado exitosamente', 'success');
-            }, 2000);
-        }
-        
-        function updateStatusIndicators() {
-            const indicators = ['system-status', 'firebase-status', 'monitoring-status', 'maintenance-status'];
-            indicators.forEach(id => {
-                const indicator = document.getElementById(id);
-                indicator.className = `status-indicator status-${systemStatus}`;
-            });
-        }
-        
-        // Funciones de Firebase
-        async function testFirebase() {
-            log('🔍 Probando conexión a Firebase...', 'info');
-            
-            try {
-                const testDoc = await window.firebaseDB.votesCollection.limit(1).get();
-                log('✅ Conexión a Firebase exitosa', 'success');
-                maintenanceLog('Prueba de Firebase exitosa', 'success');
-            } catch (error) {
-                log(`❌ Error de conexión a Firebase: ${error.message}`, 'error');
-                maintenanceLog(`Error de Firebase: ${error.message}`, 'error');
-            }
-        }
-        
-        async function clearFirebaseCache() {
-            log('🗑️ Limpiando cache de Firebase...', 'info');
-            maintenanceLog('Limpieza de cache iniciada', 'info');
-            
-            // Simular limpieza
-            setTimeout(() => {
-                log('✅ Cache de Firebase limpiado', 'success');
-                maintenanceLog('Cache de Firebase limpiado exitosamente', 'success');
-            }, 1000);
-        }
-        
-        // Funciones de monitoreo
-        function refreshNow() {
-            log('🔄 Actualización manual iniciada', 'info');
-            updateSystemMetrics();
-        }
-        
-        function exportLogs() {
-            const logs = document.getElementById('system-logs').innerText;
-            const blob = new Blob([logs], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `logs-${new Date().toISOString().split('T')[0]}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            log('📥 Logs exportados', 'success');
-        }
-        
-        // Funciones de mantenimiento
-        async function backupData() {
-            log('💾 Iniciando respaldo de datos...', 'info');
-            maintenanceLog('Respaldo de datos iniciado', 'info');
-            
-            try {
-                const snapshot = await window.firebaseDB.votesCollection.get();
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                
-                log(`✅ Respaldo completado: ${data.length} registros`, 'success');
-                maintenanceLog(`Respaldo completado: ${data.length} registros`, 'success');
-            } catch (error) {
-                log(`❌ Error en respaldo: ${error.message}`, 'error');
-                maintenanceLog(`Error en respaldo: ${error.message}`, 'error');
-            }
-        }
-        
-        function clearAllData() {
-            if (confirm('¿Estás seguro de que quieres eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
-                log('🗑️ Eliminación de todos los datos iniciada...', 'warning');
-                maintenanceLog('Eliminación masiva de datos iniciada', 'warning');
-                
-                // Aquí iría la lógica real de eliminación
-                setTimeout(() => {
-                    log('✅ Todos los datos eliminados', 'success');
-                    maintenanceLog('Eliminación masiva completada', 'success');
-                }, 2000);
-            }
-        }
-        
-        function optimizeSystem() {
-            log('⚡ Optimización del sistema iniciada...', 'info');
-            maintenanceLog('Optimización del sistema iniciada', 'info');
-            
-            // Simular optimización
-            setTimeout(() => {
-                log('✅ Sistema optimizado', 'success');
-                maintenanceLog('Optimización completada exitosamente', 'success');
-            }, 3000);
-        }
-        
-        function clearLogs() {
-            document.getElementById('system-logs').innerHTML = '<div class="log-entry log-info">Logs limpiados</div>';
-            log('🗑️ Logs del sistema limpiados', 'info');
-        }
-        
-        function downloadLogs() {
-            const logs = document.getElementById('system-logs').innerText;
-            const blob = new Blob([logs], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `system-logs-${new Date().toISOString().split('T')[0]}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            log('📥 Logs del sistema descargados', 'success');
-        }
-        
-        // Control de actualización automática
-        document.getElementById('auto-refresh-toggle').addEventListener('change', function() {
-            if (this.checked) {
-                startAutoRefresh();
-                document.getElementById('refresh-status').textContent = 'Activado (cada 30s)';
-            } else {
-                stopAutoRefresh();
-                document.getElementById('refresh-status').textContent = 'Desactivado';
-            }
-        });
-        
-        // Funciones del menú desplegable
-        function toggleMenu() {
-            const dropdown = document.getElementById('menu-dropdown');
-            dropdown.classList.toggle('active');
-        }
-        
-        function logout() {
-            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-                localStorage.removeItem('currentUser');
-                window.location.href = 'login.html';
-            }
-        }
-        
-        // Cerrar menú al hacer clic fuera de él
-        document.addEventListener('click', function(event) {
-            const menu = document.querySelector('.mobile-menu');
-            const dropdown = document.getElementById('menu-dropdown');
-            
-            if (!menu.contains(event.target) && dropdown.classList.contains('active')) {
-                dropdown.classList.remove('active');
-            }
-        });
-        
-        // Funciones para la lista de usuarios
-        let allUsers = [];
-        let filteredUsers = [];
-
-        // Cargar lista de usuarios
-        async function loadUsersList() {
-            try {
-                const snapshot = await window.firebaseDB.votesCollection.get();
-                allUsers = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                
-                filteredUsers = [...allUsers];
-                renderUsersTable();
-                populateUsersFilters();
-                updateUsersStats();
-                
-                log('👥 Lista de usuarios cargada exitosamente', 'success');
-            } catch (error) {
-                log(`❌ Error cargando usuarios: ${error.message}`, 'error');
-                document.getElementById('users-table-body').innerHTML = 
-                    '<tr><td colspan="10" class="loading-message">Error al cargar usuarios</td></tr>';
-            }
-        }
-
-        // Renderizar tabla de usuarios
-        function renderUsersTable() {
-                const tbody = document.getElementById('users-table-body');
-                tbody.innerHTML = '';
-                
-            if (filteredUsers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="loading-message">No se encontraron usuarios</td></tr>';
-                    return;
-                }
-                
-            filteredUsers.forEach(user => {
-                const tr = document.createElement('tr');
-                const sexoClass = user.sexo === 'M' ? 'masculino' : 'femenino';
-                const voteStatus = user.voted ? 'voted' : 'not-voted';
-                const voteText = user.voted ? 'Sí' : 'No';
-                
-                tr.innerHTML = `
-                    <td>${user.name || 'N/A'}</td>
-                    <td>${user.cedula || 'N/A'}</td>
-                    <td>${user.telefono || 'N/A'}</td>
-                    <td><span class="sexo-badge ${sexoClass}">${user.sexo === 'M' ? 'Masculino' : 'Femenino'}</span></td>
-                    <td>${user.edad || 'N/A'}</td>
-                    <td>${user.ubch || 'N/A'}</td>
-                    <td>${user.community || 'N/A'}</td>
-                    <td><span class="vote-status ${voteStatus}">${voteText}</span></td>
-                    <td>${user.registeredBy || 'N/A'}</td>
-                    <td>${user.registeredAt ? new Date(user.registeredAt).toLocaleDateString() : 'N/A'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // Poblar filtros de usuarios
-        function populateUsersFilters() {
-            const ubchFilter = document.getElementById('users-ubch-filter');
-            const uniqueUBCHs = [...new Set(allUsers.map(user => user.ubch).filter(ubch => ubch))];
-            
-            ubchFilter.innerHTML = '<option value="">Todas las UBCH</option>';
-            uniqueUBCHs.sort().forEach(ubch => {
-                const option = document.createElement('option');
-                option.value = ubch;
-                option.textContent = ubch;
-                ubchFilter.appendChild(option);
-            });
-        }
-
-        // Actualizar estadísticas de usuarios
-        function updateUsersStats() {
-            const total = allUsers.length;
-            const voted = allUsers.filter(user => user.voted).length;
-            const notVoted = total - voted;
-
-            document.getElementById('users-total').textContent = `Total: ${total}`;
-            document.getElementById('users-voted').textContent = `Votaron: ${voted}`;
-            document.getElementById('users-not-voted').textContent = `No votaron: ${notVoted}`;
-        }
-
-        // Aplicar filtros de usuarios
-        function applyUsersFilters() {
-            const searchTerm = document.getElementById('users-search').value.toLowerCase();
-            const selectedUBCH = document.getElementById('users-ubch-filter').value;
-            const selectedVoteStatus = document.getElementById('users-vote-filter').value;
-
-            filteredUsers = allUsers.filter(user => {
-                // Filtro de búsqueda
-                const matchesSearch = !searchTerm || 
-                    (user.name && user.name.toLowerCase().includes(searchTerm)) ||
-                    (user.cedula && user.cedula.includes(searchTerm)) ||
-                    (user.ubch && user.ubch.toLowerCase().includes(searchTerm));
-
-                // Filtro de UBCH
-                const matchesUBCH = !selectedUBCH || user.ubch === selectedUBCH;
-
-                // Filtro de estado de voto
-                const matchesVoteStatus = !selectedVoteStatus || 
-                    (selectedVoteStatus === 'voted' && user.voted) ||
-                    (selectedVoteStatus === 'not-voted' && !user.voted);
-
-                return matchesSearch && matchesUBCH && matchesVoteStatus;
-            });
-
-            renderUsersTable();
-        }
-
-        // Event listeners para filtros
-        document.getElementById('users-search').addEventListener('input', applyUsersFilters);
-        document.getElementById('users-ubch-filter').addEventListener('change', applyUsersFilters);
-        document.getElementById('users-vote-filter').addEventListener('change', applyUsersFilters);
-
-        // Función para actualizar lista
-        function refreshUsersList() {
-            loadUsersList();
-            log('🔄 Lista de usuarios actualizada', 'info');
-        }
-
-        // Función para exportar a CSV
-        function exportUsersToCSV() {
-            if (filteredUsers.length === 0) {
-                alert('No hay usuarios para exportar');
-                    return;
-                }
-                
-            const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Estado', 'Registrado por', 'Fecha Registro'];
-                const csvContent = [
-                headers.join(';'),
-                ...filteredUsers.map(user => [
-                    `"${(user.name || '').replace(/"/g, '""')}"`, // Escapar comillas dobles
-                    user.cedula || '',
-                    user.telefono || '',
-                    user.sexo === 'M' ? 'Masculino' : 'Femenino',
-                    user.edad || '',
-                    `"${(user.ubch || '').replace(/"/g, '""')}"`,
-                    `"${(user.community || '').replace(/"/g, '""')}"`,
-                    user.voted ? 'Sí' : 'No',
-                    `"${(user.registeredBy || '').replace(/"/g, '""')}"`,
-                    user.registeredAt ? new Date(user.registeredAt).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                    }) : ''
-                ].join(';'))
-            ].join('\r\n'); // Usar \r\n para compatibilidad con Windows
-
-            // Agregar BOM para UTF-8 (importante para Excel en español)
-            const BOM = '\uFEFF';
-            const blob = new Blob([BOM + csvContent], { 
-                type: 'text/csv;charset=utf-8;' 
-            });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-            a.download = `usuarios-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.csv`;
-                a.click();
-                URL.revokeObjectURL(url);
-                
-            log('📥 Lista de usuarios exportada a CSV (formato español con acentos)', 'success');
-        }
-
-        // Función para exportar a PDF
-        function exportUsersToPDF() {
-            if (filteredUsers.length === 0) {
-                alert('No hay usuarios para exportar');
-                return;
-            }
-            
-            // Aquí iría la lógica de exportación a PDF
-            // Por ahora solo mostramos un mensaje
-            alert('Función de exportación a PDF en desarrollo');
-            log('📄 Exportación a PDF solicitada', 'info');
-        }
-
-        // Cargar lista de usuarios al iniciar
-        window.addEventListener('load', () => {
-            setTimeout(loadUsersList, 1000); // Cargar después de 1 segundo
-        });
-    </script>
+    <script src="ubch-data.js"></script>
+    <script src="script.js"></script>
 </body>
 </html> 

@@ -6,38 +6,37 @@
     <title>Sistema de Registro de Votos 2025</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="favicon.ico/favicon.ico?v=2">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico/favicon-32x32.png?v=2">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon.ico/favicon-16x16.png?v=2">
-    <link rel="icon" type="image/png" sizes="96x96" href="favicon.ico/favicon-96x96.png?v=2">
-    <link rel="apple-touch-icon" sizes="180x180" href="favicon.ico/apple-icon-180x180.png?v=2">
-    <link rel="apple-touch-icon" sizes="152x152" href="favicon.ico/apple-icon-152x152.png?v=2">
-    <link rel="apple-touch-icon" sizes="144x144" href="favicon.ico/apple-icon-144x144.png?v=2">
-    <link rel="apple-touch-icon" sizes="120x120" href="favicon.ico/apple-icon-120x120.png?v=2">
-    <link rel="apple-touch-icon" sizes="114x114" href="favicon.ico/apple-icon-114x114.png?v=2">
-    <link rel="apple-touch-icon" sizes="76x76" href="favicon.ico/apple-icon-76x76.png?v=2">
-    <link rel="apple-touch-icon" sizes="72x72" href="favicon.ico/apple-icon-72x72.png?v=2">
-    <link rel="apple-touch-icon" sizes="60x60" href="favicon.ico/apple-icon-60x60.png?v=2">
-    <link rel="apple-touch-icon" sizes="57x57" href="favicon.ico/apple-icon-57x57.png?v=2">
-    <link rel="apple-touch-icon" href="favicon.ico/apple-icon.png?v=2">
-    <link rel="apple-touch-icon-precomposed" href="favicon.ico/apple-icon-precomposed.png?v=2">
+    <link rel="icon" type="image/x-icon" href="favicon.ico/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.ico/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="favicon.ico/favicon-96x96.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.ico/apple-icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="favicon.ico/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="favicon.ico/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="favicon.ico/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="favicon.ico/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="favicon.ico/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="favicon.ico/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="favicon.ico/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="57x57" href="favicon.ico/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" href="favicon.ico/apple-icon.png">
+    <link rel="apple-touch-icon-precomposed" href="favicon.ico/apple-icon-precomposed.png">
     
     <!-- Android Icons -->
-    <link rel="icon" type="image/png" sizes="192x192" href="favicon.ico/android-icon-192x192.png?v=2">
-    <link rel="icon" type="image/png" sizes="144x144" href="favicon.ico/android-icon-144x144.png?v=2">
-    <link rel="icon" type="image/png" sizes="96x96" href="favicon.ico/android-icon-96x96.png?v=2">
-    <link rel="icon" type="image/png" sizes="72x72" href="favicon.ico/android-icon-72x72.png?v=2">
-    <link rel="icon" type="image/png" sizes="48x48" href="favicon.ico/android-icon-48x48.png?v=2">
-    <link rel="icon" type="image/png" sizes="36x36" href="favicon.ico/android-icon-36x36.png?v=2">
+    <link rel="icon" type="image/png" sizes="192x192" href="favicon.ico/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="144x144" href="favicon.ico/android-icon-144x144.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="favicon.ico/android-icon-96x96.png">
+    <link rel="icon" type="image/png" sizes="72x72" href="favicon.ico/android-icon-72x72.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="favicon.ico/android-icon-48x48.png">
+    <link rel="icon" type="image/png" sizes="36x36" href="favicon.ico/android-icon-36x36.png">
     
     <!-- Microsoft Icons -->
     <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="favicon.ico/ms-icon-144x144.png?v=2">
-    <meta name="msapplication-config" content="favicon.ico/browserconfig.xml?v=2">
+    <meta name="msapplication-TileImage" content="favicon.ico/ms-icon-144x144.png">
+    <meta name="msapplication-config" content="favicon.ico/browserconfig.xml">
     
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="config.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -56,24 +55,9 @@
                     <button class="nav-btn" data-page="listado">Listado</button>
                     <button class="nav-btn" data-page="dashboard">Totales</button>
                     <button class="nav-btn" data-page="statistics">Estadísticas</button>
-                    <span id="admin-ubch-link-container"></span>
                 </nav>
                 <div class="user-info">
-                    <span class="user-id" id="userId"></span>
-                    <div class="sync-status">
-                        <span class="sync-spinner" id="sync-spinner"></span>
-                        <span class="sync-check" id="sync-check"></span>
-                        <span class="sync-indicator" id="sync-indicator">🔄</span>
-                        <span class="sync-text" id="sync-text">Sincronizando</span>
-                        <span class="sync-status" id="sync-status">🟢 Sincronizado</span>
-                    </div>
-                </div>
-                <!-- Menú desplegable móvil -->
-                <div class="mobile-menu">
-                    <button class="menu-toggle" onclick="toggleMenu()">⋮</button>
-                    <div class="menu-dropdown" id="menu-dropdown">
-                        <!-- El contenido del menú se generará dinámicamente por JS según el rol -->
-                    </div>
+                    <p>ID de usuario: <span class="user-id" id="userId"></span></p>
                 </div>
             </div>
         </header>
@@ -84,96 +68,48 @@
             <div class="page active" id="registration-page">
                 <div class="page-container">
                     <h2 class="page-title">Registro de Persona</h2>
-                    
-                    <!-- Selector de modo de registro -->
-                    <div class="registration-mode-selector">
-                        <button class="mode-btn active" data-mode="individual" onclick="switchRegistrationMode('individual')">
-                            👤 Registro Individual
-                        </button>
-                        <button class="mode-btn" data-mode="bulk" onclick="switchRegistrationMode('bulk')">
-                            📊 Registro Masivo (Excel)
-                        </button>
-                    </div>
-                    
-                    <!-- Formulario de registro individual -->
-                    <div id="individual-registration" class="registration-mode">
-                        <form id="registration-form" class="registration-form" autocomplete="off">
-                            <div class="form-group">
-                                <label for="ubch">UBCH (Unidad de Batalla Bolívar-Chávez)</label>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                <select id="ubch" name="ubch" required>
-                                    <option value="">Selecciona una UBCH</option>
-                                </select>
-                                    <button type="button" id="refresh-ubch-btn" class="btn btn-info" title="Refrescar UBCH">🔄</button>
-                                </div>
-                                <div id="ubch-warning" class="message warning" style="display:none; margin-top: 8px;"></div>
-                            </div>
-                            <div class="form-group">
-                                <label for="community">Comunidad vinculada a la UBCH</label>
-                                <select id="community" name="community" required disabled>
-                                    <option value="">Selecciona una comunidad</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="name">Nombre de la Persona</label>
-                                <input type="text" id="name" name="name" placeholder="Ej: Juan Pérez" required autocomplete="off">
-                            </div>
-                            <div class="form-group">
-                                <label for="cedula">Cédula</label>
-                                <input type="text" id="cedula" name="cedula" placeholder="Ej: 12345678" required title="Introduce una cédula válida (solo números, 6 a 10 dígitos)" autocomplete="off">
-                            </div>
-                            <div class="form-group">
-                                <label for="telefono">Teléfono</label>
-                                <input type="text" id="telefono" name="telefono" placeholder="Ej: 04121234567" required title="Introduce un teléfono válido (ej: 04121234567)" autocomplete="off">
-                            </div>
-                            <div class="form-group">
-                                <label for="sexo">Sexo</label>
-                                <select id="sexo" name="sexo" required>
-                                    <option value="">Selecciona el sexo</option>
-                                    <option value="M">Masculino</option>
-                                    <option value="F">Femenino</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="edad">Edad</label>
-                                <input type="number" id="edad" name="edad" placeholder="Ej: 25" min="16" max="120" required title="Introduce una edad válida (entre 16 y 120 años)" autocomplete="off">
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-large" id="register-btn">
-                                <span class="btn-text">Registrar Persona</span>
-                                <span class="btn-loading" style="display: none;">Registrando...</span>
-                            </button>
-                        </form>
-                    </div>
-                    
-                    <!-- Registro masivo desde Excel -->
-                    <div id="bulk-registration" class="registration-mode" style="display: none;">
-                        <div class="bulk-import-section">
-                            <div class="import-info">
-                                <h4>📊 Registro Masivo desde Excel</h4>
-                                <p><strong>Formato requerido:</strong> CSV con columnas: UBCH, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</p>
-                                <p><strong>Valores válidos:</strong> Sexo: M/F, Edad: 16-120, Cédula: solo números</p>
-                            </div>
-                            <div class="import-controls">
-                                <input type="file" id="bulk-excel-input" accept=".csv,.xlsx,.xls" style="display: none;">
-                                <button class="btn btn-primary" onclick="document.getElementById('bulk-excel-input').click()">
-                                    📁 Seleccionar Archivo Excel
-                                </button>
-                                <button class="btn btn-info" onclick="downloadBulkTemplate()">
-                                    📥 Descargar Plantilla
-                                </button>
-                            </div>
-                            <div id="bulk-import-preview" class="bulk-import-preview" style="display: none;">
-                                <h5>📋 Vista Previa de Registros a Importar</h5>
-                                <div id="bulk-preview-content"></div>
-                                <div class="bulk-import-summary">
-                                    <p><strong>Resumen:</strong> <span id="bulk-summary-text"></span></p>
-                                </div>
-                                <button class="btn btn-success" onclick="confirmBulkImport()">✅ Confirmar Registro Masivo</button>
-                                <button class="btn btn-secondary" onclick="cancelBulkImport()">❌ Cancelar</button>
-                            </div>
+                    <form id="registration-form" class="registration-form" autocomplete="off">
+                        <div class="form-group">
+                            <label for="ubch">UBCH (Unidad de Batalla Bolívar-Chávez)</label>
+                            <select id="ubch" name="ubch" required>
+                                <option value="">Selecciona una UBCH</option>
+                            </select>
                         </div>
-                    </div>
-                    
+                        <div class="form-group">
+                            <label for="community">Comunidad vinculada a la UBCH</label>
+                            <select id="community" name="community" required disabled>
+                                <option value="">Selecciona una comunidad</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Nombre de la Persona</label>
+                            <input type="text" id="name" name="name" placeholder="Ej: Juan Pérez" required autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="cedula">Cédula</label>
+                            <input type="text" id="cedula" name="cedula" placeholder="Ej: 12345678" required pattern="\d{6,10}" title="Introduce una cédula válida (solo números)" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="telefono">Teléfono</label>
+                            <input type="text" id="telefono" name="telefono" placeholder="Ej: 04121234567" required pattern="04\d{9}" title="Introduce un teléfono válido (ej: 04121234567)" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="sexo">Sexo</label>
+                            <select id="sexo" name="sexo" required>
+                                <option value="">Selecciona el sexo</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edad">Edad</label>
+                            <input type="number" id="edad" name="edad" min="16" max="120" required placeholder="Ej: 25">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-large" id="register-btn">
+                            <span class="btn-text">Registrar Persona</span>
+                            <span class="btn-loading" style="display: none;">Registrando...</span>
+                        </button>
+                    </form>
                     <div id="registration-message" class="message" style="display: none;"></div>
                     <div id="thank-you-message" class="thank-you-message" style="display: none;"></div>
                 </div>
@@ -183,14 +119,15 @@
             <div class="page" id="check-in-page">
                 <div class="page-container">
                     <h2 class="page-title">Confirmar Voto</h2>
-                    <form id="check-in-form" class="check-in-form">
-                        <div class="search-container">
-                            <input type="text" id="cedula-search" placeholder="Buscar por Cédula" required>
-                            <button type="submit" class="btn btn-primary">
-                                <span class="btn-text">Buscar</span>
-                                <span class="btn-loading" style="display: none;">Buscando...</span>
-                            </button>
+                    <form id="check-in-form" class="check-in-form" autocomplete="off">
+                        <div class="form-group">
+                            <label for="cedula-search">Cédula</label>
+                            <input type="text" id="cedula-search" name="cedula-search" placeholder="Buscar por Cédula" required pattern="\d{6,10}" title="Introduce una cédula válida (solo números)" autocomplete="off">
                         </div>
+                        <button type="submit" class="btn btn-primary btn-large" id="check-in-btn">
+                            <span class="btn-text">Buscar</span>
+                            <span class="btn-loading" style="display: none;">Buscando...</span>
+                        </button>
                     </form>
                     <div id="check-in-message" class="message" style="display: none;"></div>
                     <div id="search-results" class="search-results"></div>
@@ -212,13 +149,6 @@
                             <button class="filter-btn active" data-filter="all">Todos</button>
                             <button class="filter-btn" data-filter="voted">Votaron</button>
                             <button class="filter-btn" data-filter="not-voted">No Votaron</button>
-                            <span class="filter-counter" id="filter-counter">0</span>
-                        </div>
-                        <div class="ubch-filter">
-                            <label for="ubch-filter-select">Filtrar por UBCH:</label>
-                            <select id="ubch-filter-select" class="ubch-filter-select">
-                                <option value="">Todas las UBCH</option>
-                            </select>
                         </div>
                     </div>
                     <div class="table-container">
@@ -227,8 +157,6 @@
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Cédula</th>
-                                    <th>Sexo</th>
-                                    <th>Edad</th>
                                     <th>UBCH</th>
                                     <th>Comunidad</th>
                                     <th>Votó</th>
@@ -237,7 +165,6 @@
                             </thead>
                             <tbody></tbody>
                         </table>
-                        <div id="pagination-controls" class="pagination-controls"></div>
                     </div>
                 </div>
             </div>
@@ -285,14 +212,6 @@
                             <h3>Votos por Comunidad</h3>
                             <div class="stats-list" id="community-stats"></div>
                         </div>
-                        <div class="stats-card">
-                            <h3>Votos por Sexo</h3>
-                            <div class="stats-list" id="sexo-stats"></div>
-                        </div>
-                        <div class="stats-card">
-                            <h3>Votos por Rango de Edad</h3>
-                            <div class="stats-list" id="edad-stats"></div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -333,58 +252,9 @@
             </div>
         </div>
 
-        <!-- Modal de Edición -->
-        <div id="edit-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <h3>Editar Registro</h3>
-                <form id="edit-form" class="edit-form">
-                    <div class="form-group">
-                        <label for="edit-ubch">UBCH</label>
-                        <select id="edit-ubch" name="ubch" required>
-                            <option value="">Selecciona una UBCH</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-community">Comunidad</label>
-                        <select id="edit-community" name="community" required disabled>
-                            <option value="">Selecciona una comunidad</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-name">Nombre</label>
-                        <input type="text" id="edit-name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-cedula">Cédula</label>
-                        <input type="text" id="edit-cedula" name="cedula" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-telefono">Teléfono</label>
-                        <input type="text" id="edit-telefono" name="telefono" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-sexo">Sexo</label>
-                        <select id="edit-sexo" name="sexo" required>
-                            <option value="">Selecciona el sexo</option>
-                            <option value="M">Masculino</option>
-                            <option value="F">Femenino</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-edad">Edad</label>
-                        <input type="number" id="edit-edad" name="edad" min="16" max="120" required>
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" id="cancel-edit">Cancelar</button>
-                        <button type="submit" class="btn btn-primary" id="save-edit">Guardar Cambios</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
         <!-- Footer -->
         <footer class="footer">
-            <p>© 2025 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>
+            <p>&copy; 2024 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>
         </footer>
     </div>
 
@@ -392,620 +262,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js"></script>
     
-    <!-- Firebase Libraries -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    
-    <script src="firebase-config.js"></script>
-    <script src="sync-manager.js"></script>
-    <script src="service-manager.js"></script>
     <script src="script.js"></script>
-    
-    <script>
-        const USUARIOS_INICIALES = [
-            // Superusuarios
-            { username: "superadmin_01", password: "Sup3r_Adm1n#2o24", rol: "superusuario" },
-            { username: "superadmin_02", password: "aB5!zP9$qW_sU", rol: "superusuario" },
-            { username: "superadmin_03", password: "rT7@eX3&yU_sU", rol: "superusuario" },
-            { username: "superadmin_04", password: "kL9#mN1!bV_sU", rol: "superusuario" },
-            { username: "superadmin_05", password: "zX8$cV6@fG_sU", rol: "superusuario" },
-            // Administradores
-            { username: "admin_01", password: "P@ssw0rd_Adm_01", rol: "admin" },
-            { username: "admin_02", password: "Adm_Secure_02!", rol: "admin" },
-            { username: "admin_03", password: "Gestion_2024_03", rol: "admin" },
-            { username: "admin_04", password: "4dminUser_p4ss", rol: "admin" },
-            { username: "admin_05", password: "Adm!n_Syst3m_05", rol: "admin" },
-            { username: "admin_06", password: "UserAdmin_06#", rol: "admin" },
-            { username: "admin_07", password: "Control_Panel_07", rol: "admin" },
-            { username: "admin_08", password: "Adm_Access_08$", rol: "admin" },
-            { username: "admin_09", password: "My_Admin_P@ss09", rol: "admin" },
-            { username: "admin_10", password: "P@ss_Adm_Global", rol: "admin" },
-            // Registradores
-            { username: "registrador_01", password: "RegUsr_2o24_01", rol: "registrador" },
-            { username: "registrador_02", password: "UserReg_Pass_02", rol: "registrador" },
-            { username: "registrador_03", password: "Reg!strador_03", rol: "registrador" },
-            { username: "registrador_04", password: "Acc3s_Reg_04", rol: "registrador" },
-            { username: "registrador_05", password: "DataEntry_05$", rol: "registrador" },
-            { username: "registrador_06", password: "RegUsr_2o24_06", rol: "registrador" },
-            { username: "registrador_07", password: "UserReg_Pass_07", rol: "registrador" },
-            { username: "registrador_08", password: "Reg!strador_08", rol: "registrador" },
-            { username: "registrador_09", password: "Acc3s_Reg_09", rol: "registrador" },
-            { username: "registrador_10", password: "DataEntry_10$", rol: "registrador" },
-            { username: "registrador_11", password: "RegUsr_2o24_11", rol: "registrador" },
-            { username: "registrador_12", password: "UserReg_Pass_12", rol: "registrador" },
-            { username: "registrador_13", password: "Reg!strador_13", rol: "registrador" },
-            { username: "registrador_14", password: "Acc3s_Reg_14", rol: "registrador" },
-            { username: "registrador_15", password: "DataEntry_15$", rol: "registrador" },
-            { username: "registrador_16", password: "RegUsr_2o24_16", rol: "registrador" },
-            { username: "registrador_17", password: "UserReg_Pass_17", rol: "registrador" },
-            { username: "registrador_18", password: "Reg!strador_18", rol: "registrador" },
-            { username: "registrador_19", password: "Acc3s_Reg_19", rol: "registrador" },
-            { username: "registrador_20", password: "DataEntry_20$", rol: "registrador" },
-            { username: "registrador_21", password: "RegUsr_2o24_21", rol: "registrador" },
-            { username: "registrador_22", password: "UserReg_Pass_22", rol: "registrador" },
-            { username: "registrador_23", password: "Reg!strador_23", rol: "registrador" },
-            { username: "registrador_24", password: "Acc3s_Reg_24", rol: "registrador" },
-            { username: "registrador_25", password: "DataEntry_25$", rol: "registrador" },
-            { username: "registrador_26", password: "RegUsr_2o24_26", rol: "registrador" },
-            { username: "registrador_27", password: "UserReg_Pass_27", rol: "registrador" },
-            { username: "registrador_28", password: "Reg!strador_28", rol: "registrador" },
-            { username: "registrador_29", password: "Acc3s_Reg_29", rol: "registrador" },
-            { username: "registrador_30", password: "DataEntry_30$", rol: "registrador" },
-            { username: "registrador_31", password: "RegUsr_2o24_31", rol: "registrador" },
-            { username: "registrador_32", password: "UserReg_Pass_32", rol: "registrador" },
-            { username: "registrador_33", password: "Reg!strador_33", rol: "registrador" },
-            { username: "registrador_34", password: "Acc3s_Reg_34", rol: "registrador" },
-            { username: "registrador_35", password: "DataEntry_35$", rol: "registrador" },
-            { username: "registrador_36", password: "RegUsr_2o24_36", rol: "registrador" },
-            { username: "registrador_37", password: "UserReg_Pass_37", rol: "registrador" },
-            { username: "registrador_38", password: "Reg!strador_38", rol: "registrador" },
-            { username: "registrador_39", password: "Acc3s_Reg_39", rol: "registrador" },
-            { username: "registrador_40", password: "DataEntry_40$", rol: "registrador" },
-            { username: "registrador_41", password: "RegUsr_2o24_41", rol: "registrador" },
-            { username: "registrador_42", password: "UserReg_Pass_42", rol: "registrador" },
-            { username: "registrador_43", password: "Reg!strador_43", rol: "registrador" },
-            { username: "registrador_44", password: "Acc3s_Reg_44", rol: "registrador" },
-            { username: "registrador_45", password: "DataEntry_45$", rol: "registrador" },
-            { username: "registrador_46", password: "RegUsr_2o24_46", rol: "registrador" },
-            { username: "registrador_47", password: "UserReg_Pass_47", rol: "registrador" },
-            { username: "registrador_48", password: "Reg!strador_48", rol: "registrador" },
-            { username: "registrador_49", password: "Acc3s_Reg_49", rol: "registrador" },
-            { username: "registrador_50", password: "RegUsr_Final_50", rol: "registrador" }
-        ];
-
-        function showMessage(message, type = 'info') {
-            const loginMessage = document.getElementById('login-message');
-            loginMessage.textContent = message;
-            loginMessage.className = `login-message ${type}`;
-            loginMessage.style.display = 'block';
-            if (type === 'success') {
-                setTimeout(() => { loginMessage.style.display = 'none'; }, 3000);
-            }
-        }
-
-        function renderLoginForm() {
-            return `
-                <div class="login-container">
-                    <div class="login-header">
-                        <img src="logo.jpg" alt="Logo Sistema de Votos">
-                        <h1>Bienvenido</h1>
-                        <p>Sistema de Registro de Votos 2025</p>
-                    </div>
-                    <div id="login-message" class="login-message" style="display:none;"></div>
-                    <form id="login-form" class="login-form">
-                        <div class="form-group">
-                            <label for="username">Usuario</label>
-                            <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Contraseña</label>
-                            <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required>
-                        </div>
-                        <button type="submit" class="login-btn" id="login-btn">
-                            <span class="btn-text">Iniciar Sesión</span>
-                            <span class="btn-loading" style="display:none;"><div class="spinner"></div>Iniciando sesión...</span>
-                        </button>
-                    </form>
-                </div>
-            `;
-        }
-
-        function renderAppContent(user) {
-            // Aquí puedes mostrar el contenido real de la app según el rol
-            // Ejemplo básico:
-            return `<div class="app-content">
-                <h2>¡Hola, ${user.username}!</h2>
-                <p>Tu rol es: <strong>${user.rol}</strong></p>
-                <button onclick="logout()">Cerrar Sesión</button>
-                <!-- Aquí va el resto de la app -->
-            </div>`;
-        }
-
-        function logout() {
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('sessionTime');
-            window.location.href = 'login.html';
-        }
-
-        function checkSession() {
-            const currentUser = localStorage.getItem('currentUser');
-            const sessionTime = localStorage.getItem('sessionTime');
-            
-            if (!currentUser) {
-                window.location.href = 'login.html';
-                        return;
-            }
-            
-            // Verificar si la sesión ha expirado (24 horas)
-            if (sessionTime && (Date.now() - parseInt(sessionTime)) > 24 * 60 * 60 * 1000) {
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('sessionTime');
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            // Mostrar información del usuario
-            try {
-                const user = JSON.parse(currentUser);
-                const userInfo = document.getElementById('userId');
-                if (userInfo) {
-                    userInfo.textContent = `${user.username} (${user.rol})`;
-                }
-            } catch (error) {
-                console.error('Error al mostrar información del usuario:', error);
-            }
-        }
-
-        // Verificar sesión al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            checkSession();
-        });
-        
-        // Funciones del menú desplegable
-        function toggleMenu() {
-            const dropdown = document.getElementById('menu-dropdown');
-            dropdown.classList.toggle('active');
-        }
-        
-        // Cerrar menú al hacer clic fuera de él
-        document.addEventListener('click', function(event) {
-            const menuToggle = document.querySelector('.menu-toggle');
-            const menuDropdown = document.getElementById('menu-dropdown');
-            
-            if (menuToggle && menuDropdown && !menuToggle.contains(event.target) && !menuDropdown.contains(event.target)) {
-                menuDropdown.classList.remove('active');
-            }
-        });
-
-        // Variables para registro masivo
-        let bulkRegistrations = [];
-        let bulkFile = null;
-
-        // Configurar el input de archivo para registro masivo
-        document.addEventListener('DOMContentLoaded', function() {
-            const bulkFileInput = document.getElementById('bulk-excel-input');
-            if (bulkFileInput) {
-                bulkFileInput.addEventListener('change', handleBulkFileSelect);
-            }
-        });
-
-        // Funciones para registro masivo
-        function switchRegistrationMode(mode) {
-            const individualMode = document.getElementById('individual-registration');
-            const bulkMode = document.getElementById('bulk-registration');
-            const individualBtn = document.querySelector('[data-mode="individual"]');
-            const bulkBtn = document.querySelector('[data-mode="bulk"]');
-
-            if (mode === 'individual') {
-                individualMode.style.display = 'block';
-                bulkMode.style.display = 'none';
-                individualBtn.classList.add('active');
-                bulkBtn.classList.remove('active');
-            } else {
-                individualMode.style.display = 'none';
-                bulkMode.style.display = 'block';
-                bulkBtn.classList.add('active');
-                individualBtn.classList.remove('active');
-            }
-        }
-
-        // Manejar selección de archivo para registro masivo
-        function handleBulkFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            bulkFile = file;
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                try {
-                    const content = e.target.result;
-                    const registrations = parseBulkCSV(content);
-                    
-                    if (registrations.length === 0) {
-                        showBulkStatus('❌ No se encontraron datos válidos en el archivo', 'error');
-                        return;
-                    }
-
-                    bulkRegistrations = registrations;
-                    showBulkPreview(registrations);
-                    showBulkStatus(`📋 ${registrations.length} registros encontrados para importar`, 'success');
-                    
-                } catch (error) {
-                    showBulkStatus(`❌ Error procesando archivo: ${error.message}`, 'error');
-                }
-            };
-
-            reader.readAsText(file);
-        }
-
-        // Parsear archivo CSV para registro masivo
-        function parseBulkCSV(content) {
-            const lines = content.split('\n').filter(line => line.trim());
-            if (lines.length < 2) {
-                throw new Error('El archivo debe tener al menos una fila de encabezados y una fila de datos');
-            }
-
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const requiredHeaders = ['ubch', 'comunidad', 'nombre', 'cédula', 'teléfono', 'sexo', 'edad'];
-            
-            // Verificar que los encabezados sean correctos
-            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-            if (missingHeaders.length > 0) {
-                throw new Error(`Faltan columnas requeridas: ${missingHeaders.join(', ')}`);
-            }
-
-            const registrations = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
-                if (values.length < 7) continue;
-
-                const registration = {
-                    ubch: values[headers.indexOf('ubch')],
-                    comunidad: values[headers.indexOf('comunidad')],
-                    nombre: values[headers.indexOf('nombre')],
-                    cedula: values[headers.indexOf('cédula')],
-                    telefono: values[headers.indexOf('teléfono')],
-                    sexo: values[headers.indexOf('sexo')].toUpperCase(),
-                    edad: parseInt(values[headers.indexOf('edad')])
-                };
-
-                // Validar datos
-                if (!registration.nombre || !registration.cedula || !registration.telefono) {
-                    continue; // Saltar filas incompletas
-                }
-
-                if (!['M', 'F'].includes(registration.sexo)) {
-                    registration.sexo = 'M'; // Sexo por defecto si no es válido
-                }
-
-                if (isNaN(registration.edad) || registration.edad < 16 || registration.edad > 120) {
-                    registration.edad = 18; // Edad por defecto si no es válida
-                }
-
-                registrations.push(registration);
-            }
-
-            return registrations;
-        }
-
-        // Mostrar vista previa de registro masivo
-        function showBulkPreview(registrations) {
-            const previewDiv = document.getElementById('bulk-import-preview');
-            const contentDiv = document.getElementById('bulk-preview-content');
-            const summaryDiv = document.getElementById('bulk-summary-text');
-            
-            if (!previewDiv || !contentDiv) return;
-
-            let tableHTML = `
-                <table class="bulk-preview-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Cédula</th>
-                            <th>UBCH</th>
-                            <th>Comunidad</th>
-                            <th>Sexo</th>
-                            <th>Edad</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            let validCount = 0;
-            let invalidCount = 0;
-
-            registrations.forEach(registration => {
-                const status = validateBulkRegistration(registration);
-                const statusClass = status === '✅ Válido' ? 'valid' : 'invalid';
-                
-                if (status === '✅ Válido') {
-                    validCount++;
-                } else {
-                    invalidCount++;
-                }
-                
-                tableHTML += `
-                    <tr>
-                        <td>${registration.nombre}</td>
-                        <td>${registration.cedula}</td>
-                        <td>${registration.ubch}</td>
-                        <td>${registration.comunidad}</td>
-                        <td>${registration.sexo}</td>
-                        <td>${registration.edad}</td>
-                        <td class="bulk-status ${statusClass}">${status}</td>
-                    </tr>
-                `;
-            });
-
-            tableHTML += '</tbody></table>';
-            contentDiv.innerHTML = tableHTML;
-            
-            if (summaryDiv) {
-                summaryDiv.textContent = `${validCount} válidos, ${invalidCount} con problemas`;
-            }
-            
-            previewDiv.style.display = 'block';
-        }
-
-        // Validar registro individual
-        function validateBulkRegistration(registration) {
-            if (!registration.nombre || registration.nombre.length < 2) {
-                return '❌ Nombre muy corto';
-            }
-            if (!registration.cedula || !/^\d{6,10}$/.test(registration.cedula)) {
-                return '❌ Cédula inválida';
-            }
-            if (!registration.telefono || !/^\d{10,11}$/.test(registration.telefono)) {
-                return '❌ Teléfono inválido';
-            }
-            if (!['M', 'F'].includes(registration.sexo)) {
-                return '❌ Sexo inválido';
-            }
-            if (isNaN(registration.edad) || registration.edad < 16 || registration.edad > 120) {
-                return '❌ Edad inválida';
-            }
-            return '✅ Válido';
-        }
-
-        // Mostrar estado de registro masivo
-        function showBulkStatus(message, type) {
-            const previewDiv = document.getElementById('bulk-import-preview');
-            if (!previewDiv) return;
-
-            const statusDiv = document.createElement('div');
-            statusDiv.className = `bulk-status ${type}`;
-            statusDiv.textContent = message;
-            
-            // Insertar al inicio del preview
-            previewDiv.insertBefore(statusDiv, previewDiv.firstChild);
-            
-            // Remover después de 5 segundos
-            setTimeout(() => {
-                if (statusDiv.parentNode) {
-                    statusDiv.parentNode.removeChild(statusDiv);
-                }
-            }, 5000);
-        }
-
-        // Confirmar registro masivo
-        async function confirmBulkImport() {
-            if (bulkRegistrations.length === 0) {
-                showBulkStatus('❌ No hay registros para importar', 'error');
-                return;
-            }
-
-            try {
-                let importedCount = 0;
-                let skippedCount = 0;
-                let errorCount = 0;
-
-                for (const registration of bulkRegistrations) {
-                    try {
-                        // Verificar si ya existe un registro con esa cédula
-                        const existingQuery = await window.firebaseDB.votesCollection
-                            .where('cedula', '==', registration.cedula)
-                            .get();
-
-                        if (!existingQuery.empty) {
-                            skippedCount++;
-                            continue; // Saltar registro existente
-                        }
-
-                        // Crear nuevo registro
-                        const newRegistration = {
-                            ubch: registration.ubch,
-                            comunidad: registration.comunidad,
-                            nombre: registration.nombre,
-                            cedula: registration.cedula,
-                            telefono: registration.telefono,
-                            sexo: registration.sexo,
-                            edad: registration.edad,
-                            voted: false,
-                            createdAt: new Date().toISOString(),
-                            createdBy: JSON.parse(localStorage.getItem('currentUser')).name || 'Sistema'
-                        };
-
-                        await window.firebaseDB.votesCollection.add(newRegistration);
-                        importedCount++;
-
-                        // Mostrar progreso cada 10 registros
-                        if (importedCount % 10 === 0) {
-                            showBulkStatus(`📊 Progreso: ${importedCount} registros importados...`, 'success');
-                        }
-
-                    } catch (error) {
-                        console.error('Error importando registro:', error);
-                        errorCount++;
-                    }
-                }
-
-                // Mostrar resultados finales
-                let resultMessage = `✅ ${importedCount} registros importados exitosamente`;
-                if (skippedCount > 0) {
-                    resultMessage += `, ${skippedCount} registros existentes omitidos`;
-                }
-                if (errorCount > 0) {
-                    resultMessage += `, ${errorCount} errores`;
-                }
-                
-                showBulkStatus(resultMessage, 'success');
-                
-                // Actualizar contadores en la interfaz
-                if (window.updateDashboard) {
-                    window.updateDashboard();
-                }
-                if (window.loadRegistrations) {
-                    window.loadRegistrations();
-                }
-
-                // Limpiar vista previa
-                cancelBulkImport();
-
-            } catch (error) {
-                showBulkStatus(`❌ Error en importación: ${error.message}`, 'error');
-            }
-        }
-
-        // Cancelar registro masivo
-        function cancelBulkImport() {
-            bulkRegistrations = [];
-            bulkFile = null;
-            
-            const previewDiv = document.getElementById('bulk-import-preview');
-            const fileInput = document.getElementById('bulk-excel-input');
-            
-            if (previewDiv) {
-                previewDiv.style.display = 'none';
-            }
-            if (fileInput) {
-                fileInput.value = '';
-            }
-        }
-
-        function downloadBulkTemplate() {
-            const template = `UBCH,Comunidad,Nombre,Cédula,Teléfono,Sexo,Edad
-UBCH-001,Comunidad A,Juan Pérez,12345678,04121234567,M,25
-UBCH-002,Comunidad B,María García,87654321,04261234567,F,30
-UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
-
-            const blob = new Blob([template], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'plantilla-registro-masivo.csv';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // Agregar función de logout al menú móvil
-        function setupMobileMenu() {
-            const menuDropdown = document.getElementById('menu-dropdown');
-            if (menuDropdown) {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                
-                let menuHTML = '';
-                
-                menuHTML += '<a href="admin-panel.html" class="menu-item"><span class="icon">⚙️</span>Panel de Administración</a>';
-                menuHTML += '<a href="#" onclick="logout()" class="menu-item danger"><span class="icon">🚪</span>Cerrar Sesión</a>';
-                
-                menuDropdown.innerHTML = menuHTML;
-            }
-        }
-
-        // Configurar menú móvil
-        document.addEventListener('DOMContentLoaded', function() {
-            setupMobileMenu();
-        });
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(reg => console.log('Service Worker registrado:', reg))
-                    .catch(err => console.log('Error al registrar Service Worker:', err));
-            });
-        }
-
-        // Función para mostrar/ocultar el enlace Admin UBCH según el usuario
-        function updateAdminUBCHLink() {
-            const currentUser = localStorage.getItem('currentUser');
-            let isSuperAdmin = false;
-            if (currentUser) {
-                try {
-                    const user = JSON.parse(currentUser);
-                    isSuperAdmin = user.rol === 'superusuario';
-                } catch (e) {}
-            }
-            const container = document.getElementById('admin-ubch-link-container');
-            if (container) {
-                if (isSuperAdmin) {
-                    container.innerHTML = '<a href="admin-ubch.html" class="nav-btn" style="text-decoration: none; color: inherit;">🏛️ Admin UBCH</a>';
-                } else {
-                    container.innerHTML = '';
-                }
-            }
-        }
-
-        // Llamar al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            updateAdminUBCHLink();
-        });
-
-        // Llamar después de login/logout (puedes llamar a updateAdminUBCHLink() después de cambiar de usuario)
-        // Por ejemplo, después de login/logout en tu código, agrega: updateAdminUBCHLink();
-
-        // Función para refrescar la lista de UBCH
-        function refreshUBCHList() {
-            if (window.votingSystem && typeof window.votingSystem.loadUBCHDataFromAdmin === 'function') {
-                window.votingSystem.loadUBCHDataFromAdmin();
-                window.votingSystem.renderRegistrationPage();
-                checkUBCHWarning();
-            }
-        }
-
-        // Mostrar advertencia si no hay UBCH
-        function checkUBCHWarning() {
-            const ubchSelect = document.getElementById('ubch');
-            const warningDiv = document.getElementById('ubch-warning');
-            if (ubchSelect && warningDiv) {
-                if (ubchSelect.options.length <= 1) {
-                    warningDiv.style.display = 'block';
-                    warningDiv.textContent = 'No hay UBCH disponibles. Por favor, sincroniza desde el panel de administración.';
-                } else {
-                    warningDiv.style.display = 'none';
-                }
-            }
-        }
-
-        // Listener para el botón de refrescar UBCH
-        document.addEventListener('DOMContentLoaded', function() {
-            const refreshBtn = document.getElementById('refresh-ubch-btn');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', refreshUBCHList);
-            }
-            checkUBCHWarning();
-        });
-
-        // Refrescar UBCH automáticamente al cargar la página y al volver a la pestaña
-        function autoRefreshUBCH() {
-            if (window.votingSystem && typeof window.votingSystem.loadUBCHDataFromAdmin === 'function') {
-                window.votingSystem.loadUBCHDataFromAdmin();
-                window.votingSystem.renderRegistrationPage();
-                checkUBCHWarning();
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            autoRefreshUBCH();
-            // ... ya existen otros listeners aquí ...
-        });
-
-        window.addEventListener('focus', function() {
-            autoRefreshUBCH();
-        });
-    </script>
 </body>
 </html>

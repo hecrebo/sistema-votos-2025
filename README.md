@@ -1,81 +1,6 @@
-# Sistema de Registro de Votos 2025
+# 🗳️ Sistema de Votos 2025
 
-Sistema de votación electrónica desarrollado con HTML, CSS y JavaScript.
-
-## 🚀 Cómo Publicar el Proyecto
-
-### Opción 1: GitHub Pages (Recomendado)
-
-1. **Crear un repositorio en GitHub:**
-   ```bash
-   git init
-   git add .
-   git commit -m "Primer commit"
-   git branch -M main
-   git remote add origin https://github.com/tu-usuario/nombre-del-repo.git
-   git push -u origin main
-   ```
-
-2. **Activar GitHub Pages:**
-   - Ve a Settings > Pages
-   - Selecciona "Deploy from a branch"
-   - Elige la rama "main"
-   - Guarda
-
-3. **Tu sitio estará disponible en:** `https://tu-usuario.github.io/nombre-del-repo`
-
-### Opción 2: Netlify (Con backend)
-
-1. **Crear cuenta en Netlify**
-2. **Conectar tu repositorio de GitHub**
-3. **Configurar el build:**
-   - Build command: `npm install`
-   - Publish directory: `.` (raíz del proyecto)
-
-### Opción 3: Vercel
-
-1. **Instalar Vercel CLI:**
-   ```bash
-   npm i -g vercel
-   ```
-
-2. **Desplegar:**
-   ```bash
-   vercel
-   ```
-
-## 📋 Requisitos
-
-- Node.js (para desarrollo local)
-- Navegador web moderno
-
-## 🛠️ Instalación Local
-
-```bash
-npm install
-npm run dev
-```
-
-## 📁 Estructura del Proyecto
-
-- `index.html` - Página principal
-- `styles.css` - Estilos
-- `script.js` - Lógica JavaScript
-- `db.json` - Base de datos JSON
-- `favicon.ico/` - Iconos del sitio
-
-## 🔧 Scripts Disponibles
-
-- `npm start` - Inicia JSON Server (puerto 3000)
-- `npm run dev` - Inicia servidor de desarrollo (puerto 8080)
-- `npm run build` - No requiere build (archivos estáticos)
-
-## 🌐 Notas Importantes
-
-- Para producción, considera migrar de JSON Server a una base de datos real
-- Implementa autenticación y autorización
-- Configura HTTPS para seguridad
-- Optimiza imágenes y recursos
+Una aplicación web simple y moderna para sistemas de votación electrónica, desarrollada con HTML, CSS y JavaScript vanilla.
 
 ## ✨ Características
 
@@ -142,6 +67,18 @@ npm run dev
 - ✅ API REST automática
 - ✅ Generoso plan gratuito
 
+## 📁 Estructura del proyecto
+
+```
+web-votos2025/
+├── index.html          # Página principal
+├── styles.css          # Estilos CSS
+├── script.js           # Lógica JavaScript
+├── package.json        # Configuración de dependencias
+├── db.json             # Base de datos JSON
+└── README.md           # Este archivo
+```
+
 ## 🎯 Funcionalidades
 
 ### Para Votantes
@@ -197,52 +134,51 @@ Modifica el archivo `db.json`:
       "name": "Tu Candidato",
       "party": "Tu Partido",
       "votes": 0,
-      "image": "ruta/a/imagen.jpg"
+      "image": "url-de-la-imagen"
     }
-  ],
-  "votedUsers": []
+  ]
 }
 ```
 
-## 📱 Responsive Design
+## 🔧 Requisitos técnicos
 
-La aplicación está optimizada para:
-- 📱 Móviles (320px+)
-- 📱 Tablets (768px+)
-- 💻 Escritorio (1024px+)
+- **Navegador moderno** (Chrome, Firefox, Safari, Edge)
+- **JavaScript habilitado**
+- **Node.js** (solo para JSON Server)
+- **Conexión a internet** (solo para cargar imágenes externas)
 
-## 🔒 Seguridad
+## 📱 Compatibilidad
 
-- Validación de entrada en el frontend
-- Prevención de votos duplicados
-- Sanitización de datos
-- Para producción: implementar autenticación
+- ✅ Desktop (Windows, Mac, Linux)
+- ✅ Móviles (iOS, Android)
+- ✅ Tablets
+- ✅ Todos los navegadores modernos
 
-## 🚀 Despliegue
+## 🚨 Limitaciones
 
-### Netlify (Recomendado)
-1. Conecta tu repositorio de GitHub
-2. Build command: `npm install`
-3. Publish directory: `.`
-4. ¡Listo! Tu sitio estará en `https://tu-sitio.netlify.app`
+- **Con localStorage**: Los datos se almacenan localmente
+- **Con JSON Server**: Requiere servidor Node.js
+- No hay autenticación de usuarios avanzada
+- No hay base de datos relacional completa
 
-### Vercel
-1. Instala Vercel CLI: `npm i -g vercel`
-2. Ejecuta: `vercel`
-3. Sigue las instrucciones
+## 🔮 Futuras mejoras
 
-### GitHub Pages
-1. Ve a Settings > Pages
-2. Selecciona rama main
-3. Tu sitio estará en `https://tu-usuario.github.io/repo`
+- [ ] Autenticación de usuarios
+- [ ] Base de datos PostgreSQL/MySQL
+- [ ] Múltiples elecciones
+- [ ] Gráficos estadísticos
+- [ ] Notificaciones push
+- [ ] Modo offline
+- [ ] Integración con Firebase/Supabase
 
 ## 📞 Soporte
 
-Si tienes problemas:
-1. Verifica que Node.js esté instalado
-2. Ejecuta `npm install` para instalar dependencias
-3. Asegúrate de que el puerto 3000 esté libre para JSON Server
+Si tienes problemas o sugerencias:
+1. Revisa que JavaScript esté habilitado
+2. Verifica que JSON Server esté corriendo (puerto 3000)
+3. Limpia el caché del navegador
+4. Verifica que todos los archivos estén presentes
 
-## 📄 Licencia
+---
 
-MIT License - Libre para uso personal y comercial
+**Desarrollado con ❤️ usando tecnologías web estándar** 

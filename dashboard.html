@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - Sistema de Votos 2025</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 1px 2px 8px #0002;
+        }
+        .dashboard-nav {
+            display: flex;
+            gap: 1rem;
+        }
+        .dashboard-nav a {
+            background: #fff;
+            color: #3498db;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 2px 8px #0001;
+            transition: background 0.2s, color 0.2s;
+        }
+        .dashboard-nav a:hover {
+            background: #3498db;
+            color: #fff;
+        }
+        .dashboard-cards {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        .dashboard-card {
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 16px #0001;
+            padding: 2rem 1.5rem;
+            flex: 1 1 220px;
+            min-width: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .dashboard-card-title {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        .dashboard-card-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #3498db;
+        }
+        .dashboard-charts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .dashboard-chart {
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 16px #0001;
+            padding: 1.5rem;
+            flex: 1 1 350px;
+            min-width: 320px;
+        }
+        .dashboard-table-container {
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 16px #0001;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .dashboard-table-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        .dashboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .dashboard-table th, .dashboard-table td {
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        .dashboard-table th {
+            background: #f3f4f6;
+            font-weight: 700;
+        }
+        .dashboard-table tr:last-child td {
+            border-bottom: none;
+        }
+        .dashboard-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 900px) {
+            .dashboard-cards, .dashboard-charts {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-top">
+                    <div class="logo-container">
+                        <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
+                    </div>
+                    <h1 class="header-title">Panel de Control - Registro de Votos y Estadísticas</h1>
+                </div>
+                <nav class="nav-menu">
+                    <a class="nav-btn" href="index.html">Volver al Sistema</a>
+                </nav>
+            </div>
+        </header>
+        <main class="main-content">
+            <div class="dashboard-container">
+                <div class="dashboard-header">
+                    <div class="dashboard-title">Panel de Control</div>
+                    <div class="dashboard-nav">
+                        <a href="index.html">Volver al Sistema</a>
+                    </div>
+                </div>
+                <div class="dashboard-cards">
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-title">Registrados</div>
+                        <div class="dashboard-card-value" id="total-registered">0</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-title">Votaron</div>
+                        <div class="dashboard-card-value" id="total-voted">0</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-title">No Votaron</div>
+                        <div class="dashboard-card-value" id="total-not-voted">0</div>
+                    </div>
+                </div>
+                <div class="dashboard-actions">
+                    <button class="btn btn-secondary" id="export-dashboard-csv">Exportar CSV</button>
+                    <button class="btn btn-secondary" id="export-dashboard-pdf">Exportar PDF</button>
+                </div>
+                <div class="dashboard-charts">
+                    <div class="dashboard-chart">
+                        <canvas id="chart-sexo"></canvas>
+                    </div>
+                    <div class="dashboard-chart">
+                        <canvas id="chart-edad"></canvas>
+                    </div>
+                    <div class="dashboard-chart">
+                        <canvas id="chart-ubch"></canvas>
+                    </div>
+                </div>
+                <div class="dashboard-table-container">
+                    <div class="dashboard-table-title">Últimos 10 registros</div>
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Cédula</th>
+                                <th>Sexo</th>
+                                <th>Edad</th>
+                                <th>UBCH</th>
+                                <th>Comunidad</th>
+                                <th>Votó</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-table-body">
+                            <tr><td colspan="8" style="text-align:center;">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- Librerías -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+    // Esperar a que Firebase esté listo
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Esperar a que votes estén disponibles
+        let votes = [];
+        if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+            votes = await window.firebaseDB.firebaseSyncManager.loadVotesFromFirebase();
+        } else {
+            const votesData = localStorage.getItem('votesData');
+            votes = votesData ? JSON.parse(votesData) : [];
+        }
+        // Tarjetas
+        const totalRegistered = votes.length;
+        const totalVoted = votes.filter(v => v.voted).length;
+        const totalNotVoted = totalRegistered - totalVoted;
+        document.getElementById('total-registered').textContent = totalRegistered;
+        document.getElementById('total-voted').textContent = totalVoted;
+        document.getElementById('total-not-voted').textContent = totalNotVoted;
+        // Gráfica por sexo
+        const sexoCounts = { M: 0, F: 0 };
+        votes.forEach(v => { if (v.sexo === 'M') sexoCounts.M++; else if (v.sexo === 'F') sexoCounts.F++; });
+        new Chart(document.getElementById('chart-sexo').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Masculino', 'Femenino'],
+                datasets: [{
+                    data: [sexoCounts.M, sexoCounts.F],
+                    backgroundColor: ['#3b82f6', '#f472b6']
+                }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } } }
+        });
+        // Gráfica por edad
+        const ageRanges = [
+            { min: 16, max: 25, label: '16-25' },
+            { min: 26, max: 35, label: '26-35' },
+            { min: 36, max: 45, label: '36-45' },
+            { min: 46, max: 55, label: '46-55' },
+            { min: 56, max: 65, label: '56-65' },
+            { min: 66, max: 200, label: '66+' }
+        ];
+        const ageCounts = ageRanges.map(r => votes.filter(v => v.edad >= r.min && v.edad <= r.max).length);
+        new Chart(document.getElementById('chart-edad').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ageRanges.map(r => r.label),
+                datasets: [{
+                    label: 'Cantidad',
+                    data: ageCounts,
+                    backgroundColor: '#38bdf8'
+                }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+        // Gráfica por UBCH (top 5)
+        const ubchCounts = {};
+        votes.forEach(v => { ubchCounts[v.ubch] = (ubchCounts[v.ubch] || 0) + 1; });
+        const topUbch = Object.entries(ubchCounts).sort((a,b) => b[1]-a[1]).slice(0,5);
+        new Chart(document.getElementById('chart-ubch').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: topUbch.map(u => u[0]),
+                datasets: [{
+                    data: topUbch.map(u => u[1]),
+                    backgroundColor: ['#6366f1','#f59e42','#10b981','#f43f5e','#fbbf24']
+                }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } } }
+        });
+        // Últimos 10 registros
+        const tbody = document.getElementById('dashboard-table-body');
+        tbody.innerHTML = '';
+        votes.slice(-10).reverse().forEach(vote => {
+            const sexoLabel = vote.sexo === 'M' ? 'Masculino' : (vote.sexo === 'F' ? 'Femenino' : '');
+            const fecha = vote.timestamp ? new Date(vote.timestamp).toLocaleString('es-VE') : '';
+            tbody.innerHTML += `<tr>
+                <td>${vote.name}</td>
+                <td>${vote.cedula}</td>
+                <td>${sexoLabel}</td>
+                <td>${vote.edad || ''}</td>
+                <td>${vote.ubch}</td>
+                <td>${vote.community}</td>
+                <td>${vote.voted ? 'Sí' : 'No'}</td>
+                <td>${fecha}</td>
+            </tr>`;
+        });
+        // Exportar CSV
+        document.getElementById('export-dashboard-csv').onclick = () => {
+            const headers = ["Nombre", "Cédula", "Sexo", "Edad", "UBCH", "Comunidad", "Votó", "Fecha"];
+            const csvRows = [
+                headers.join(','),
+                ...votes.map(vote => [
+                    `"${vote.name}"`,
+                    `"${vote.cedula}"`,
+                    `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
+                    `"${vote.edad || ''}"`,
+                    `"${vote.ubch}"`,
+                    `"${vote.community}"`,
+                    `"${vote.voted ? 'Sí' : 'No'}"`,
+                    `"${vote.timestamp ? new Date(vote.timestamp).toLocaleString('es-VE') : ''}"`
+                ].join(','))
+            ];
+            const csvString = csvRows.join('\r\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "dashboard_registros.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+        // Exportar PDF (simple)
+        document.getElementById('export-dashboard-pdf').onclick = () => {
+            alert('Exportación a PDF próximamente. Usa la exportación CSV por ahora.');
+        };
+    });
+    </script>
+</body>
+</html> 
