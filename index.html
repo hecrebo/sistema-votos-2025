@@ -55,6 +55,8 @@
                     <button class="nav-btn" data-page="listado">Listado</button>
                     <button class="nav-btn" data-page="dashboard">Totales</button>
                     <button class="nav-btn" data-page="statistics">Estadísticas</button>
+                    <span id="admin-panel-link"></span>
+                    <button onclick="logout()" class="btn btn-danger" style="margin-left:20px;">Cerrar Sesión</button>
                 </nav>
                 <div class="user-info">
                     <p>ID de usuario: <span class="user-id" id="userId"></span></p>
@@ -266,6 +268,20 @@
       // Redirigir a login si no hay usuario autenticado
       const currentUser = localStorage.getItem('currentUser');
       if (!currentUser) {
+        window.location.href = 'login.html';
+      } else {
+        // Mostrar acceso a panel de control si es superusuario o admin
+        const user = JSON.parse(currentUser);
+        if (user.rol === 'superusuario' || user.rol === 'admin') {
+          document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('admin-panel-link').innerHTML = '<a href="admin-dashboard.html" class="btn btn-primary">Panel de Control</a>';
+          });
+        }
+      }
+      function logout() {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('sessionTime');
+        if (window.firebase && firebase.auth) firebase.auth().signOut();
         window.location.href = 'login.html';
       }
     </script>
