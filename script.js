@@ -199,17 +199,15 @@ class VotingSystem {
             }
         }
 
-        // Usar sistema de cola de Firebase para mejor concurrencia
+        // Usar Firebase directamente para mejor confiabilidad
         if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
             try {
-                // Agregar a la cola de sincronización
-                await window.firebaseDB.firebaseSyncManager.addToSyncQueue('vote', registrationData);
-                
-                // Agregar localmente para respuesta inmediata
+                // Crear objeto de voto con ID válido
                 var newVote = {
-                    id: 'temp_' + Date.now(),
+                    id: 'vote_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                     registeredAt: new Date().toISOString(),
-                    registeredBy: this.currentUser ? this.currentUser.username : 'Sistema'
+                    registeredBy: this.currentUser ? this.currentUser.username : 'Sistema',
+                    voted: false
                 };
                 
                 // Copiar propiedades del registro
@@ -219,16 +217,20 @@ class VotingSystem {
                     }
                 }
                 
+                // Guardar directamente en Firebase
+                await window.firebaseDB.firebaseSyncManager.saveVote(newVote);
+                
+                // Agregar localmente
                 this.votes.unshift(newVote);
                 localStorage.setItem('votesData', JSON.stringify(this.votes));
                 
                 // Mostrar indicador de sincronización
-                this.showSyncIndicator('Registro en cola de sincronización', 'info');
+                this.showSyncIndicator('Registro guardado en Firebase', 'success');
                 
                 return newVote;
                 
-            } catch (queueError) {
-                console.error('❌ Error agregando a cola de sincronización:', queueError);
+            } catch (firebaseError) {
+                console.error('❌ Error guardando en Firebase:', firebaseError);
                 // Fallback a guardado directo
                 return this.saveVoteDirect(registrationData);
             }
@@ -1122,7 +1124,14 @@ class VotingSystem {
             if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
                 try {
                     console.log('✅ Confirmando voto en Firebase...');
-                    await window.firebaseDB.firebaseSyncManager.saveVote(person);
+                    // Asegurar que el objeto tenga un ID válido
+                    const voteToSave = {
+                        ...person,
+                        id: person.id || 'vote_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                        voted: true,
+                        voteTimestamp: new Date().toISOString()
+                    };
+                    await window.firebaseDB.firebaseSyncManager.saveVote(voteToSave);
                     console.log('✅ Voto confirmado en Firebase exitosamente');
                 } catch (firebaseError) {
                     console.warn('⚠️ Error confirmando voto en Firebase, usando método tradicional:', firebaseError);

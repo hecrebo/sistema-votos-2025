@@ -529,7 +529,12 @@ class FirebaseSyncManager {
                 throw new Error('Esta cédula ya está registrada');
             }
             
-            const voteRef = votesCollection.doc(voteData.id || 'vote_' + Date.now());
+            // Generar ID válido para el documento
+            const voteId = voteData.id && typeof voteData.id === 'string' && voteData.id.trim() !== '' 
+                ? voteData.id 
+                : 'vote_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            const voteRef = votesCollection.doc(voteId);
             await voteRef.set({
                 name: voteData.name,
                 cedula: voteData.cedula,
