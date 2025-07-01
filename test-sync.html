@@ -76,15 +76,15 @@
             <button onclick="addTestVote()">➕ Agregar Voto de Prueba</button>
             <button onclick="refreshVotes()">🔄 Refrescar Lista</button>
             <button onclick="clearAllVotes()" class="delete">🗑️ Limpiar Todos</button>
-        </div>
-        
+    </div>
+    
         <div class="test-section">
             <h3>Lista de Votos (Tiempo Real)</h3>
             <div id="votes-list">
                 <p>Cargando votos...</p>
             </div>
-        </div>
-        
+    </div>
+    
         <div class="test-section">
             <h3>Log de Eventos</h3>
             <div id="event-log" style="max-height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 5px;">
@@ -92,7 +92,7 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
@@ -227,7 +227,7 @@
                         renderVotes();
                         addLog('🗑️ Todos los votos eliminados localmente', 'success');
                     }
-                } catch (error) {
+            } catch (error) {
                     addLog('❌ Error limpiando votos: ' + error.message, 'error');
                 }
             }
@@ -257,7 +257,7 @@
                 try {
                     votes = await window.firebaseDB.firebaseSyncManager.loadVotesFromFirebase();
                     addLog('📥 Votos cargados inicialmente: ' + votes.length + ' registros', 'success');
-                } catch (error) {
+            } catch (error) {
                     addLog('⚠️ Error cargando votos iniciales: ' + error.message, 'error');
                 }
                 

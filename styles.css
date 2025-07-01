@@ -1250,6 +1250,8 @@ body {
     gap: 8px;
     font-size: 14px;
     margin-top: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .sync-indicator {
@@ -1278,6 +1280,83 @@ body {
 
 .sync-text.error {
     color: #dc3545;
+}
+
+/* Indicador de estado de sincronización mejorado */
+.sync-status .sync-status {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.sync-status .sync-status.online {
+    background: rgba(40, 167, 69, 0.2);
+    border-color: rgba(40, 167, 69, 0.4);
+    color: #28a745;
+}
+
+.sync-status .sync-status.offline {
+    background: rgba(220, 53, 69, 0.2);
+    border-color: rgba(220, 53, 69, 0.4);
+    color: #dc3545;
+}
+
+.sync-status .sync-status.error {
+    background: rgba(255, 193, 7, 0.2);
+    border-color: rgba(255, 193, 7, 0.4);
+    color: #ffc107;
+}
+
+.sync-status .sync-status.syncing {
+    background: rgba(0, 123, 255, 0.2);
+    border-color: rgba(0, 123, 255, 0.4);
+    color: #007bff;
+    animation: pulse 2s infinite;
+}
+
+/* Indicador de sincronización flotante */
+#sync-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    max-width: 300px;
+    word-wrap: break-word;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#sync-indicator.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Colores para diferentes tipos de notificaciones */
+#sync-indicator.success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+#sync-indicator.error {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+}
+
+#sync-indicator.warning {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+}
+
+#sync-indicator.info {
+    background: linear-gradient(135deg, #007bff, #0056b3);
 }
 
 @keyframes spin {

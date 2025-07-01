@@ -199,30 +199,64 @@ class VotingSystem {
             }
         }
 
-        // Crear nuevo registro
-        const newVote = {
-            id: Date.now() + Math.random(),
-            ...registrationData,
-            registeredAt: new Date().toISOString(),
-            registeredBy: this.currentUser.username,
-            voted: false
-        };
-
-        // Prioridad 1: Usar Firebase SyncManager si está disponible
+        // Usar sistema de cola de Firebase para mejor concurrencia
         if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
             try {
-                console.log('🚀 Guardando registro en Firebase...');
-                const firebaseId = await window.firebaseDB.firebaseSyncManager.saveVote(newVote);
-                newVote.id = firebaseId;
-                this.votes.push(newVote);
-                console.log('✅ Registro guardado en Firebase exitosamente');
+                // Agregar a la cola de sincronización
+                await window.firebaseDB.firebaseSyncManager.addToSyncQueue('vote', registrationData);
+                
+                // Agregar localmente para respuesta inmediata
+                var newVote = {
+                    id: 'temp_' + Date.now(),
+                    registeredAt: new Date().toISOString(),
+                    registeredBy: this.currentUser ? this.currentUser.username : 'Sistema'
+                };
+                
+                // Copiar propiedades del registro
+                for (var key in registrationData) {
+                    if (registrationData.hasOwnProperty(key)) {
+                        newVote[key] = registrationData[key];
+                    }
+                }
+                
+                this.votes.unshift(newVote);
+                localStorage.setItem('votesData', JSON.stringify(this.votes));
+                
+                // Mostrar indicador de sincronización
+                this.showSyncIndicator('Registro en cola de sincronización', 'info');
+                
                 return newVote;
-            } catch (firebaseError) {
-                console.warn('⚠️ Error guardando en Firebase, usando método tradicional:', firebaseError);
+                
+            } catch (queueError) {
+                console.error('❌ Error agregando a cola de sincronización:', queueError);
+                // Fallback a guardado directo
+                return this.saveVoteDirect(registrationData);
+            }
+        } else {
+            // Fallback sin Firebase
+            return this.saveVoteDirect(registrationData);
+        }
+    }
+
+    // Guardar voto directamente (fallback)
+    saveVoteDirect(registrationData) {
+        var newVote = {
+            id: 'vote_' + Date.now(),
+            registeredAt: new Date().toISOString(),
+            registeredBy: this.currentUser ? this.currentUser.username : 'Sistema',
+            voted: false
+        };
+        
+        // Copiar propiedades del registro
+        for (var key in registrationData) {
+            if (registrationData.hasOwnProperty(key)) {
+                newVote[key] = registrationData[key];
             }
         }
-        this.votes.push(newVote);
-        await this.saveData();
+        
+        this.votes.unshift(newVote);
+        localStorage.setItem('votesData', JSON.stringify(this.votes));
+        
         return newVote;
     }
 
@@ -313,7 +347,7 @@ class VotingSystem {
 
     async init() {
         // Cargar datos de Firebase y configuraciones locales
-        await this.loadData();
+            await this.loadData();
         
         // Cargar votos desde el respaldo local de Firebase si existen
         const votesData = localStorage.getItem('votesData');
@@ -326,7 +360,7 @@ class VotingSystem {
 
         // Configurar listeners de Firebase en tiempo real
         this.setupFirebaseListeners();
-
+        
         this.setupEventListeners();
         this.renderCurrentPage();
         this.loadPdfLibraries();
@@ -509,35 +543,67 @@ class VotingSystem {
     setupFirebaseListeners() {
         if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
             try {
-                console.log('🔄 Configurando listeners de Firebase...');
+                console.log('🔄 Configurando listeners de Firebase mejorados...');
                 
-                // Iniciar sincronización en tiempo real
-                window.firebaseDB.firebaseSyncManager.syncUBCHRealTime();
-                window.firebaseDB.firebaseSyncManager.syncCommunitiesRealTime();
-                window.firebaseDB.firebaseSyncManager.syncVotesRealTime();
+                // Iniciar sincronización completa
+                window.firebaseDB.firebaseSyncManager.startFullSync();
                 
-                // Configurar listeners para eventos
+                // Configurar listeners para eventos mejorados
                 window.addEventListener('ubchDataUpdated', (event) => {
                     console.log('🔄 Datos de UBCH actualizados en tiempo real:', event.detail);
                     this.handleUBCHDataUpdate(event.detail.data);
+                    
+                    // Mostrar indicador de sincronización
+                    this.showSyncIndicator('UBCH actualizado', 'success');
                 });
                 
                 window.addEventListener('communitiesDataUpdated', (event) => {
                     console.log('🔄 Datos de Comunidades actualizados en tiempo real:', event.detail);
                     this.handleCommunitiesDataUpdate(event.detail.data);
+                    
+                    // Mostrar indicador de sincronización
+                    this.showSyncIndicator('Comunidades actualizadas', 'success');
                 });
                 
                 window.addEventListener('votesDataUpdated', (event) => {
                     console.log('🔄 Datos de Votos actualizados en tiempo real:', event.detail);
                     this.handleVotesDataUpdate(event.detail.data);
+                    
+                    // Mostrar indicador de sincronización
+                    this.showSyncIndicator(`${event.detail.changes || 0} cambios en votos`, 'info');
                 });
                 
                 window.addEventListener('voteDeleted', (event) => {
                     console.log('🗑️ Voto eliminado en tiempo real:', event.detail);
                     this.handleVoteDeleted(event.detail.voteId);
+                    
+                    // Mostrar indicador de sincronización
+                    this.showSyncIndicator('Voto eliminado', 'warning');
                 });
                 
-                console.log('✅ Listeners de Firebase configurados correctamente');
+                window.addEventListener('voteAdded', (event) => {
+                    console.log('➕ Voto agregado en tiempo real:', event.detail);
+                    this.handleVoteAdded(event.detail.vote);
+                    
+                    // Mostrar indicador de sincronización
+                    this.showSyncIndicator('Nuevo voto registrado', 'success');
+                });
+                
+                window.addEventListener('voteModified', (event) => {
+                    console.log('✏️ Voto modificado en tiempo real:', event.detail);
+                    this.handleVoteModified(event.detail.vote);
+                    
+                    // Mostrar indicador de sincronización
+                    this.showSyncIndicator('Voto modificado', 'info');
+                });
+                
+                // Listener para cambios de estado de sincronización
+                window.addEventListener('syncStatusChanged', (event) => {
+                    console.log('📡 Estado de sincronización cambiado:', event.detail);
+                    this.updateSyncStatusUI(event.detail.status);
+                });
+                
+                console.log('✅ Listeners de Firebase mejorados configurados correctamente');
             } catch (error) {
                 console.error('❌ Error configurando listeners de Firebase:', error);
             }
@@ -1160,7 +1226,7 @@ class VotingSystem {
             tableBody.appendChild(tr);
         });
     }
-    
+
     renderPaginationControls(hasNextPage) {
         const container = document.getElementById('pagination-controls');
         if (!container) return;
@@ -1517,46 +1583,46 @@ class VotingSystem {
         try {
             const allVotes = await window.firebaseDB.firebaseSyncManager.getAllVotes();
             const votedVotes = allVotes.filter(vote => vote.voted);
+        
+        // Estadísticas por UBCH
+        const ubchStats = {};
+        votedVotes.forEach(vote => {
+            ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
+        });
+
+        // Estadísticas por Comunidad
+        const communityStats = {};
+        votedVotes.forEach(vote => {
+            communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
+        });
+
+        // Estadísticas por Sexo
+        const sexoStats = {};
+        votedVotes.forEach(vote => {
+            const sexo = vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'No especificado';
+            sexoStats[sexo] = (sexoStats[sexo] || 0) + 1;
+        });
+
+        // Estadísticas por Rango de Edad
+        const edadStats = {};
+        votedVotes.forEach(vote => {
+            const edad = vote.edad || 0;
+            let rango = 'No especificado';
             
-            // Estadísticas por UBCH
-            const ubchStats = {};
-            votedVotes.forEach(vote => {
-                ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
-            });
+            if (edad >= 16 && edad <= 25) rango = '16-25 años';
+            else if (edad >= 26 && edad <= 35) rango = '26-35 años';
+            else if (edad >= 36 && edad <= 45) rango = '36-45 años';
+            else if (edad >= 46 && edad <= 55) rango = '46-55 años';
+            else if (edad >= 56 && edad <= 65) rango = '56-65 años';
+            else if (edad >= 66) rango = '66+ años';
+            
+            edadStats[rango] = (edadStats[rango] || 0) + 1;
+        });
 
-            // Estadísticas por Comunidad
-            const communityStats = {};
-            votedVotes.forEach(vote => {
-                communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
-            });
-
-            // Estadísticas por Sexo
-            const sexoStats = {};
-            votedVotes.forEach(vote => {
-                const sexo = vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'No especificado';
-                sexoStats[sexo] = (sexoStats[sexo] || 0) + 1;
-            });
-
-            // Estadísticas por Rango de Edad
-            const edadStats = {};
-            votedVotes.forEach(vote => {
-                const edad = vote.edad || 0;
-                let rango = 'No especificado';
-                
-                if (edad >= 16 && edad <= 25) rango = '16-25 años';
-                else if (edad >= 26 && edad <= 35) rango = '26-35 años';
-                else if (edad >= 36 && edad <= 45) rango = '36-45 años';
-                else if (edad >= 46 && edad <= 55) rango = '46-55 años';
-                else if (edad >= 56 && edad <= 65) rango = '56-65 años';
-                else if (edad >= 66) rango = '66+ años';
-                
-                edadStats[rango] = (edadStats[rango] || 0) + 1;
-            });
-
-            this.renderStatsList('ubch-stats', ubchStats, 'ubch');
-            this.renderStatsList('community-stats', communityStats, 'community');
-            this.renderStatsList('sexo-stats', sexoStats, 'sexo');
-            this.renderStatsList('edad-stats', edadStats, 'edad');
+        this.renderStatsList('ubch-stats', ubchStats, 'ubch');
+        this.renderStatsList('community-stats', communityStats, 'community');
+        this.renderStatsList('sexo-stats', sexoStats, 'sexo');
+        this.renderStatsList('edad-stats', edadStats, 'edad');
 
         } catch (error) {
             console.error('Error al renderizar estadísticas:', error);
@@ -1804,7 +1870,7 @@ class VotingSystem {
         
         // Tabla de Listado
         if (page === 'listado' && listadoTableBody) {
-            if (loading) {
+        if (loading) {
                 listadoTableBody.innerHTML = '<tr><td colspan="8" class="loading-message">Cargando registros...</td></tr>';
             } else if (listadoTableBody.querySelector('.loading-message')) {
                 // No limpiar aquí, renderVotesTable lo hará
@@ -1836,7 +1902,7 @@ class VotingSystem {
                     statsContainer.appendChild(loader);
                 }
                 loader.style.display = 'block';
-            } else {
+        } else {
                 statsContainer.querySelector('.stats-grid').style.display = 'grid';
                 const loader = statsContainer.querySelector('.loading-message');
                 if (loader) {
@@ -1849,15 +1915,125 @@ class VotingSystem {
     showMessage(message, type, page) {
         const messageDiv = document.getElementById(`${page}-message`);
         if (messageDiv) {
-            messageDiv.textContent = message;
-            messageDiv.className = `message ${type}`;
-            messageDiv.style.display = 'block';
-            setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 5000);
+        messageDiv.textContent = message;
+        messageDiv.className = `message ${type}`;
+        messageDiv.style.display = 'block';
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 5000);
         } else {
             // Fallback: mostrar alerta si el div no existe
             alert(message);
+        }
+    }
+
+    // Manejar voto agregado en tiempo real
+    handleVoteAdded(vote) {
+        try {
+            // Agregar a la lista local si no existe
+            const existingIndex = this.votes.findIndex(v => v.id === vote.id);
+            if (existingIndex === -1) {
+                this.votes.unshift(vote); // Agregar al inicio
+                localStorage.setItem('votesData', JSON.stringify(this.votes));
+                
+                // Actualizar interfaz según la página actual
+                this.updateUIForVoteChange();
+            }
+        } catch (error) {
+            console.error('❌ Error manejando voto agregado:', error);
+        }
+    }
+
+    // Manejar voto modificado en tiempo real
+    handleVoteModified(vote) {
+        try {
+            // Actualizar en la lista local
+            const existingIndex = this.votes.findIndex(v => v.id === vote.id);
+            if (existingIndex !== -1) {
+                this.votes[existingIndex] = vote;
+                localStorage.setItem('votesData', JSON.stringify(this.votes));
+                
+                // Actualizar interfaz según la página actual
+                this.updateUIForVoteChange();
+            }
+        } catch (error) {
+            console.error('❌ Error manejando voto modificado:', error);
+        }
+    }
+
+    // Actualizar interfaz para cambios en votos
+    updateUIForVoteChange() {
+        if (this.currentPage === 'listado') {
+            this.renderVotesTable();
+        } else if (this.currentPage === 'dashboard') {
+            this.renderDashboardPage();
+        } else if (this.currentPage === 'statistics') {
+            this.renderStatisticsPage();
+        }
+    }
+
+    // Mostrar indicador de sincronización
+    showSyncIndicator(message, type = 'info') {
+        // Crear o actualizar indicador de sincronización
+        let indicator = document.getElementById('sync-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'sync-indicator';
+            indicator.className = 'sync-indicator';
+            indicator.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 10px 15px;
+                border-radius: 8px;
+                color: white;
+                font-size: 14px;
+                font-weight: 500;
+                z-index: 10000;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+            document.body.appendChild(indicator);
+        }
+        
+        // Configurar colores según tipo
+        const colors = {
+            success: '#28a745',
+            error: '#dc3545',
+            warning: '#ffc107',
+            info: '#17a2b8'
+        };
+        
+        indicator.style.backgroundColor = colors[type] || colors.info;
+        indicator.textContent = message;
+        
+        // Mostrar con animación
+        indicator.style.opacity = '1';
+        indicator.style.transform = 'translateX(0)';
+        
+        // Ocultar después de 3 segundos
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+            indicator.style.transform = 'translateX(100%)';
+        }, 3000);
+    }
+
+    // Actualizar UI de estado de sincronización
+    updateSyncStatusUI(status) {
+        const statusElement = document.getElementById('sync-status');
+        if (statusElement) {
+            const statusTexts = {
+                online: '🟢 Sincronizado',
+                offline: '🔴 Sin conexión',
+                error: '⚠️ Error de sincronización',
+                syncing: '🔄 Sincronizando...'
+            };
+            
+            statusElement.textContent = statusTexts[status] || '❓ Estado desconocido';
+            statusElement.className = `sync-status ${status}`;
         }
     }
 }
