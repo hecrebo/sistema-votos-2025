@@ -181,21 +181,32 @@ class VotingSystem {
             throw new Error(validation.message);
         }
 
-        // Validación de duplicados en frontend
+        // Validación de duplicados más robusta
         const isDuplicate = this.votes.some(vote => vote.cedula === registrationData.cedula);
         if (isDuplicate) {
-            throw new Error('Esta cédula ya está registrada');
+            throw new Error('Esta cédula ya está registrada localmente');
         }
 
-        // Validación de duplicados en Firebase
+        // Validación de duplicados en Firebase con retry
         if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
-            try {
-                const exists = await window.firebaseDB.firebaseSyncManager.existsVoteByCedula(registrationData.cedula);
-                if (exists) {
-                    throw new Error('Esta cédula ya está registrada en la base de datos');
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            while (retryCount < maxRetries) {
+                try {
+                    const exists = await window.firebaseDB.firebaseSyncManager.existsVoteByCedula(registrationData.cedula);
+                    if (exists) {
+                        throw new Error('Esta cédula ya está registrada en la base de datos');
+                    }
+                    break; // Si no hay duplicado, salir del bucle
+                } catch (firebaseError) {
+                    retryCount++;
+                    if (retryCount >= maxRetries) {
+                        throw new Error(firebaseError.message || 'Error validando duplicados en Firebase');
+                    }
+                    // Esperar un poco antes de reintentar
+                    await this.delay(1000 * retryCount);
                 }
-            } catch (firebaseError) {
-                throw new Error(firebaseError.message || 'Error validando duplicados en Firebase');
             }
         }
 

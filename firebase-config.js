@@ -62,6 +62,10 @@ class FirebaseSyncManager {
         this.updateTimeouts = new Map();
         this.debounceDelay = 1000; // 1 segundo
         
+        // Sistema de bloqueo para evitar duplicados simultáneos
+        this.registrationLocks = new Map();
+        this.lockTimeout = 10000; // 10 segundos
+        
         // Métricas de rendimiento
         this.metrics = {
             syncCount: 0,
@@ -518,18 +522,46 @@ class FirebaseSyncManager {
         }
     }
 
-    // Guardar Voto en Firebase con validación de duplicados
+    // Guardar Voto en Firebase con validación de duplicados mejorada
     async saveVote(voteData) {
+        let lockAcquired = false;
+        
         try {
             console.log('💾 Guardando Voto en Firebase...');
             
-            // Validar duplicados
+            // Obtener bloqueo para evitar registros simultáneos
+            await this.acquireLock(voteData.cedula);
+            lockAcquired = true;
+            
+            // Validación de duplicados más robusta
             const existingVote = await this.existsVoteByCedula(voteData.cedula);
-            if (existingVote && existingVote.id !== voteData.id) {
-                throw new Error('Esta cédula ya está registrada');
+            if (existingVote) {
+                // Si existe un voto con la misma cédula, verificar si es el mismo registro
+                if (existingVote.id !== voteData.id) {
+                    console.warn('⚠️ Cédula duplicada detectada:', voteData.cedula);
+                    throw new Error('Esta cédula ya está registrada en la base de datos');
+                } else {
+                    // Es el mismo registro, actualizar en lugar de crear uno nuevo
+                    console.log('🔄 Actualizando registro existente...');
+                    const voteRef = votesCollection.doc(existingVote.id);
+                    await voteRef.update({
+                        name: voteData.name,
+                        telefono: voteData.telefono,
+                        sexo: voteData.sexo,
+                        edad: voteData.edad,
+                        ubch: voteData.ubch,
+                        community: voteData.community,
+                        voted: voteData.voted || existingVote.voted || false,
+                        voteTimestamp: voteData.voteTimestamp || existingVote.voteTimestamp || null,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        lastModifiedBy: this.getCurrentUserId()
+                    });
+                    console.log('✅ Registro actualizado exitosamente');
+                    return existingVote.id;
+                }
             }
             
-            // Generar ID válido para el documento
+            // No existe duplicado, crear nuevo registro
             const voteId = voteData.id && typeof voteData.id === 'string' && voteData.id.trim() !== '' 
                 ? voteData.id 
                 : 'vote_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -549,7 +581,7 @@ class FirebaseSyncManager {
                 registeredBy: voteData.registeredBy || this.getCurrentUserId(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastModifiedBy: this.getCurrentUserId()
-            }, { merge: true });
+            });
             
             console.log('✅ Voto guardado exitosamente');
             return voteRef.id;
@@ -557,6 +589,11 @@ class FirebaseSyncManager {
         } catch (error) {
             console.error('❌ Error guardando Voto:', error);
             throw error;
+        } finally {
+            // Liberar bloqueo si se adquirió
+            if (lockAcquired) {
+                this.releaseLock(voteData.cedula);
+            }
         }
     }
 
@@ -824,6 +861,43 @@ class FirebaseSyncManager {
             console.error('❌ Error buscando duplicados por cédula en Firebase:', error);
             throw new Error('Error buscando duplicados en Firebase');
         }
+    }
+
+    // Obtener bloqueo para una cédula
+    async acquireLock(cedula) {
+        const lockKey = `lock_${cedula}`;
+        const now = Date.now();
+        
+        // Limpiar bloqueos expirados
+        for (const [key, timestamp] of this.registrationLocks.entries()) {
+            if (now - timestamp > this.lockTimeout) {
+                this.registrationLocks.delete(key);
+            }
+        }
+        
+        // Verificar si ya hay un bloqueo activo
+        if (this.registrationLocks.has(lockKey)) {
+            const lockAge = now - this.registrationLocks.get(lockKey);
+            if (lockAge < this.lockTimeout) {
+                throw new Error('Esta cédula está siendo procesada por otro usuario. Inténtalo en unos segundos.');
+            }
+        }
+        
+        // Crear nuevo bloqueo
+        this.registrationLocks.set(lockKey, now);
+        
+        // Limpiar bloqueo después del timeout
+        setTimeout(() => {
+            this.registrationLocks.delete(lockKey);
+        }, this.lockTimeout);
+        
+        return true;
+    }
+
+    // Liberar bloqueo para una cédula
+    releaseLock(cedula) {
+        const lockKey = `lock_${cedula}`;
+        this.registrationLocks.delete(lockKey);
     }
 
     // Métodos de utilidad
