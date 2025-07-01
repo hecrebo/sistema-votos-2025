@@ -71,7 +71,7 @@ class VotingSystem {
         
         // --- Paginación ---
         this.currentPage = 1;
-        this.pageSize = 20;
+        this.pageSize = 50;
         this.totalPages = 1;
         this.paginatedVotes = [];
         this.lastVisibleDoc = null; // Para paginación de Firestore
@@ -181,10 +181,22 @@ class VotingSystem {
             throw new Error(validation.message);
         }
 
-        // Verificar duplicados
+        // Validación de duplicados en frontend
         const isDuplicate = this.votes.some(vote => vote.cedula === registrationData.cedula);
         if (isDuplicate) {
             throw new Error('Esta cédula ya está registrada');
+        }
+
+        // Validación de duplicados en Firebase
+        if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
+            try {
+                const exists = await window.firebaseDB.firebaseSyncManager.existsVoteByCedula(registrationData.cedula);
+                if (exists) {
+                    throw new Error('Esta cédula ya está registrada en la base de datos');
+                }
+            } catch (firebaseError) {
+                throw new Error(firebaseError.message || 'Error validando duplicados en Firebase');
+            }
         }
 
         // Crear nuevo registro
@@ -200,29 +212,17 @@ class VotingSystem {
         if (window.firebaseDB && window.firebaseDB.firebaseSyncManager) {
             try {
                 console.log('🚀 Guardando registro en Firebase...');
-                
-                // Guardar en Firebase
                 const firebaseId = await window.firebaseDB.firebaseSyncManager.saveVote(newVote);
-                
-                // Actualizar ID con el de Firebase
                 newVote.id = firebaseId;
-                
-                // Agregar a la lista local para mostrar inmediatamente
                 this.votes.push(newVote);
-                
                 console.log('✅ Registro guardado en Firebase exitosamente');
                 return newVote;
-                
             } catch (firebaseError) {
                 console.warn('⚠️ Error guardando en Firebase, usando método tradicional:', firebaseError);
-                // Fallback al método tradicional
             }
         }
-
-        // Método tradicional (fallback)
         this.votes.push(newVote);
         await this.saveData();
-        
         return newVote;
     }
 
@@ -626,17 +626,12 @@ class VotingSystem {
     // Manejar actualización de datos de votos
     handleVotesDataUpdate(votesData) {
         try {
-            // Actualizar la lista de votos
             this.votes = votesData;
-            
-            // Actualizar localStorage
             localStorage.setItem('votesData', JSON.stringify(this.votes));
-            
             console.log('✅ Lista de votos actualizada en tiempo real:', this.votes.length, 'registros');
-            
-            // Actualizar interfaz según la página actual
+            // Siempre renderizar la lista completa sin paginación
             if (this.currentPage === 'listado') {
-                this.renderVotesTable();
+                this.renderVotesTable(true); // true = sin paginación
             } else if (this.currentPage === 'dashboard') {
                 this.renderDashboardPage();
             } else if (this.currentPage === 'statistics') {
@@ -1130,20 +1125,15 @@ class VotingSystem {
         }
     }
 
-    renderVotesTable() {
-        const tbody = document.querySelector('#registros-table tbody');
-        tbody.innerHTML = '';
-
-        this.populateUBCHFilter();
-        
-        if (this.paginatedVotes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="no-records">No hay registros para mostrar.</td></tr>';
-            this.updateFilterCounter(0);
-            this.renderPaginationControls(false); // No mostrar paginación
-            return;
-        }
-
-        this.paginatedVotes.forEach(vote => {
+    renderVotesTable(noPagination = false) {
+        const tableBody = document.getElementById('votes-table-body');
+        if (!tableBody) return;
+        // Calcular los registros a mostrar según la página actual
+        const start = (this.currentPage - 1) * this.pageSize;
+        const end = start + this.pageSize;
+        const votesToShow = this.votes.slice(start, end);
+        tableBody.innerHTML = '';
+        votesToShow.forEach(vote => {
             const tr = document.createElement('tr');
             const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
             tr.innerHTML = `
@@ -1167,12 +1157,8 @@ class VotingSystem {
                     </button>
                 </td>
             `;
-            tbody.appendChild(tr);
+            tableBody.appendChild(tr);
         });
-
-        // La paginación ahora es más simple, solo controla siguiente y anterior.
-        // El número total de páginas ya no se conoce de antemano.
-        this.renderPaginationControls(true);
     }
     
     renderPaginationControls(hasNextPage) {
