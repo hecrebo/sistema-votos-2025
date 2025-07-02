@@ -49,7 +49,7 @@ async getCachedData(key, fetchFunction, maxAge = 30000) {
 startAutoSync() {
     this.syncInterval = setInterval(() => {
         if (this.syncEnabled && !this.offlineMode) {
-            // this.syncData();
+            this.syncData();
         }
     }, 30000);
 }
@@ -60,7 +60,7 @@ startAutoSync() {
 // Fallback automático a localStorage
 async init() {
     try {
-        // await this.loadData(); // Intentar servidor
+        await this.loadData(); // Intentar servidor
         this.startAutoSync();
     } catch (error) {
         this.useLocalStorage = true;
@@ -155,15 +155,15 @@ function checkSession() {
 ```javascript
 // Cada 30 segundos
 async syncData() {
-    // try {
-    //     const serverVotes = await fetch('/votes').json();
-    //     if (JSON.stringify(serverVotes) !== JSON.stringify(this.votes)) {
-    //         this.votes = serverVotes; // Actualizar datos
-    //         this.updateSyncStatus('Sincronizado', 'success');
-    //     }
-    // } catch (error) {
-    //     this.updateSyncStatus('Error de sincronización', 'error');
-    // }
+    try {
+        const serverVotes = await fetch('/votes').json();
+        if (JSON.stringify(serverVotes) !== JSON.stringify(this.votes)) {
+            this.votes = serverVotes; // Actualizar datos
+            this.updateSyncStatus('Sincronizado', 'success');
+        }
+    } catch (error) {
+        this.updateSyncStatus('Error de sincronización', 'error');
+    }
 }
 ```
 

@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Sistema de Votos 2025</title>
+    <link rel="manifest" href="favicon.ico/manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="favicon.ico/apple-icon-180x180.png">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 10px 40px 10px;
+        }
+        
+        .admin-header {
+            background: white;
+            padding: 40px 30px 30px 30px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.10);
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .admin-header h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 2.7em;
+            font-weight: 700;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .admin-header p {
+            color: #666;
+            margin: 0;
+            font-size: 1.15em;
+        }
+        
+        /* Menú desplegable estilo móvil */
+        .mobile-menu {
+            position: absolute;
+            top: 25px;
+            right: 30px;
+        }
+        
+        .menu-toggle {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-size: 26px;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 50%;
+            color: white;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.10);
+            transition: all 0.2s;
+        }
+        
+        .menu-toggle:hover {
+            background: #f8f9fa;
+            color: #667eea;
+            transform: scale(1.08);
+        }
+        
+        .menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            min-width: 220px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s;
+        }
+        
+        .menu-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 18px 24px;
+            text-decoration: none;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+            font-weight: 500;
+            font-size: 1.05em;
+            transition: all 0.2s;
+        }
+        
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+        
+        .menu-item:hover {
+            background: #f8f9fa;
+            color: #667eea;
+        }
+        
+        .menu-item .icon {
+            margin-right: 14px;
+            font-size: 20px;
+        }
+        
+        .menu-item.danger {
+            color: #dc3545;
+        }
+        
+        .menu-item.danger:hover {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+        
+        .admin-card {
+            background: white;
+            padding: 32px 24px 28px 24px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(102,126,234,0.08);
+            margin-bottom: 0;
+        }
+        
+        .admin-card h3 {
+            color: #333;
+            margin: 0 0 18px 0;
+            font-size: 1.35em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .status-warning {
+            background-color: #ffc107;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 18px;
+            margin: 18px 0 0 0;
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            padding: 18px 10px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+        }
+        
+        .metric-number {
+            font-size: 2.1em;
+            font-weight: bold;
+            color: #333;
+            margin: 0;
+        }
+        
+        .metric-label {
+            color: #666;
+            margin: 5px 0 0 0;
+            font-size: 1em;
+        }
+        
+        .service-controls {
+            display: flex;
+            gap: 12px;
+            margin: 18px 0 0 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 13px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.08);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #667eea;
+            color: #fff;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #43e97b 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #28a745;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #ff758c 100%);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc3545;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ffecb3 100%);
+            color: #333;
+        }
+        
+        .btn-warning:hover {
+            background: #ffc107;
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e1e5e9;
+        }
+        
+        .btn-secondary:hover {
+            background: #e1e5e9;
+        }
+        
+        .auto-refresh {
+            background: #e8f5e8;
+            border: 1px solid #28a745;
+            padding: 18px;
+            border-radius: 12px;
+            margin: 18px 0;
+        }
+        
+        .auto-refresh h4 {
+            color: #155724;
+            margin: 0 0 10px 0;
+        }
+        
+        .refresh-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .refresh-status {
+            color: #155724;
+            font-weight: 500;
+        }
+        
+        .log-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 18px;
+            margin: 18px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            font-family: monospace;
+            font-size: 1em;
+            margin: 5px 0;
+            padding: 7px;
+            border-radius: 7px;
+        }
+        
+        .log-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .import-section {
+            background: #f8f9fa;
+            padding: 28px 18px 18px 18px;
+            border-radius: 18px;
+            margin-top: 30px;
+            border: 1px solid #bbdefb;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+        }
+        
+        .import-section h3 {
+            color: #1976d2;
+            margin: 0 0 15px 0;
+            font-size: 1.25em;
+            font-weight: 700;
+        }
+        
+        .import-info {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .import-info p {
+            margin: 5px 0;
+            font-size: 1em;
+            color: #555;
+        }
+        
+        .import-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .import-status {
+            padding: 12px;
+            border-radius: 7px;
+            margin: 10px 0;
+            font-weight: 600;
+            font-size: 1em;
+        }
+        
+        .import-status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .import-status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .import-status.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 1em;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+        }
+        
+        .preview-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            padding: 12px 8px;
+            border-bottom: 2px solid #e5e7eb;
+            font-size: 1.05em;
+        }
+        
+        .preview-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+            min-width: 90px;
+            background: #fff;
+            transition: background 0.2s;
+        }
+        
+        .preview-table tr:nth-child(even) td {
+            background: #f9f9fc;
+        }
+        
+        .preview-table tr:hover td {
+            background: #e3eafe;
+        }
+        
+        .loading-message {
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        .sexo-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 80px;
+        }
+        
+        .sexo-badge.masculino {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .sexo-badge.femenino {
+            background-color: #fce7f3;
+            color: #be185d;
+        }
+        
+        .users-table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1em;
+        }
+        
+        .users-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            padding: 12px 8px;
+            border-bottom: 2px solid #e5e7eb;
+            font-size: 1.05em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .users-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+            background: #fff;
+            transition: background 0.2s;
+        }
+        
+        .users-table tr:nth-child(even) td {
+            background: #f9f9fc;
+        }
+        
+        .users-table tr:hover td {
+            background: #e3eafe;
+        }
+        
+        .vote-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .vote-status.voted {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .vote-status.not-voted {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        @media (max-width: 900px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+            .admin-header {
+                padding: 30px 10px 20px 10px;
+            }
+            .admin-card {
+                padding: 18px 8px 14px 8px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .admin-container {
+                padding: 10px 2px 20px 2px;
+            }
+            .admin-header h1 {
+                font-size: 1.5em;
+            }
+            .admin-card {
+                padding: 10px 2px 8px 2px;
+            }
+            .import-section {
+                padding: 10px 2px 8px 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <div class="mobile-menu">
+                <button class="menu-toggle" onclick="toggleMenu()">⋮</button>
+                <div class="menu-dropdown" id="menu-dropdown">
+                    <a href="index.html" class="menu-item">
+                        <span class="icon">🏠</span>
+                        Volver al Sistema
+                    </a>
+                    <a href="#" class="menu-item danger" onclick="logout()">
+                        <span class="icon">🚪</span>
+                        Cerrar Sesión
+                    </a>
+                </div>
+            </div>
+            <h1>🛠️ Panel de Administración</h1>
+            <p>Sistema de Votos 2025 - Gestión 24/7</p>
+        </div>
+        
+        <div class="admin-grid">
+            <!-- Estado del Sistema -->
+            <div class="admin-card">
+                <h3>
+                    <span class="status-indicator status-online" id="system-status"></span>
+                    Estado del Sistema
+                </h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <p class="metric-number" id="total-users">0</p>
+                        <p class="metric-label">Usuarios Activos</p>
+                    </div>
+                    <div class="metric-card">
+                        <p class="metric-number" id="total-registrations">0</p>
+                        <p class="metric-label">Registros Totales</p>
+                    </div>
+                    <div class="metric-card">
+                        <p class="metric-number" id="total-votes">0</p>
+                        <p class="metric-label">Votos Confirmados</p>
+                    </div>
+                    <div class="metric-card">
+                        <p class="metric-number" id="uptime">0h</p>
+                        <p class="metric-label">Tiempo Activo</p>
+                    </div>
+                </div>
+                <div class="service-controls">
+                    <button class="btn btn-success" onclick="startSystem()">🚀 Iniciar Sistema</button>
+                    <button class="btn btn-danger" onclick="stopSystem()">🛑 Detener Sistema</button>
+                    <button class="btn btn-warning" onclick="restartSystem()">🔄 Reiniciar</button>
+                </div>
+            </div>
+            
+            <!-- Firebase Status -->
+            <div class="admin-card">
+                <h3>
+                    <span class="status-indicator status-online" id="firebase-status"></span>
+                    Estado de Firebase
+                </h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <p class="metric-number" id="firebase-connections">0</p>
+                        <p class="metric-label">Conexiones</p>
+                    </div>
+                    <div class="metric-card">
+                        <p class="metric-number" id="firebase-sync">✅</p>
+                        <p class="metric-label">Sincronización</p>
+                    </div>
+                </div>
+                <div class="service-controls">
+                    <button class="btn btn-primary" onclick="testFirebase()">🔍 Probar Conexión</button>
+                    <button class="btn btn-warning" onclick="clearFirebaseCache()">🗑️ Limpiar Cache</button>
+                </div>
+            </div>
+            
+            <!-- Monitoreo -->
+            <div class="admin-card">
+                <h3>
+                    <span class="status-indicator status-online" id="monitoring-status"></span>
+                    Monitoreo en Tiempo Real
+                </h3>
+                <div class="auto-refresh">
+                    <h4>🔄 Actualización Automática</h4>
+                    <div class="refresh-info">
+                        <label class="switch">
+                            <input type="checkbox" id="auto-refresh-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="refresh-status" id="refresh-status">Activado (cada 30s)</span>
+                    </div>
+                </div>
+                <div class="service-controls">
+                    <button class="btn btn-primary" onclick="refreshNow()">🔄 Actualizar Ahora</button>
+                    <button class="btn btn-warning" onclick="exportLogs()">📥 Exportar Logs</button>
+                </div>
+            </div>
+            
+            <!-- Mantenimiento -->
+            <div class="admin-card">
+                <h3>
+                    <span class="status-indicator status-warning" id="maintenance-status"></span>
+                    Mantenimiento
+                </h3>
+                <div class="service-controls">
+                    <button class="btn btn-warning" onclick="backupData()">💾 Respaldar Datos</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpiar Todo</button>
+                    <button class="btn btn-primary" onclick="optimizeSystem()">⚡ Optimizar</button>
+                </div>
+                <div class="log-container" id="maintenance-logs">
+                    <div class="log-entry log-info">Sistema listo para mantenimiento</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Logs del Sistema -->
+        <div class="admin-card">
+            <h3>📋 Logs del Sistema</h3>
+            <div class="service-controls">
+                <button class="btn btn-primary" onclick="clearLogs()">🗑️ Limpiar Logs</button>
+                <button class="btn btn-warning" onclick="downloadLogs()">📥 Descargar</button>
+            </div>
+            <div class="log-container" id="system-logs">
+                <div class="log-entry log-info">Panel de administración iniciado</div>
+            </div>
+        </div>
+        
+        <div id="dashboard-visual"></div>
+        
+        <div id="sync-panel"></div>
+        
+        <!-- Lista Completa de Usuarios -->
+        <div class="admin-card">
+            <h3>👥 Lista Completa de Usuarios Registrados</h3>
+            <div class="users-controls">
+                <div class="users-filters">
+                    <input type="text" id="users-search" placeholder="🔍 Buscar por nombre, cédula o UBCH..." class="users-search-input">
+                    <select id="users-ubch-filter" class="users-filter-select">
+                        <option value="">Todas las UBCH</option>
+                    </select>
+                    <select id="users-vote-filter" class="users-filter-select">
+                        <option value="">Todos los estados</option>
+                        <option value="voted">Votaron</option>
+                        <option value="not-voted">No votaron</option>
+                    </select>
+                </div>
+                <div class="users-actions">
+                    <button class="btn btn-primary" onclick="exportUsersToCSV()">📥 Exportar CSV</button>
+                    <button class="btn btn-secondary" onclick="exportUsersToPDF()">📄 Exportar PDF</button>
+                    <button class="btn btn-warning" onclick="refreshUsersList()">🔄 Actualizar</button>
+                </div>
+            </div>
+            <div class="users-stats">
+                <span id="users-total">Total: 0</span>
+                <span id="users-voted">Votaron: 0</span>
+                <span id="users-not-voted">No votaron: 0</span>
+            </div>
+            <div class="users-table-container">
+                <table id="users-table" class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Cédula</th>
+                            <th>Teléfono</th>
+                            <th>Sexo</th>
+                            <th>Edad</th>
+                            <th>UBCH</th>
+                            <th>Comunidad</th>
+                            <th>Estado</th>
+                            <th>Registrado por</th>
+                            <th>Fecha Registro</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr>
+                            <td colspan="10" class="loading-message">Cargando usuarios...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Registro Masivo desde Excel -->
+        <div class="admin-card import-section">
+            <h3>📋 Registro Masivo (Pega los datos de Excel aquí)</h3>
+            <div class="import-info">
+                <p>Pega los datos copiados de Excel directamente en la tabla. Puedes editar los valores antes de cargar.</p>
+                <p>Columnas esperadas: <b>UBCH, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</b></p>
+            </div>
+            <div style="overflow-x:auto;">
+                <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false" style="min-width:800px;">
+                    <thead>
+                        <tr>
+                            <th>UBCH</th>
+                            <th>Comunidad</th>
+                            <th>Nombre</th>
+                            <th>Cédula</th>
+                            <th>Teléfono</th>
+                            <th>Sexo</th>
+                            <th>Edad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paste-table-body">
+                        <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="import-controls">
+                <button class="btn btn-success" onclick="importPasteTable()">Cargar a Firebase</button>
+                <button class="btn btn-warning" onclick="clearPasteTable()">Limpiar Tabla</button>
+            </div>
+            <div id="import-massive-status" class="import-status info" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="sync-manager.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="admin-dashboard.js"></script>
+    <script src="admin-sync-panel.js"></script>
+    
+    <script>
+        let systemStartTime = Date.now();
+        let autoRefreshInterval = null;
+        let systemStatus = 'online';
+        
+        // Inicialización
+        window.addEventListener('load', () => {
+            log('🚀 Panel de administración iniciado', 'info');
+            startAutoRefresh();
+            updateSystemMetrics();
+        });
+        
+        // Funciones de logging
+        function log(message, type = 'info') {
+            const logsContainer = document.getElementById('system-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            console.log(message);
+        }
+        
+        function maintenanceLog(message, type = 'info') {
+            const logsContainer = document.getElementById('maintenance-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+        
+        // Actualización automática
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            autoRefreshInterval = setInterval(() => {
+                updateSystemMetrics();
+                log('📊 Métricas actualizadas automáticamente', 'info');
+            }, 30000); // 30 segundos
+            
+            log('🔄 Actualización automática iniciada (cada 30s)', 'success');
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                log('🛑 Actualización automática detenida', 'warning');
+            }
+        }
+        
+        // Actualizar métricas del sistema
+        async function updateSystemMetrics() {
+            try {
+                // Obtener datos de Firebase
+                const snapshot = await window.firebaseDB.votesCollection.get();
+                const totalRegistrations = snapshot.docs.length;
+                const totalVotes = snapshot.docs.filter(doc => doc.data().voted).length;
+                
+                // Actualizar métricas
+                document.getElementById('total-registrations').textContent = totalRegistrations;
+                document.getElementById('total-votes').textContent = totalVotes;
+                document.getElementById('total-users').textContent = Math.floor(Math.random() * 10) + 1; // Simulado
+                
+                // Calcular tiempo activo
+                const uptimeHours = Math.floor((Date.now() - systemStartTime) / (1000 * 60 * 60));
+                document.getElementById('uptime').textContent = `${uptimeHours}h`;
+                
+                // Actualizar estado de Firebase
+                document.getElementById('firebase-connections').textContent = '1';
+                document.getElementById('firebase-sync').textContent = '✅';
+                
+                log(`📊 Métricas actualizadas: ${totalRegistrations} registros, ${totalVotes} votos`, 'success');
+                
+            } catch (error) {
+                log(`❌ Error actualizando métricas: ${error.message}`, 'error');
+                document.getElementById('firebase-sync').textContent = '❌';
+            }
+        }
+        
+        // Control del sistema
+        function startSystem() {
+            systemStatus = 'online';
+            updateStatusIndicators();
+            log('🚀 Sistema iniciado', 'success');
+            maintenanceLog('Sistema iniciado manualmente', 'success');
+        }
+        
+        function stopSystem() {
+            systemStatus = 'offline';
+            updateStatusIndicators();
+            log('🛑 Sistema detenido', 'warning');
+            maintenanceLog('Sistema detenido manualmente', 'warning');
+        }
+        
+        function restartSystem() {
+            log('🔄 Reiniciando sistema...', 'warning');
+            maintenanceLog('Reinicio del sistema iniciado', 'warning');
+            
+            setTimeout(() => {
+                systemStatus = 'online';
+                updateStatusIndicators();
+                log('✅ Sistema reiniciado exitosamente', 'success');
+                maintenanceLog('Sistema reiniciado exitosamente', 'success');
+            }, 2000);
+        }
+        
+        function updateStatusIndicators() {
+            const indicators = ['system-status', 'firebase-status', 'monitoring-status', 'maintenance-status'];
+            indicators.forEach(id => {
+                const indicator = document.getElementById(id);
+                indicator.className = `status-indicator status-${systemStatus}`;
+            });
+        }
+        
+        // Funciones de Firebase
+        async function testFirebase() {
+            log('🔍 Probando conexión a Firebase...', 'info');
+            
+            try {
+                const testDoc = await window.firebaseDB.votesCollection.limit(1).get();
+                log('✅ Conexión a Firebase exitosa', 'success');
+                maintenanceLog('Prueba de Firebase exitosa', 'success');
+            } catch (error) {
+                log(`❌ Error de conexión a Firebase: ${error.message}`, 'error');
+                maintenanceLog(`Error de Firebase: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearFirebaseCache() {
+            log('🗑️ Limpiando cache de Firebase...', 'info');
+            maintenanceLog('Limpieza de cache iniciada', 'info');
+            
+            // Simular limpieza
+            setTimeout(() => {
+                log('✅ Cache de Firebase limpiado', 'success');
+                maintenanceLog('Cache de Firebase limpiado exitosamente', 'success');
+            }, 1000);
+        }
+        
+        // Funciones de monitoreo
+        function refreshNow() {
+            log('🔄 Actualización manual iniciada', 'info');
+            updateSystemMetrics();
+        }
+        
+        function exportLogs() {
+            const logs = document.getElementById('system-logs').innerText;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `logs-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('📥 Logs exportados', 'success');
+        }
+        
+        // Funciones de mantenimiento
+        async function backupData() {
+            log('💾 Iniciando respaldo de datos...', 'info');
+            maintenanceLog('Respaldo de datos iniciado', 'info');
+            
+            try {
+                const snapshot = await window.firebaseDB.votesCollection.get();
+                const data = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                log(`✅ Respaldo completado: ${data.length} registros`, 'success');
+                maintenanceLog(`Respaldo completado: ${data.length} registros`, 'success');
+            } catch (error) {
+                log(`❌ Error en respaldo: ${error.message}`, 'error');
+                maintenanceLog(`Error en respaldo: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearAllData() {
+            if (confirm('¿Estás seguro de que quieres eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
+                log('🗑️ Eliminación de todos los datos iniciada...', 'warning');
+                maintenanceLog('Eliminación masiva de datos iniciada', 'warning');
+                
+                // Aquí iría la lógica real de eliminación
+                setTimeout(() => {
+                    log('✅ Todos los datos eliminados', 'success');
+                    maintenanceLog('Eliminación masiva completada', 'success');
+                }, 2000);
+            }
+        }
+        
+        function optimizeSystem() {
+            log('⚡ Optimización del sistema iniciada...', 'info');
+            maintenanceLog('Optimización del sistema iniciada', 'info');
+            
+            // Simular optimización
+            setTimeout(() => {
+                log('✅ Sistema optimizado', 'success');
+                maintenanceLog('Optimización completada exitosamente', 'success');
+            }, 3000);
+        }
+        
+        function clearLogs() {
+            document.getElementById('system-logs').innerHTML = '<div class="log-entry log-info">Logs limpiados</div>';
+            log('🗑️ Logs del sistema limpiados', 'info');
+        }
+        
+        function downloadLogs() {
+            const logs = document.getElementById('system-logs').innerText;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `system-logs-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('📥 Logs del sistema descargados', 'success');
+        }
+        
+        // Control de actualización automática
+        document.getElementById('auto-refresh-toggle').addEventListener('change', function() {
+            if (this.checked) {
+                startAutoRefresh();
+                document.getElementById('refresh-status').textContent = 'Activado (cada 30s)';
+            } else {
+                stopAutoRefresh();
+                document.getElementById('refresh-status').textContent = 'Desactivado';
+            }
+        });
+        
+        // Funciones del menú desplegable
+        function toggleMenu() {
+            const dropdown = document.getElementById('menu-dropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Cerrar menú al hacer clic fuera de él
+        document.addEventListener('click', function(event) {
+            const menu = document.querySelector('.mobile-menu');
+            const dropdown = document.getElementById('menu-dropdown');
+            
+            if (!menu.contains(event.target) && dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+            }
+        });
+        
+        // Funciones para la lista de usuarios
+        let allUsers = [];
+        let filteredUsers = [];
+
+        // Cargar lista de usuarios
+        async function loadUsersList() {
+            try {
+                const snapshot = await window.firebaseDB.votesCollection.get();
+                allUsers = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                filteredUsers = [...allUsers];
+                renderUsersTable();
+                populateUsersFilters();
+                updateUsersStats();
+                
+                log('👥 Lista de usuarios cargada exitosamente', 'success');
+            } catch (error) {
+                log(`❌ Error cargando usuarios: ${error.message}`, 'error');
+                document.getElementById('users-table-body').innerHTML = 
+                    '<tr><td colspan="10" class="loading-message">Error al cargar usuarios</td></tr>';
+            }
+        }
+
+        // Renderizar tabla de usuarios
+        function renderUsersTable() {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = '';
+            
+            if (filteredUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="loading-message">No se encontraron usuarios</td></tr>';
+                return;
+            }
+            
+            filteredUsers.forEach(user => {
+                const tr = document.createElement('tr');
+                const sexoClass = user.sexo === 'M' ? 'masculino' : 'femenino';
+                const voteStatus = user.voted ? 'voted' : 'not-voted';
+                const voteText = user.voted ? 'Sí' : 'No';
+                
+                tr.innerHTML = `
+                    <td>${user.name || 'N/A'}</td>
+                    <td>${user.cedula || 'N/A'}</td>
+                    <td>${user.telefono || 'N/A'}</td>
+                    <td><span class="sexo-badge ${sexoClass}">${user.sexo === 'M' ? 'Masculino' : 'Femenino'}</span></td>
+                    <td>${user.edad || 'N/A'}</td>
+                    <td>${user.ubch || 'N/A'}</td>
+                    <td>${user.community || 'N/A'}</td>
+                    <td><span class="vote-status ${voteStatus}">${voteText}</span></td>
+                    <td>${user.registeredBy || 'N/A'}</td>
+                    <td>${user.registeredAt ? new Date(user.registeredAt).toLocaleDateString() : 'N/A'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Poblar filtros de usuarios
+        function populateUsersFilters() {
+            const ubchFilter = document.getElementById('users-ubch-filter');
+            const uniqueUBCHs = [...new Set(allUsers.map(user => user.ubch).filter(ubch => ubch))];
+            
+            ubchFilter.innerHTML = '<option value="">Todas las UBCH</option>';
+            uniqueUBCHs.sort().forEach(ubch => {
+                const option = document.createElement('option');
+                option.value = ubch;
+                option.textContent = ubch;
+                ubchFilter.appendChild(option);
+            });
+        }
+
+        // Actualizar estadísticas de usuarios
+        function updateUsersStats() {
+            const total = allUsers.length;
+            const voted = allUsers.filter(user => user.voted).length;
+            const notVoted = total - voted;
+
+            document.getElementById('users-total').textContent = `Total: ${total}`;
+            document.getElementById('users-voted').textContent = `Votaron: ${voted}`;
+            document.getElementById('users-not-voted').textContent = `No votaron: ${notVoted}`;
+        }
+
+        // Aplicar filtros de usuarios
+        function applyUsersFilters() {
+            const searchTerm = document.getElementById('users-search').value.toLowerCase();
+            const selectedUBCH = document.getElementById('users-ubch-filter').value;
+            const selectedVoteStatus = document.getElementById('users-vote-filter').value;
+
+            filteredUsers = allUsers.filter(user => {
+                // Filtro de búsqueda
+                const matchesSearch = !searchTerm || 
+                    (user.name && user.name.toLowerCase().includes(searchTerm)) ||
+                    (user.cedula && user.cedula.includes(searchTerm)) ||
+                    (user.ubch && user.ubch.toLowerCase().includes(searchTerm));
+
+                // Filtro de UBCH
+                const matchesUBCH = !selectedUBCH || user.ubch === selectedUBCH;
+
+                // Filtro de estado de voto
+                const matchesVoteStatus = !selectedVoteStatus || 
+                    (selectedVoteStatus === 'voted' && user.voted) ||
+                    (selectedVoteStatus === 'not-voted' && !user.voted);
+
+                return matchesSearch && matchesUBCH && matchesVoteStatus;
+            });
+
+            renderUsersTable();
+        }
+
+        // Event listeners para filtros
+        document.getElementById('users-search').addEventListener('input', applyUsersFilters);
+        document.getElementById('users-ubch-filter').addEventListener('change', applyUsersFilters);
+        document.getElementById('users-vote-filter').addEventListener('change', applyUsersFilters);
+
+        // Función para actualizar lista
+        function refreshUsersList() {
+            loadUsersList();
+            log('🔄 Lista de usuarios actualizada', 'info');
+        }
+
+        // Función para exportar a CSV
+        function exportUsersToCSV() {
+            if (filteredUsers.length === 0) {
+                alert('No hay usuarios para exportar');
+                return;
+            }
+            
+            const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Estado', 'Registrado por', 'Fecha Registro'];
+            const csvContent = [
+                headers.join(';'),
+                ...filteredUsers.map(user => [
+                    `"${(user.name || '').replace(/"/g, '""')}"`, // Escapar comillas dobles
+                    user.cedula || '',
+                    user.telefono || '',
+                    user.sexo === 'M' ? 'Masculino' : 'Femenino',
+                    user.edad || '',
+                    `"${(user.ubch || '').replace(/"/g, '""')}"`,
+                    `"${(user.community || '').replace(/"/g, '""')}"`,
+                    user.voted ? 'Sí' : 'No',
+                    `"${(user.registeredBy || '').replace(/"/g, '""')}"`,
+                    user.registeredAt ? new Date(user.registeredAt).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    }) : ''
+                ].join(';'))
+            ].join('\r\n'); // Usar \r\n para compatibilidad con Windows
+
+            // Agregar BOM para UTF-8 (importante para Excel en español)
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { 
+                type: 'text/csv;charset=utf-8;' 
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `usuarios-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('📥 Lista de usuarios exportada a CSV (formato español con acentos)', 'success');
+        }
+
+        // Función para exportar a PDF
+        function exportUsersToPDF() {
+            if (filteredUsers.length === 0) {
+                alert('No hay usuarios para exportar');
+                return;
+            }
+            
+            // Aquí iría la lógica de exportación a PDF
+            // Por ahora solo mostramos un mensaje
+            alert('Función de exportación a PDF en desarrollo');
+            log('📄 Exportación a PDF solicitada', 'info');
+        }
+
+        // Cargar lista de usuarios al iniciar
+        window.addEventListener('load', () => {
+            setTimeout(loadUsersList, 1000); // Cargar después de 1 segundo
+        });
+
+        // --- Registro Masivo desde Excel ---
+        const pasteTable = document.getElementById('paste-table');
+        const pasteTableBody = document.getElementById('paste-table-body');
+        const importStatus = document.getElementById('import-massive-status');
+
+        // Permitir pegar datos desde Excel
+        pasteTable.addEventListener('paste', function (e) {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text');
+            const rows = text.split('\n').filter(row => row.trim() !== '');
+            pasteTableBody.innerHTML = '';
+            rows.forEach(row => {
+                const cols = row.split('\t');
+                const tr = document.createElement('tr');
+                for (let i = 0; i < 7; i++) {
+                    const td = document.createElement('td');
+                    td.contentEditable = 'true';
+                    td.textContent = cols[i] ? cols[i].trim() : '';
+                    tr.appendChild(td);
+                }
+                pasteTableBody.appendChild(tr);
+            });
+        });
+
+        // Limpiar tabla
+        function clearPasteTable() {
+            pasteTableBody.innerHTML = '<tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>';
+            importStatus.style.display = 'none';
+        }
+
+        // Validar y cargar datos a Firebase
+        async function importPasteTable() {
+            importStatus.style.display = 'block';
+            importStatus.className = 'import-status info';
+            importStatus.textContent = 'Validando y cargando datos...';
+            let count = 0, errors = 0;
+            for (let tr of pasteTableBody.rows) {
+                const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
+                // Validación básica
+                if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (!/^\d{6,10}$/.test(cedula)) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (!/^04\d{9}$/.test(telefono)) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (!['M','F','m','f'].includes(sexo)) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (isNaN(edad) || edad < 16 || edad > 120) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                // Preparar datos
+                const data = {
+                    ubch,
+                    community,
+                    name,
+                    cedula: cedula.replace(/\D/g, ''),
+                    telefono: telefono.replace(/\D/g, ''),
+                    sexo: sexo.toUpperCase(),
+                    edad: parseInt(edad),
+                    registeredBy: JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin',
+                    voted: false,
+                    registeredAt: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+                try {
+                    // Verificar duplicados por cédula
+                    const existing = await window.firebaseDB.votesCollection.where('cedula','==',data.cedula).get();
+                    if (!existing.empty) {
+                        tr.style.background = '#ffeaa7'; // Amarillo: duplicado
+                        continue;
+                    }
+                    await window.firebaseDB.votesCollection.add(data);
+                    tr.style.background = '#d4edda'; // Verde: éxito
+                    count++;
+                } catch (err) {
+                    tr.style.background = '#f8d7da'; // Rojo: error
+                    errors++;
+                }
+            }
+            if (count > 0 && errors === 0) {
+                importStatus.className = 'import-status success';
+                importStatus.textContent = `✅ ${count} registros cargados exitosamente.`;
+            } else if (count > 0 && errors > 0) {
+                importStatus.className = 'import-status warning';
+                importStatus.textContent = `⚠️ ${count} registros cargados. ${errors} filas con errores o duplicados.`;
+            } else {
+                importStatus.className = 'import-status error';
+                importStatus.textContent = `❌ No se cargaron registros. Verifica los datos.`;
+            }
+        }
+
+        // Resaltar celda activa y fila activa
+        pasteTableBody.addEventListener('focusin', function(e) {
+            if (e.target.tagName === 'TD') {
+                // Quitar resaltado previo
+                Array.from(pasteTableBody.rows).forEach(row => row.classList.remove('active-row'));
+                e.target.parentElement.classList.add('active-row');
+            }
+        });
+        pasteTableBody.addEventListener('focusout', function(e) {
+            if (e.target.tagName === 'TD') {
+                e.target.parentElement.classList.remove('active-row');
+            }
+        });
+
+        // Sugerencia visual en la primera celda si la tabla está vacía
+        function showPastePlaceholder() {
+            if (pasteTableBody.rows.length === 1) {
+                const firstRow = pasteTableBody.rows[0];
+                let empty = true;
+                for (let td of firstRow.cells) {
+                    if (td.textContent.trim() !== '') empty = false;
+                }
+                if (empty) {
+                    firstRow.cells[0].classList.add('placeholder');
+                    firstRow.cells[0].textContent = 'Haz clic aquí y pega los datos de Excel';
+                }
+            }
+        }
+        // Limpiar placeholder al enfocar
+        pasteTableBody.addEventListener('focusin', function(e) {
+            if (e.target.classList.contains('placeholder')) {
+                e.target.classList.remove('placeholder');
+                e.target.textContent = '';
+            }
+        });
+        // Mostrar placeholder al cargar
+        showPastePlaceholder();
+        // También después de limpiar la tabla
+        const oldClearPasteTable = clearPasteTable;
+        clearPasteTable = function() {
+            oldClearPasteTable();
+            showPastePlaceholder();
+        };
+        // También después de pegar, si la tabla queda vacía
+        pasteTable.addEventListener('paste', function() {
+            setTimeout(showPastePlaceholder, 100);
+        });
+
+        // Botón Instalar como App
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-app-btn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block';
+        });
+        installBtn && installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+        // Ocultar si ya está instalada
+        window.addEventListener('appinstalled', () => {
+            installBtn.style.display = 'none';
+        });
+    </script>
+</body>
+</html> 

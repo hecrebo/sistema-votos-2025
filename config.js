@@ -147,7 +147,7 @@ const SYSTEM_CONFIG = {
     
     // URLs de la aplicación
     urls: {
-        api: 'http://localhost:3001',
+        api: 'http://localhost:3000',
         login: 'login.html',
         main: 'index.html',
         admin: 'admin-panel.html'
