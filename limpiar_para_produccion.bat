@@ -31,3 +31,8 @@ REM Eliminar archivos temporales
 REM Mensaje final
 echo Limpieza completada. Revisa la carpeta antes de hacer push a GitHub.
 pause 
+
+REM Haz commit y push a tu repositorio de GitHub
+git add .
+git commit -m "Limpieza y preparación para despliegue en la nube"
+git push
