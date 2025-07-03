@@ -3,7 +3,7 @@
 class VotingSystem {
     constructor() {
         this.apiUrl = 'http://localhost:3000';
-        this.currentPage = 'registration';
+        this.activePage = 'registration';  // Cambiar nombre para evitar confusión
         this.userId = this.generateUserId();
         
         // Sistema de cola para múltiples usuarios
@@ -946,12 +946,12 @@ class VotingSystem {
         // Mostrar página seleccionada
         document.getElementById(`${page}-page`).classList.add('active');
 
-        this.currentPage = page;
+        this.activePage = page;
         this.renderCurrentPage();
     }
 
     renderCurrentPage() {
-        switch (this.currentPage) {
+        switch (this.activePage) {
             case 'registration':
                 this.renderRegistrationPage();
                 break;
@@ -1355,8 +1355,11 @@ class VotingSystem {
         });
         document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
 
-        // Aplicar filtros usando la función de filtrado dedicada
-        this.applyFilters();
+        // Resetear a página 1 cuando se cambia el filtro
+        this.currentPage = 1;
+        
+        // Usar renderVotesTable que ya tiene toda la lógica de filtrado integrada
+        this.renderVotesTable();
     }
 
     // Aplicar todos los filtros (estado de voto, UBCH y comunidad)
