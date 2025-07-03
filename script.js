@@ -3,7 +3,7 @@
 class VotingSystem {
     constructor() {
         this.apiUrl = 'http://localhost:3000';
-        this.currentPage = 'registration';
+        this.activePage = 'registration';  // Cambiar nombre para evitar confusión
         this.userId = this.generateUserId();
         
         // Sistema de cola para múltiples usuarios
@@ -76,6 +76,10 @@ class VotingSystem {
         this.totalPages = 1;
         this.paginatedVotes = [];
         
+        // --- Cache para filtros (optimización) ---
+        this.filteredVotes = [];
+        this.lastFilterState = null;
+        
         // === SISTEMA AUTOMÁTICO MEJORADO ===
         this.autoSyncEnabled = true;
         this.autoRetryEnabled = true;
@@ -113,10 +117,13 @@ class VotingSystem {
             // 7. Renderizar página inicial
             this.renderCurrentPage();
             
-            // 8. Configurar modo proyección automático
-            this.setupAutoProjection();
-            
-            console.log('✅ Sistema automático iniciado correctamente');
+        // 8. Configurar modo proyección automático
+        this.setupAutoProjection();
+        
+        // 9. Cargar librerías PDF
+        this.loadPdfLibraries();
+        
+        console.log('✅ Sistema automático iniciado correctamente');
             
         } catch (error) {
             console.error('❌ Error en inicialización automática:', error);
@@ -343,13 +350,16 @@ class VotingSystem {
         // Actualizar estadísticas en tiempo real
         this.renderStatisticsPage();
         
-        // Actualizar contadores
+        // Actualizar contadores de proyección con datos reales
         this.updateProjectionCounters();
+        
+        // Actualizar datos específicos de proyección
+        this.updateProjectionData();
         
         // Mostrar información de sincronización
         this.updateProjectionSyncInfo();
         
-        console.log('📊 Proyección actualizada');
+        console.log('📊 Proyección actualizada con datos reales');
     }
 
     updateProjectionCounters() {
@@ -376,6 +386,85 @@ class VotingSystem {
                     counter.textContent = `${percentage}%`;
                     break;
             }
+        });
+    }
+
+    updateProjectionData() {
+        const totalVotes = this.votes.length;
+        const votedCount = this.votes.filter(v => v.voted).length;
+        const participationRate = totalVotes > 0 ? (votedCount / totalVotes) * 100 : 0;
+        
+        // Actualizar número principal de votos
+        const projectionVotes = document.getElementById('projection-votes');
+        if (projectionVotes) {
+            projectionVotes.textContent = votedCount;
+        }
+        
+        // Actualizar texto de progreso
+        const projectionText = document.getElementById('projection-text');
+        if (projectionText) {
+            projectionText.textContent = `${votedCount} de ${totalVotes}`;
+        }
+        
+        // Actualizar barra de progreso
+        const projectionProgressFill = document.getElementById('projection-progress-fill');
+        if (projectionProgressFill) {
+            projectionProgressFill.style.width = `${participationRate}%`;
+        }
+        
+        // Actualizar lista de UBCH en proyección
+        this.updateProjectionUBCHList();
+    }
+    
+    updateProjectionUBCHList() {
+        const container = document.getElementById('projection-ubch-list');
+        if (!container) return;
+        
+        // Calcular estadísticas por UBCH
+        const ubchStats = {};
+        this.votes.forEach(vote => {
+            if (!ubchStats[vote.ubch]) {
+                ubchStats[vote.ubch] = { total: 0, voted: 0 };
+            }
+            ubchStats[vote.ubch].total++;
+            if (vote.voted) {
+                ubchStats[vote.ubch].voted++;
+            }
+        });
+        
+        // Ordenar por mayor participación
+        const sortedUBCH = Object.entries(ubchStats)
+            .map(([ubch, stats]) => ({
+                ubch,
+                total: stats.total,
+                voted: stats.voted,
+                percentage: stats.total > 0 ? (stats.voted / stats.total) * 100 : 0
+            }))
+            .sort((a, b) => b.voted - a.voted)
+            .slice(0, 10); // Top 10
+        
+        // Renderizar lista
+        container.innerHTML = '';
+        sortedUBCH.forEach(ubchData => {
+            const div = document.createElement('div');
+            div.className = 'projection-ubch-item';
+            
+            const ubchName = ubchData.ubch.length > 30 
+                ? ubchData.ubch.substring(0, 27) + '...' 
+                : ubchData.ubch;
+            
+            div.innerHTML = `
+                <div class="projection-ubch-name">${ubchName}</div>
+                <div class="projection-ubch-stats">
+                    <span class="projection-ubch-votes">${ubchData.voted}</span>
+                    <span class="projection-ubch-percentage">${ubchData.percentage.toFixed(1)}%</span>
+                </div>
+                <div class="projection-ubch-bar">
+                    <div class="projection-ubch-bar-fill" style="width: ${ubchData.percentage}%"></div>
+                </div>
+            `;
+            
+            container.appendChild(div);
         });
     }
 
@@ -737,6 +826,101 @@ class VotingSystem {
         if (userInfo && this.currentUser) {
             userInfo.textContent = `${this.currentUser.username} (${this.currentUser.rol})`;
         }
+        
+        // Aplicar restricciones de acceso basadas en roles
+        this.applyRoleBasedAccess();
+    }
+    
+    // Control de acceso basado en roles
+    applyRoleBasedAccess() {
+        if (!this.currentUser) return;
+        
+        const userRole = this.currentUser.rol;
+        
+        // Definir permisos por rol
+        const permissions = {
+            'registrador': {
+                allowedPages: ['registration', 'check-in'],
+                hiddenElements: ['.export-btn', '#projection-btn', '#admin-panel-btn'],
+                disabledFeatures: ['delete', 'admin-functions']
+            },
+            'admin': {
+                allowedPages: ['registration', 'check-in', 'listado', 'dashboard', 'statistics'],
+                hiddenElements: ['#admin-panel-btn'],
+                disabledFeatures: []
+            },
+            'superusuario': {
+                allowedPages: ['registration', 'check-in', 'listado', 'dashboard', 'statistics', 'admin'],
+                hiddenElements: [],
+                disabledFeatures: []
+            }
+        };
+        
+        const userPermissions = permissions[userRole] || permissions['registrador'];
+        
+        // Ocultar botones de navegación no permitidos
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            const page = btn.dataset.page;
+            if (!userPermissions.allowedPages.includes(page)) {
+                btn.style.display = 'none';
+            }
+        });
+        
+        // Ocultar elementos específicos
+        userPermissions.hiddenElements.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => el.style.display = 'none');
+        });
+        
+        // Aplicar restricciones específicas por rol
+        this.applySpecificRoleRestrictions(userRole, userPermissions);
+    }
+    
+    // Aplicar restricciones específicas por rol
+    applySpecificRoleRestrictions(userRole, permissions) {
+        switch(userRole) {
+            case 'registrador':
+                // Solo puede registrar y confirmar votos
+                this.restrictRegistradorAccess();
+                break;
+                
+            case 'admin':
+                // Puede ver todo excepto funciones de superusuario
+                this.restrictAdminAccess();
+                break;
+                
+            case 'superusuario':
+                // Acceso completo - no hay restricciones
+                break;
+        }
+    }
+    
+    // Restricciones para registradores
+    restrictRegistradorAccess() {
+        // Ocultar botones de eliminación
+        const deleteButtons = document.querySelectorAll('.btn-danger');
+        deleteButtons.forEach(btn => {
+            if (btn.textContent.includes('Eliminar')) {
+                btn.style.display = 'none';
+            }
+        });
+        
+        // Ocultar botones de exportación
+        const exportButtons = document.querySelectorAll('#export-pdf-btn, #export-csv-btn, #export-stats-pdf-btn');
+        exportButtons.forEach(btn => btn.style.display = 'none');
+        
+        // Redirigir a página de registro si está en una página no permitida
+        if (!['registration', 'check-in'].includes(this.activePage)) {
+            this.navigateToPage('registration');
+        }
+    }
+    
+    // Restricciones para administradores
+    restrictAdminAccess() {
+        // Los administradores tienen acceso casi completo
+        // Solo se ocultan funciones de superusuario si las hay
+        const superUserElements = document.querySelectorAll('.superuser-only');
+        superUserElements.forEach(el => el.style.display = 'none');
     }
 
     // Actualizar estado de sincronización
@@ -912,8 +1096,18 @@ class VotingSystem {
         // Filtro por UBCH
         const ubchFilterSelect = document.getElementById('ubch-filter-select');
         if (ubchFilterSelect) {
-            ubchFilterSelect.addEventListener('change', () => {
-                this.applyFilters();
+            ubchFilterSelect.addEventListener('change', (e) => {
+                // Actualizar el filtro de comunidades cuando cambie la UBCH
+                this.populateCommunityFilter(e.target.value);
+                this.renderFilteredTable();
+            });
+        }
+
+        // Filtro por Comunidad
+        const communityFilterSelect = document.getElementById('community-filter-select');
+        if (communityFilterSelect) {
+            communityFilterSelect.addEventListener('change', () => {
+                this.renderFilteredTable();
             });
         }
 
@@ -936,12 +1130,12 @@ class VotingSystem {
         // Mostrar página seleccionada
         document.getElementById(`${page}-page`).classList.add('active');
 
-        this.currentPage = page;
+        this.activePage = page;
         this.renderCurrentPage();
     }
 
     renderCurrentPage() {
-        switch (this.currentPage) {
+        switch (this.activePage) {
             case 'registration':
                 this.renderRegistrationPage();
                 break;
@@ -1170,6 +1364,9 @@ class VotingSystem {
     renderListPage() {
         this.currentPage = 1;
         this.renderVotesTable();
+        
+        // Inicializar el filtro de comunidades
+        this.populateCommunityFilter();
     }
 
     renderVotesTable() {
@@ -1304,6 +1501,37 @@ class VotingSystem {
         });
     }
 
+    // Poblar el selector de filtro por Comunidades
+    populateCommunityFilter(selectedUBCH = '') {
+        const communitySelect = document.getElementById('community-filter-select');
+        if (!communitySelect) return;
+
+        // Obtener comunidades según la UBCH seleccionada
+        let availableCommunities;
+        if (selectedUBCH) {
+            // Si hay UBCH seleccionada, mostrar solo sus comunidades
+            availableCommunities = [...new Set(this.votes
+                .filter(vote => vote.ubch === selectedUBCH)
+                .map(vote => vote.community)
+                .filter(community => community)
+            )];
+        } else {
+            // Si no hay UBCH seleccionada, mostrar todas las comunidades
+            availableCommunities = [...new Set(this.votes.map(vote => vote.community).filter(community => community))];
+        }
+        
+        // Limpiar opciones existentes excepto la primera
+        communitySelect.innerHTML = '<option value="">Todas las Comunidades</option>';
+        
+        // Agregar opciones para cada comunidad
+        availableCommunities.sort().forEach(community => {
+            const option = document.createElement('option');
+            option.value = community;
+            option.textContent = community;
+            communitySelect.appendChild(option);
+        });
+    }
+
     handleFilterChange(filter) {
         // Actualizar botones de filtro
         document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -1311,11 +1539,14 @@ class VotingSystem {
         });
         document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
 
-        // Aplicar filtros
-        this.applyFilters();
+        // Resetear a página 1 cuando se cambia el filtro
+        this.currentPage = 1;
+        
+        // Usar la función de filtrado optimizada
+        this.renderFilteredTable();
     }
 
-    // Aplicar todos los filtros (estado de voto y UBCH)
+    // Aplicar todos los filtros (estado de voto, UBCH y comunidad)
     applyFilters() {
         const tbody = document.querySelector('#registros-table tbody');
         tbody.innerHTML = '';
@@ -1323,6 +1554,7 @@ class VotingSystem {
         // Obtener filtros activos
         const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
         const selectedUBCH = document.getElementById('ubch-filter-select').value;
+        const selectedCommunity = document.getElementById('community-filter-select').value;
 
         let filteredVotes = this.votes;
         
@@ -1338,8 +1570,20 @@ class VotingSystem {
             filteredVotes = filteredVotes.filter(vote => vote.ubch === selectedUBCH);
         }
 
-        // Renderizar votos filtrados
-        filteredVotes.forEach(vote => {
+        // Filtrar por Comunidad
+        if (selectedCommunity) {
+            filteredVotes = filteredVotes.filter(vote => vote.community === selectedCommunity);
+        }
+
+        // Aplicar paginación a los resultados filtrados
+        this.totalPages = Math.max(1, Math.ceil(filteredVotes.length / this.pageSize));
+        if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+        const startIdx = (this.currentPage - 1) * this.pageSize;
+        const endIdx = startIdx + this.pageSize;
+        const paginatedResults = filteredVotes.slice(startIdx, endIdx);
+
+        // Renderizar votos filtrados con paginación
+        paginatedResults.forEach(vote => {
             const tr = document.createElement('tr');
             const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
             tr.innerHTML = `
@@ -1355,7 +1599,7 @@ class VotingSystem {
                     </span>
                 </td>
                 <td>
-                    <button class="btn btn-danger" onclick="votingSystem.deleteVote(${vote.id})">
+                    <button class="btn btn-danger" onclick="votingSystem.deleteVote('${vote.id}')">
                         Eliminar
                     </button>
                 </td>
@@ -1363,8 +1607,102 @@ class VotingSystem {
             tbody.appendChild(tr);
         });
 
-        // Mostrar contador de resultados
+        // Actualizar contador de resultados (total filtrado, no solo la página actual)
         this.updateFilterCounter(filteredVotes.length);
+        
+        // Renderizar controles de paginación
+        this.renderPaginationControls(filteredVotes.length);
+    }
+
+    // Función optimizada para renderizar tabla filtrada (mejor rendimiento)
+    renderFilteredTable() {
+        // Obtener estado actual de filtros
+        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+        const selectedUBCH = document.getElementById('ubch-filter-select')?.value || '';
+        const selectedCommunity = document.getElementById('community-filter-select')?.value || '';
+        
+        // Crear clave de estado de filtro para cache
+        const filterState = `${activeFilter}-${selectedUBCH}-${selectedCommunity}`;
+        
+        // Si el estado del filtro no ha cambiado, no re-renderizar
+        if (this.lastFilterState === filterState && this.filteredVotes.length > 0) {
+            // Solo actualizar la paginación
+            this.renderTablePage();
+            return;
+        }
+        
+        // Aplicar filtros (solo una vez)
+        this.filteredVotes = this.votes.filter(vote => {
+            // Filtro por estado de voto
+            if (activeFilter === 'voted' && !vote.voted) return false;
+            if (activeFilter === 'not-voted' && vote.voted) return false;
+            
+            // Filtro por UBCH
+            if (selectedUBCH && vote.ubch !== selectedUBCH) return false;
+            
+            // Filtro por Comunidad
+            if (selectedCommunity && vote.community !== selectedCommunity) return false;
+            
+            return true;
+        });
+        
+        // Guardar estado del filtro
+        this.lastFilterState = filterState;
+        
+        // Renderizar página actual
+        this.renderTablePage();
+        
+        // Actualizar contador y paginación
+        this.updateFilterCounter(this.filteredVotes.length);
+        this.renderPaginationControls(this.filteredVotes.length);
+    }
+    
+    // Renderizar solo la página actual (más rápido)
+    renderTablePage() {
+        const tbody = document.querySelector('#registros-table tbody');
+        
+        // Limpiar tbody de manera eficiente
+        tbody.innerHTML = '';
+        
+        // Calcular paginación
+        this.totalPages = Math.max(1, Math.ceil(this.filteredVotes.length / this.pageSize));
+        if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+        
+        const startIdx = (this.currentPage - 1) * this.pageSize;
+        const endIdx = startIdx + this.pageSize;
+        const pageVotes = this.filteredVotes.slice(startIdx, endIdx);
+        
+        // Usar DocumentFragment para mejor rendimiento
+        const fragment = document.createDocumentFragment();
+        
+        pageVotes.forEach(vote => {
+            const tr = document.createElement('tr');
+            const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
+            
+            tr.innerHTML = `
+                <td>${vote.name}</td>
+                <td>${vote.cedula}</td>
+                <td class="${sexoClass}">${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}</td>
+                <td>${vote.edad || 'N/A'}</td>
+                <td>${vote.ubch}</td>
+                <td>${vote.community}</td>
+                <td>
+                    <span class="vote-status ${vote.voted ? 'voted' : 'not-voted'}">
+                        ${vote.voted ? 'Sí' : 'No'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-danger" onclick="votingSystem.deleteVote('${vote.id}')">
+                        Eliminar
+                    </button>
+                </td>
+            `;
+            
+            fragment.appendChild(tr);
+        });
+        
+        // Agregar todo de una vez (más eficiente)
+        tbody.appendChild(fragment);
     }
 
     // Actualizar contador de resultados filtrados
@@ -1373,15 +1711,27 @@ class VotingSystem {
         const filterCounter = document.getElementById('filter-counter');
         
         if (filterCounter) {
+            // Siempre mostrar solo el número de registros en la lista actual
+            filterCounter.textContent = count;
+            
+            // Cambiar color según si hay filtros aplicados o no
             if (count === totalCount) {
-                filterCounter.textContent = totalCount;
+                // Sin filtros aplicados - color verde
                 filterCounter.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
                 filterCounter.style.borderColor = '#10b981';
             } else {
-                filterCounter.textContent = `${count}/${totalCount}`;
-                filterCounter.style.background = 'linear-gradient(135deg, #1f2937 0%, #374151 100%)';
-                filterCounter.style.borderColor = '#4b5563';
+                // Con filtros aplicados - color azul
+                filterCounter.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
+                filterCounter.style.borderColor = '#3b82f6';
             }
+            
+            filterCounter.style.color = '#ffffff';
+            
+            // Agregar animación de actualización
+            filterCounter.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                filterCounter.style.transform = 'scale(1)';
+            }, 200);
         }
     }
 
@@ -1482,7 +1832,7 @@ class VotingSystem {
     }
 
     enterProjectionMode() {
-        console.log('🎬 Activando modo proyección...');
+        console.log('🎜️ Activando modo proyección...');
         
         // Verificar si existe el elemento de proyección
         const projectionView = document.getElementById('projection-view');
@@ -1498,12 +1848,12 @@ class VotingSystem {
         // Aplicar estilos de proyección
         document.body.classList.add('projection-mode');
         
-        // Actualizar datos de proyección
-        this.updateProjection();
+        // Actualizar datos inmediatamente con datos reales
+        this.updateProjectionData();
         
         // Iniciar actualizaciones automáticas cada 5 segundos
         this.projectionInterval = setInterval(() => {
-            this.updateProjection();
+            this.updateProjectionData();
         }, 5000);
         
         // Mostrar mensaje de confirmación
@@ -1538,20 +1888,34 @@ class VotingSystem {
 
     loadPdfLibraries() {
         // Verificar si las librerías ya están cargadas
-        if (window.jspdf) {
+        if (window.jspdf && window.jspdf.jsPDF) {
             this.pdfLibrariesReady = true;
+            console.log('✅ Librerías PDF ya están cargadas');
             return;
         }
 
+        console.log('🔄 Esperando a que se carguen las librerías PDF...');
+        
         // Las librerías se cargan desde CDN en el HTML
         const checkLibraries = () => {
-            if (window.jspdf) {
+            if (window.jspdf && window.jspdf.jsPDF) {
                 this.pdfLibrariesReady = true;
+                console.log('✅ Librerías PDF cargadas correctamente');
             } else {
-                setTimeout(checkLibraries, 100);
+                setTimeout(checkLibraries, 500);
             }
         };
+        
+        // Verificar inmediatamente y luego periódicamente
         checkLibraries();
+        
+        // Timeout de seguridad - si después de 10 segundos no se cargan, mostrar error
+        setTimeout(() => {
+            if (!this.pdfLibrariesReady) {
+                console.error('❌ Error: No se pudieron cargar las librerías PDF después de 10 segundos');
+                this.showMessage('Error al cargar librerías PDF. Verifica la conexión a internet.', 'error');
+            }
+        }, 10000);
     }
 
     exportToPDF() {
@@ -1637,43 +2001,429 @@ class VotingSystem {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        doc.setFontSize(18);
-        doc.text("Reporte de Estadísticas de Votación", 14, 22);
+        // === CONFIGURACIÓN INICIAL ===
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        let currentY = 20;
+        
+        // === ENCABEZADO CORPORATIVO ===
+        this.addCorporateHeader(doc, pageWidth);
+        currentY = 60;
+        
+        // === RESUMEN EJECUTIVO ===
+        currentY = this.addExecutiveSummary(doc, currentY, pageWidth);
+        
+        // === ESTADÍSTICAS GENERALES ===
+        currentY = this.addGeneralStats(doc, currentY, pageWidth);
+        
+        // === NUEVA PÁGINA PARA GRÁFICAS ===
+        doc.addPage();
+        this.addCorporateHeader(doc, pageWidth);
+        currentY = 70;
+        
+        // === GRÁFICAS Y ESTADÍSTICAS DETALLADAS ===
+        currentY = this.addDetailedCharts(doc, currentY, pageWidth);
+        
+        // === NUEVA PÁGINA PARA TABLAS DETALLADAS ===
+        doc.addPage();
+        this.addCorporateHeader(doc, pageWidth);
+        currentY = 70;
+        
+        // === TABLAS DETALLADAS ===
+        currentY = this.addDetailedTables(doc, currentY, pageWidth);
+        
+        // === PIE DE PÁGINA ===
+        this.addFooter(doc, pageWidth, pageHeight);
+        
+        // === GUARDAR ARCHIVO ===
+        const fecha = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+        const hora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        doc.save(`Reporte_Estadisticas_${fecha}_${hora}.pdf`);
+    }
+    
+    // === FUNCIONES AUXILIARES PARA EL PDF ===
+    
+    addCorporateHeader(doc, pageWidth) {
+        // Fondo del encabezado
+        doc.setFillColor(52, 152, 219); // Azul corporativo
+        doc.rect(0, 0, pageWidth, 50, 'F');
+        
+        // Título principal
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('SISTEMA DE REGISTRO DE VOTOS 2025', pageWidth / 2, 20, { align: 'center' });
+        
+        // Subtítulo
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Reporte Estadístico Completo', pageWidth / 2, 30, { align: 'center' });
+        
+        // Fecha y hora de generación
         doc.setFontSize(10);
-        doc.text(`Generado el: ${new Date().toLocaleString('es-VE')}`, 14, 30);
+        const fechaHora = new Date().toLocaleString('es-ES');
+        doc.text(`Generado: ${fechaHora}`, pageWidth / 2, 40, { align: 'center' });
+        
+        // Usuario que genera el reporte
+        doc.text(`Usuario: ${this.currentUser.username} (${this.currentUser.rol})`, pageWidth / 2, 45, { align: 'center' });
+        
+        // Restablecer color de texto
+        doc.setTextColor(0, 0, 0);
+    }
+    
+    addExecutiveSummary(doc, startY, pageWidth) {
+        const totalRegistered = this.votes.length;
+        const totalVoted = this.votes.filter(vote => vote.voted).length;
+        const totalPending = totalRegistered - totalVoted;
+        const participationRate = totalRegistered > 0 ? (totalVoted / totalRegistered) * 100 : 0;
+        
+        // Título de sección
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('📊 RESUMEN EJECUTIVO', 14, startY);
+        
+        // Cuadro de resumen
+        doc.setDrawColor(52, 152, 219);
+        doc.setLineWidth(1);
+        doc.rect(14, startY + 5, pageWidth - 28, 45);
+        
+        // Datos del resumen
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        
+        const summaryY = startY + 15;
+        doc.text(`Total de Personas Registradas: ${totalRegistered}`, 20, summaryY);
+        doc.text(`Total de Votos Confirmados: ${totalVoted}`, 20, summaryY + 8);
+        doc.text(`Pendientes por Votar: ${totalPending}`, 20, summaryY + 16);
+        doc.text(`Tasa de Participación: ${participationRate.toFixed(2)}%`, 20, summaryY + 24);
+        
+        // Indicador visual de participación
+        const barWidth = 100;
+        const barHeight = 8;
+        const barX = pageWidth - 130;
+        const barY = summaryY + 20;
+        
+        // Fondo de la barra
+        doc.setFillColor(220, 220, 220);
+        doc.rect(barX, barY, barWidth, barHeight, 'F');
+        
+        // Barra de progreso
+        doc.setFillColor(52, 152, 219);
+        doc.rect(barX, barY, (barWidth * participationRate) / 100, barHeight, 'F');
+        
+        return startY + 60;
+    }
+    
+    addGeneralStats(doc, startY, pageWidth) {
+        // Título de sección
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('📈 ESTADÍSTICAS GENERALES', 14, startY);
         
         const votedVotes = this.votes.filter(vote => vote.voted);
         
-        // Estadísticas por UBCH
+        // Estadísticas por sexo
+        const sexoStats = {};
+        votedVotes.forEach(vote => {
+            const sexo = vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'No especificado';
+            sexoStats[sexo] = (sexoStats[sexo] || 0) + 1;
+        });
+        
+        // Estadísticas por edad
+        const edadStats = {
+            '16-25 años': 0,
+            '26-35 años': 0,
+            '36-45 años': 0,
+            '46-55 años': 0,
+            '56-65 años': 0,
+            '66+ años': 0,
+            'No especificado': 0
+        };
+        
+        votedVotes.forEach(vote => {
+            const edad = vote.edad || 0;
+            if (edad >= 16 && edad <= 25) edadStats['16-25 años']++;
+            else if (edad >= 26 && edad <= 35) edadStats['26-35 años']++;
+            else if (edad >= 36 && edad <= 45) edadStats['36-45 años']++;
+            else if (edad >= 46 && edad <= 55) edadStats['46-55 años']++;
+            else if (edad >= 56 && edad <= 65) edadStats['56-65 años']++;
+            else if (edad >= 66) edadStats['66+ años']++;
+            else edadStats['No especificado']++;
+        });
+        
+        // Tabla de estadísticas por sexo
+        doc.autoTable({
+            startY: startY + 10,
+            head: [['Distribución por Sexo', 'Cantidad', 'Porcentaje']],
+            body: Object.entries(sexoStats).map(([sexo, count]) => {
+                const percentage = votedVotes.length > 0 ? ((count / votedVotes.length) * 100).toFixed(1) : '0';
+                return [sexo, count, `${percentage}%`];
+            }),
+            headStyles: { 
+                fillColor: [52, 152, 219],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            theme: 'striped',
+            margin: { left: 14, right: 14 }
+        });
+        
+        // Tabla de estadísticas por edad
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 10,
+            head: [['Distribución por Edad', 'Cantidad', 'Porcentaje']],
+            body: Object.entries(edadStats)
+                .filter(([, count]) => count > 0)
+                .map(([rango, count]) => {
+                    const percentage = votedVotes.length > 0 ? ((count / votedVotes.length) * 100).toFixed(1) : '0';
+                    return [rango, count, `${percentage}%`];
+                }),
+            headStyles: { 
+                fillColor: [52, 152, 219],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            theme: 'striped',
+            margin: { left: 14, right: 14 }
+        });
+        
+        return doc.lastAutoTable.finalY + 20;
+    }
+    
+    addDetailedCharts(doc, startY, pageWidth) {
+        // Título de sección
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('📊 GRÁFICAS Y ANÁLISIS DETALLADO', 14, startY);
+        
+        const votedVotes = this.votes.filter(vote => vote.voted);
+        
+        // Crear gráfico de barras simulado para UBCH
         const ubchStats = {};
         votedVotes.forEach(vote => {
             ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
         });
-
-        // Estadísticas por Comunidad
-        const communityStats = {};
-        votedVotes.forEach(vote => {
-            communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
+        
+        // Título del gráfico
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Participación por UBCH (Top 10)', 14, startY + 20);
+        
+        // Crear "gráfico" de barras con texto
+        const topUBCH = Object.entries(ubchStats)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 10);
+            
+        const maxVotes = Math.max(...topUBCH.map(([,votes]) => votes));
+        const chartStartY = startY + 30;
+        const barHeight = 6;
+        const maxBarWidth = 120;
+        
+        topUBCH.forEach(([ubch, votes], index) => {
+            const y = chartStartY + (index * 12);
+            const barWidth = maxVotes > 0 ? (votes / maxVotes) * maxBarWidth : 0;
+            
+            // Nombre de la UBCH (truncado si es muy largo)
+            const ubchName = ubch.length > 35 ? ubch.substring(0, 32) + '...' : ubch;
+            doc.setFontSize(8);
+            doc.text(ubchName, 14, y + 4);
+            
+            // Barra de progreso
+            doc.setFillColor(52, 152, 219);
+            doc.rect(14, y + 6, barWidth, barHeight, 'F');
+            
+            // Valor numérico
+            doc.text(votes.toString(), 140, y + 10);
         });
+        
+        // Análisis de tendencias
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('📈 ANÁLISIS DE TENDENCIAS', 14, chartStartY + 140);
+        
+        const totalVoted = votedVotes.length;
+        const totalRegistered = this.votes.length;
+        const participationRate = totalRegistered > 0 ? (totalVoted / totalRegistered) * 100 : 0;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        const analysisY = chartStartY + 150;
+        doc.text(`• Tasa de participación actual: ${participationRate.toFixed(2)}%`, 14, analysisY);
+        
+        if (participationRate > 70) {
+            doc.text('• Participación EXCELENTE - Meta superada', 14, analysisY + 8);
+        } else if (participationRate > 50) {
+            doc.text('• Participación BUENA - Dentro de expectativas', 14, analysisY + 8);
+        } else {
+            doc.text('• Participación REGULAR - Requiere impulso', 14, analysisY + 8);
+        }
+        
+        const topUBCHName = topUBCH.length > 0 ? topUBCH[0][0] : 'N/A';
+        doc.text(`• UBCH con mayor participación: ${topUBCHName}`, 14, analysisY + 16);
+        
+        return analysisY + 30;
+    }
+    
+    addDetailedTables(doc, startY, pageWidth) {
+        const votedVotes = this.votes.filter(vote => vote.voted);
+        
+        // Título de sección
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('📋 TABLAS DETALLADAS', 14, startY);
+        
+        // Estadísticas por UBCH
+        const ubchStats = {};
+        const ubchTotal = {};
+        
+        // Contar totales y votados por UBCH
+        this.votes.forEach(vote => {
+            ubchTotal[vote.ubch] = (ubchTotal[vote.ubch] || 0) + 1;
+            if (vote.voted) {
+                ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
+            }
+        });
+        
+        // Tabla detallada por UBCH
+        const ubchTableData = Object.keys(ubchTotal)
+            .map(ubch => {
+                const total = ubchTotal[ubch];
+                const voted = ubchStats[ubch] || 0;
+                const pending = total - voted;
+                const percentage = total > 0 ? ((voted / total) * 100).toFixed(1) : '0';
+                
+                return [
+                    ubch.length > 40 ? ubch.substring(0, 37) + '...' : ubch,
+                    total,
+                    voted,
+                    pending,
+                    `${percentage}%`
+                ];
+            })
+            .sort((a, b) => b[2] - a[2]); // Ordenar por votos descendente
+        
+        doc.autoTable({
+            startY: startY + 15,
+            head: [['UBCH', 'Total', 'Votaron', 'Pendientes', '% Participación']],
+            body: ubchTableData,
+            headStyles: { 
+                fillColor: [52, 152, 219],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 10
+            },
+            bodyStyles: {
+                fontSize: 8
+            },
+            theme: 'striped',
+            margin: { left: 14, right: 14 },
+            columnStyles: {
+                0: { cellWidth: 80 },
+                1: { cellWidth: 20, halign: 'center' },
+                2: { cellWidth: 20, halign: 'center' },
+                3: { cellWidth: 25, halign: 'center' },
+                4: { cellWidth: 25, halign: 'center' }
+            }
+        });
+        
+        let currentY = doc.lastAutoTable.finalY + 15;
+        
+        // Estadísticas por Comunidad (Top 15)
+        const communityStats = {};
+        const communityTotal = {};
+        
+        this.votes.forEach(vote => {
+            communityTotal[vote.community] = (communityTotal[vote.community] || 0) + 1;
+            if (vote.voted) {
+                communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
+            }
+        });
+        
+        const topCommunities = Object.keys(communityTotal)
+            .map(community => {
+                const total = communityTotal[community];
+                const voted = communityStats[community] || 0;
+                const percentage = total > 0 ? ((voted / total) * 100).toFixed(1) : '0';
+                return [community, total, voted, `${percentage}%`];
+            })
+            .sort((a, b) => b[2] - a[2])
+            .slice(0, 15);
+        
+        // Verificar si hay espacio en la página
+        if (currentY > 200) {
+            doc.addPage();
+            this.addCorporateHeader(doc, pageWidth);
+            currentY = 70;
+        }
         
         doc.setFontSize(14);
-        doc.text("Votos por UBCH", 14, 40);
-        doc.autoTable({ 
-            startY: 45, 
-            head: [['UBCH', 'Votos']], 
-            body: Object.entries(ubchStats), 
-            headStyles: { fillColor: [52, 152, 219] } 
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('Top 15 Comunidades por Participación', 14, currentY);
+        
+        doc.autoTable({
+            startY: currentY + 10,
+            head: [['Comunidad', 'Total', 'Votaron', '% Participación']],
+            body: topCommunities,
+            headStyles: { 
+                fillColor: [52, 152, 219],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 10
+            },
+            bodyStyles: {
+                fontSize: 9
+            },
+            theme: 'striped',
+            margin: { left: 14, right: 14 },
+            columnStyles: {
+                0: { cellWidth: 100 },
+                1: { cellWidth: 25, halign: 'center' },
+                2: { cellWidth: 25, halign: 'center' },
+                3: { cellWidth: 25, halign: 'center' }
+            }
         });
         
-        doc.text("Votos por Comunidad", 14, doc.lastAutoTable.finalY + 15);
-        doc.autoTable({ 
-            startY: doc.lastAutoTable.finalY + 20, 
-            head: [['Comunidad', 'Votos']], 
-            body: Object.entries(communityStats), 
-            headStyles: { fillColor: [52, 152, 219] } 
-        });
-
-        doc.save('reporte_votacion.pdf');
+        return doc.lastAutoTable.finalY + 20;
+    }
+    
+    addFooter(doc, pageWidth, pageHeight) {
+        // Agregar pie de página a todas las páginas
+        const pageCount = doc.internal.getNumberOfPages();
+        
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            
+            // Línea separadora
+            doc.setDrawColor(52, 152, 219);
+            doc.setLineWidth(0.5);
+            doc.line(14, pageHeight - 20, pageWidth - 14, pageHeight - 20);
+            
+            // Texto del pie de página
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.setFont('helvetica', 'normal');
+            
+            // Información del sistema
+            doc.text('Sistema de Registro de Votos 2025 - Reporte Generado Automáticamente', 14, pageHeight - 15);
+            
+            // Número de página
+            doc.text(`Página ${i} de ${pageCount}`, pageWidth - 40, pageHeight - 15);
+            
+            // Marca de tiempo
+            const timestamp = new Date().toLocaleString('es-ES');
+            doc.text(`Generado: ${timestamp}`, 14, pageHeight - 10);
+            
+            // Usuario
+            doc.text(`Usuario: ${this.currentUser.username}`, pageWidth - 60, pageHeight - 10);
+        }
     }
 
     setLoadingState(page, loading) {
