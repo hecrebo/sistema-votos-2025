@@ -1902,43 +1902,429 @@ class VotingSystem {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        doc.setFontSize(18);
-        doc.text("Reporte de Estadísticas de Votación", 14, 22);
+        // === CONFIGURACIÓN INICIAL ===
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        let currentY = 20;
+        
+        // === ENCABEZADO CORPORATIVO ===
+        this.addCorporateHeader(doc, pageWidth);
+        currentY = 60;
+        
+        // === RESUMEN EJECUTIVO ===
+        currentY = this.addExecutiveSummary(doc, currentY, pageWidth);
+        
+        // === ESTADÍSTICAS GENERALES ===
+        currentY = this.addGeneralStats(doc, currentY, pageWidth);
+        
+        // === NUEVA PÁGINA PARA GRÁFICAS ===
+        doc.addPage();
+        this.addCorporateHeader(doc, pageWidth);
+        currentY = 70;
+        
+        // === GRÁFICAS Y ESTADÍSTICAS DETALLADAS ===
+        currentY = this.addDetailedCharts(doc, currentY, pageWidth);
+        
+        // === NUEVA PÁGINA PARA TABLAS DETALLADAS ===
+        doc.addPage();
+        this.addCorporateHeader(doc, pageWidth);
+        currentY = 70;
+        
+        // === TABLAS DETALLADAS ===
+        currentY = this.addDetailedTables(doc, currentY, pageWidth);
+        
+        // === PIE DE PÁGINA ===
+        this.addFooter(doc, pageWidth, pageHeight);
+        
+        // === GUARDAR ARCHIVO ===
+        const fecha = new Date().toLocaleDateString('es-ES').replace(/\//g, '-');
+        const hora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        doc.save(`Reporte_Estadisticas_${fecha}_${hora}.pdf`);
+    }
+    
+    // === FUNCIONES AUXILIARES PARA EL PDF ===
+    
+    addCorporateHeader(doc, pageWidth) {
+        // Fondo del encabezado
+        doc.setFillColor(52, 152, 219); // Azul corporativo
+        doc.rect(0, 0, pageWidth, 50, 'F');
+        
+        // Título principal
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('SISTEMA DE REGISTRO DE VOTOS 2025', pageWidth / 2, 20, { align: 'center' });
+        
+        // Subtítulo
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Reporte Estadístico Completo', pageWidth / 2, 30, { align: 'center' });
+        
+        // Fecha y hora de generación
         doc.setFontSize(10);
-        doc.text(`Generado el: ${new Date().toLocaleString('es-VE')}`, 14, 30);
+        const fechaHora = new Date().toLocaleString('es-ES');
+        doc.text(`Generado: ${fechaHora}`, pageWidth / 2, 40, { align: 'center' });
+        
+        // Usuario que genera el reporte
+        doc.text(`Usuario: ${this.currentUser.username} (${this.currentUser.rol})`, pageWidth / 2, 45, { align: 'center' });
+        
+        // Restablecer color de texto
+        doc.setTextColor(0, 0, 0);
+    }
+    
+    addExecutiveSummary(doc, startY, pageWidth) {
+        const totalRegistered = this.votes.length;
+        const totalVoted = this.votes.filter(vote => vote.voted).length;
+        const totalPending = totalRegistered - totalVoted;
+        const participationRate = totalRegistered > 0 ? (totalVoted / totalRegistered) * 100 : 0;
+        
+        // Título de sección
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('📊 RESUMEN EJECUTIVO', 14, startY);
+        
+        // Cuadro de resumen
+        doc.setDrawColor(52, 152, 219);
+        doc.setLineWidth(1);
+        doc.rect(14, startY + 5, pageWidth - 28, 45);
+        
+        // Datos del resumen
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        
+        const summaryY = startY + 15;
+        doc.text(`Total de Personas Registradas: ${totalRegistered}`, 20, summaryY);
+        doc.text(`Total de Votos Confirmados: ${totalVoted}`, 20, summaryY + 8);
+        doc.text(`Pendientes por Votar: ${totalPending}`, 20, summaryY + 16);
+        doc.text(`Tasa de Participación: ${participationRate.toFixed(2)}%`, 20, summaryY + 24);
+        
+        // Indicador visual de participación
+        const barWidth = 100;
+        const barHeight = 8;
+        const barX = pageWidth - 130;
+        const barY = summaryY + 20;
+        
+        // Fondo de la barra
+        doc.setFillColor(220, 220, 220);
+        doc.rect(barX, barY, barWidth, barHeight, 'F');
+        
+        // Barra de progreso
+        doc.setFillColor(52, 152, 219);
+        doc.rect(barX, barY, (barWidth * participationRate) / 100, barHeight, 'F');
+        
+        return startY + 60;
+    }
+    
+    addGeneralStats(doc, startY, pageWidth) {
+        // Título de sección
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('📈 ESTADÍSTICAS GENERALES', 14, startY);
         
         const votedVotes = this.votes.filter(vote => vote.voted);
         
-        // Estadísticas por UBCH
+        // Estadísticas por sexo
+        const sexoStats = {};
+        votedVotes.forEach(vote => {
+            const sexo = vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'No especificado';
+            sexoStats[sexo] = (sexoStats[sexo] || 0) + 1;
+        });
+        
+        // Estadísticas por edad
+        const edadStats = {
+            '16-25 años': 0,
+            '26-35 años': 0,
+            '36-45 años': 0,
+            '46-55 años': 0,
+            '56-65 años': 0,
+            '66+ años': 0,
+            'No especificado': 0
+        };
+        
+        votedVotes.forEach(vote => {
+            const edad = vote.edad || 0;
+            if (edad >= 16 && edad <= 25) edadStats['16-25 años']++;
+            else if (edad >= 26 && edad <= 35) edadStats['26-35 años']++;
+            else if (edad >= 36 && edad <= 45) edadStats['36-45 años']++;
+            else if (edad >= 46 && edad <= 55) edadStats['46-55 años']++;
+            else if (edad >= 56 && edad <= 65) edadStats['56-65 años']++;
+            else if (edad >= 66) edadStats['66+ años']++;
+            else edadStats['No especificado']++;
+        });
+        
+        // Tabla de estadísticas por sexo
+        doc.autoTable({
+            startY: startY + 10,
+            head: [['Distribución por Sexo', 'Cantidad', 'Porcentaje']],
+            body: Object.entries(sexoStats).map(([sexo, count]) => {
+                const percentage = votedVotes.length > 0 ? ((count / votedVotes.length) * 100).toFixed(1) : '0';
+                return [sexo, count, `${percentage}%`];
+            }),
+            headStyles: { 
+                fillColor: [52, 152, 219],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            theme: 'striped',
+            margin: { left: 14, right: 14 }
+        });
+        
+        // Tabla de estadísticas por edad
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 10,
+            head: [['Distribución por Edad', 'Cantidad', 'Porcentaje']],
+            body: Object.entries(edadStats)
+                .filter(([, count]) => count > 0)
+                .map(([rango, count]) => {
+                    const percentage = votedVotes.length > 0 ? ((count / votedVotes.length) * 100).toFixed(1) : '0';
+                    return [rango, count, `${percentage}%`];
+                }),
+            headStyles: { 
+                fillColor: [52, 152, 219],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            theme: 'striped',
+            margin: { left: 14, right: 14 }
+        });
+        
+        return doc.lastAutoTable.finalY + 20;
+    }
+    
+    addDetailedCharts(doc, startY, pageWidth) {
+        // Título de sección
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('📊 GRÁFICAS Y ANÁLISIS DETALLADO', 14, startY);
+        
+        const votedVotes = this.votes.filter(vote => vote.voted);
+        
+        // Crear gráfico de barras simulado para UBCH
         const ubchStats = {};
         votedVotes.forEach(vote => {
             ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
         });
-
-        // Estadísticas por Comunidad
-        const communityStats = {};
-        votedVotes.forEach(vote => {
-            communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
+        
+        // Título del gráfico
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Participación por UBCH (Top 10)', 14, startY + 20);
+        
+        // Crear "gráfico" de barras con texto
+        const topUBCH = Object.entries(ubchStats)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 10);
+            
+        const maxVotes = Math.max(...topUBCH.map(([,votes]) => votes));
+        const chartStartY = startY + 30;
+        const barHeight = 6;
+        const maxBarWidth = 120;
+        
+        topUBCH.forEach(([ubch, votes], index) => {
+            const y = chartStartY + (index * 12);
+            const barWidth = maxVotes > 0 ? (votes / maxVotes) * maxBarWidth : 0;
+            
+            // Nombre de la UBCH (truncado si es muy largo)
+            const ubchName = ubch.length > 35 ? ubch.substring(0, 32) + '...' : ubch;
+            doc.setFontSize(8);
+            doc.text(ubchName, 14, y + 4);
+            
+            // Barra de progreso
+            doc.setFillColor(52, 152, 219);
+            doc.rect(14, y + 6, barWidth, barHeight, 'F');
+            
+            // Valor numérico
+            doc.text(votes.toString(), 140, y + 10);
         });
+        
+        // Análisis de tendencias
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('📈 ANÁLISIS DE TENDENCIAS', 14, chartStartY + 140);
+        
+        const totalVoted = votedVotes.length;
+        const totalRegistered = this.votes.length;
+        const participationRate = totalRegistered > 0 ? (totalVoted / totalRegistered) * 100 : 0;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        const analysisY = chartStartY + 150;
+        doc.text(`• Tasa de participación actual: ${participationRate.toFixed(2)}%`, 14, analysisY);
+        
+        if (participationRate > 70) {
+            doc.text('• Participación EXCELENTE - Meta superada', 14, analysisY + 8);
+        } else if (participationRate > 50) {
+            doc.text('• Participación BUENA - Dentro de expectativas', 14, analysisY + 8);
+        } else {
+            doc.text('• Participación REGULAR - Requiere impulso', 14, analysisY + 8);
+        }
+        
+        const topUBCHName = topUBCH.length > 0 ? topUBCH[0][0] : 'N/A';
+        doc.text(`• UBCH con mayor participación: ${topUBCHName}`, 14, analysisY + 16);
+        
+        return analysisY + 30;
+    }
+    
+    addDetailedTables(doc, startY, pageWidth) {
+        const votedVotes = this.votes.filter(vote => vote.voted);
+        
+        // Título de sección
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('📋 TABLAS DETALLADAS', 14, startY);
+        
+        // Estadísticas por UBCH
+        const ubchStats = {};
+        const ubchTotal = {};
+        
+        // Contar totales y votados por UBCH
+        this.votes.forEach(vote => {
+            ubchTotal[vote.ubch] = (ubchTotal[vote.ubch] || 0) + 1;
+            if (vote.voted) {
+                ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
+            }
+        });
+        
+        // Tabla detallada por UBCH
+        const ubchTableData = Object.keys(ubchTotal)
+            .map(ubch => {
+                const total = ubchTotal[ubch];
+                const voted = ubchStats[ubch] || 0;
+                const pending = total - voted;
+                const percentage = total > 0 ? ((voted / total) * 100).toFixed(1) : '0';
+                
+                return [
+                    ubch.length > 40 ? ubch.substring(0, 37) + '...' : ubch,
+                    total,
+                    voted,
+                    pending,
+                    `${percentage}%`
+                ];
+            })
+            .sort((a, b) => b[2] - a[2]); // Ordenar por votos descendente
+        
+        doc.autoTable({
+            startY: startY + 15,
+            head: [['UBCH', 'Total', 'Votaron', 'Pendientes', '% Participación']],
+            body: ubchTableData,
+            headStyles: { 
+                fillColor: [52, 152, 219],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 10
+            },
+            bodyStyles: {
+                fontSize: 8
+            },
+            theme: 'striped',
+            margin: { left: 14, right: 14 },
+            columnStyles: {
+                0: { cellWidth: 80 },
+                1: { cellWidth: 20, halign: 'center' },
+                2: { cellWidth: 20, halign: 'center' },
+                3: { cellWidth: 25, halign: 'center' },
+                4: { cellWidth: 25, halign: 'center' }
+            }
+        });
+        
+        let currentY = doc.lastAutoTable.finalY + 15;
+        
+        // Estadísticas por Comunidad (Top 15)
+        const communityStats = {};
+        const communityTotal = {};
+        
+        this.votes.forEach(vote => {
+            communityTotal[vote.community] = (communityTotal[vote.community] || 0) + 1;
+            if (vote.voted) {
+                communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
+            }
+        });
+        
+        const topCommunities = Object.keys(communityTotal)
+            .map(community => {
+                const total = communityTotal[community];
+                const voted = communityStats[community] || 0;
+                const percentage = total > 0 ? ((voted / total) * 100).toFixed(1) : '0';
+                return [community, total, voted, `${percentage}%`];
+            })
+            .sort((a, b) => b[2] - a[2])
+            .slice(0, 15);
+        
+        // Verificar si hay espacio en la página
+        if (currentY > 200) {
+            doc.addPage();
+            this.addCorporateHeader(doc, pageWidth);
+            currentY = 70;
+        }
         
         doc.setFontSize(14);
-        doc.text("Votos por UBCH", 14, 40);
-        doc.autoTable({ 
-            startY: 45, 
-            head: [['UBCH', 'Votos']], 
-            body: Object.entries(ubchStats), 
-            headStyles: { fillColor: [52, 152, 219] } 
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(52, 152, 219);
+        doc.text('Top 15 Comunidades por Participación', 14, currentY);
+        
+        doc.autoTable({
+            startY: currentY + 10,
+            head: [['Comunidad', 'Total', 'Votaron', '% Participación']],
+            body: topCommunities,
+            headStyles: { 
+                fillColor: [52, 152, 219],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 10
+            },
+            bodyStyles: {
+                fontSize: 9
+            },
+            theme: 'striped',
+            margin: { left: 14, right: 14 },
+            columnStyles: {
+                0: { cellWidth: 100 },
+                1: { cellWidth: 25, halign: 'center' },
+                2: { cellWidth: 25, halign: 'center' },
+                3: { cellWidth: 25, halign: 'center' }
+            }
         });
         
-        doc.text("Votos por Comunidad", 14, doc.lastAutoTable.finalY + 15);
-        doc.autoTable({ 
-            startY: doc.lastAutoTable.finalY + 20, 
-            head: [['Comunidad', 'Votos']], 
-            body: Object.entries(communityStats), 
-            headStyles: { fillColor: [52, 152, 219] } 
-        });
-
-        doc.save('reporte_votacion.pdf');
+        return doc.lastAutoTable.finalY + 20;
+    }
+    
+    addFooter(doc, pageWidth, pageHeight) {
+        // Agregar pie de página a todas las páginas
+        const pageCount = doc.internal.getNumberOfPages();
+        
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            
+            // Línea separadora
+            doc.setDrawColor(52, 152, 219);
+            doc.setLineWidth(0.5);
+            doc.line(14, pageHeight - 20, pageWidth - 14, pageHeight - 20);
+            
+            // Texto del pie de página
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.setFont('helvetica', 'normal');
+            
+            // Información del sistema
+            doc.text('Sistema de Registro de Votos 2025 - Reporte Generado Automáticamente', 14, pageHeight - 15);
+            
+            // Número de página
+            doc.text(`Página ${i} de ${pageCount}`, pageWidth - 40, pageHeight - 15);
+            
+            // Marca de tiempo
+            const timestamp = new Date().toLocaleString('es-ES');
+            doc.text(`Generado: ${timestamp}`, 14, pageHeight - 10);
+            
+            // Usuario
+            doc.text(`Usuario: ${this.currentUser.username}`, pageWidth - 60, pageHeight - 10);
+        }
     }
 
     setLoadingState(page, loading) {
