@@ -350,13 +350,16 @@ class VotingSystem {
         // Actualizar estadísticas en tiempo real
         this.renderStatisticsPage();
         
-        // Actualizar contadores
+        // Actualizar contadores de proyección con datos reales
         this.updateProjectionCounters();
+        
+        // Actualizar datos específicos de proyección
+        this.updateProjectionData();
         
         // Mostrar información de sincronización
         this.updateProjectionSyncInfo();
         
-        console.log('📊 Proyección actualizada');
+        console.log('📊 Proyección actualizada con datos reales');
     }
 
     updateProjectionCounters() {
@@ -383,6 +386,85 @@ class VotingSystem {
                     counter.textContent = `${percentage}%`;
                     break;
             }
+        });
+    }
+
+    updateProjectionData() {
+        const totalVotes = this.votes.length;
+        const votedCount = this.votes.filter(v => v.voted).length;
+        const participationRate = totalVotes > 0 ? (votedCount / totalVotes) * 100 : 0;
+        
+        // Actualizar número principal de votos
+        const projectionVotes = document.getElementById('projection-votes');
+        if (projectionVotes) {
+            projectionVotes.textContent = votedCount;
+        }
+        
+        // Actualizar texto de progreso
+        const projectionText = document.getElementById('projection-text');
+        if (projectionText) {
+            projectionText.textContent = `${votedCount} de ${totalVotes}`;
+        }
+        
+        // Actualizar barra de progreso
+        const projectionProgressFill = document.getElementById('projection-progress-fill');
+        if (projectionProgressFill) {
+            projectionProgressFill.style.width = `${participationRate}%`;
+        }
+        
+        // Actualizar lista de UBCH en proyección
+        this.updateProjectionUBCHList();
+    }
+    
+    updateProjectionUBCHList() {
+        const container = document.getElementById('projection-ubch-list');
+        if (!container) return;
+        
+        // Calcular estadísticas por UBCH
+        const ubchStats = {};
+        this.votes.forEach(vote => {
+            if (!ubchStats[vote.ubch]) {
+                ubchStats[vote.ubch] = { total: 0, voted: 0 };
+            }
+            ubchStats[vote.ubch].total++;
+            if (vote.voted) {
+                ubchStats[vote.ubch].voted++;
+            }
+        });
+        
+        // Ordenar por mayor participación
+        const sortedUBCH = Object.entries(ubchStats)
+            .map(([ubch, stats]) => ({
+                ubch,
+                total: stats.total,
+                voted: stats.voted,
+                percentage: stats.total > 0 ? (stats.voted / stats.total) * 100 : 0
+            }))
+            .sort((a, b) => b.voted - a.voted)
+            .slice(0, 10); // Top 10
+        
+        // Renderizar lista
+        container.innerHTML = '';
+        sortedUBCH.forEach(ubchData => {
+            const div = document.createElement('div');
+            div.className = 'projection-ubch-item';
+            
+            const ubchName = ubchData.ubch.length > 30 
+                ? ubchData.ubch.substring(0, 27) + '...' 
+                : ubchData.ubch;
+            
+            div.innerHTML = `
+                <div class="projection-ubch-name">${ubchName}</div>
+                <div class="projection-ubch-stats">
+                    <span class="projection-ubch-votes">${ubchData.voted}</span>
+                    <span class="projection-ubch-percentage">${ubchData.percentage.toFixed(1)}%</span>
+                </div>
+                <div class="projection-ubch-bar">
+                    <div class="projection-ubch-bar-fill" style="width: ${ubchData.percentage}%"></div>
+                </div>
+            `;
+            
+            container.appendChild(div);
         });
     }
 
@@ -1750,7 +1832,7 @@ class VotingSystem {
     }
 
     enterProjectionMode() {
-        console.log('🎬 Activando modo proyección...');
+        console.log('🎜️ Activando modo proyección...');
         
         // Verificar si existe el elemento de proyección
         const projectionView = document.getElementById('projection-view');
@@ -1766,12 +1848,12 @@ class VotingSystem {
         // Aplicar estilos de proyección
         document.body.classList.add('projection-mode');
         
-        // Actualizar datos de proyección
-        this.updateProjection();
+        // Actualizar datos inmediatamente con datos reales
+        this.updateProjectionData();
         
         // Iniciar actualizaciones automáticas cada 5 segundos
         this.projectionInterval = setInterval(() => {
-            this.updateProjection();
+            this.updateProjectionData();
         }, 5000);
         
         // Mostrar mensaje de confirmación
