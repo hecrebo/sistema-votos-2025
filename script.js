@@ -117,10 +117,13 @@ class VotingSystem {
             // 7. Renderizar página inicial
             this.renderCurrentPage();
             
-            // 8. Configurar modo proyección automático
-            this.setupAutoProjection();
-            
-            console.log('✅ Sistema automático iniciado correctamente');
+        // 8. Configurar modo proyección automático
+        this.setupAutoProjection();
+        
+        // 9. Cargar librerías PDF
+        this.loadPdfLibraries();
+        
+        console.log('✅ Sistema automático iniciado correctamente');
             
         } catch (error) {
             console.error('❌ Error en inicialización automática:', error);
@@ -1803,20 +1806,34 @@ class VotingSystem {
 
     loadPdfLibraries() {
         // Verificar si las librerías ya están cargadas
-        if (window.jspdf) {
+        if (window.jspdf && window.jspdf.jsPDF) {
             this.pdfLibrariesReady = true;
+            console.log('✅ Librerías PDF ya están cargadas');
             return;
         }
 
+        console.log('🔄 Esperando a que se carguen las librerías PDF...');
+        
         // Las librerías se cargan desde CDN en el HTML
         const checkLibraries = () => {
-            if (window.jspdf) {
+            if (window.jspdf && window.jspdf.jsPDF) {
                 this.pdfLibrariesReady = true;
+                console.log('✅ Librerías PDF cargadas correctamente');
             } else {
-                setTimeout(checkLibraries, 100);
+                setTimeout(checkLibraries, 500);
             }
         };
+        
+        // Verificar inmediatamente y luego periódicamente
         checkLibraries();
+        
+        // Timeout de seguridad - si después de 10 segundos no se cargan, mostrar error
+        setTimeout(() => {
+            if (!this.pdfLibrariesReady) {
+                console.error('❌ Error: No se pudieron cargar las librerías PDF después de 10 segundos');
+                this.showMessage('Error al cargar librerías PDF. Verifica la conexión a internet.', 'error');
+            }
+        }, 10000);
     }
 
     exportToPDF() {
