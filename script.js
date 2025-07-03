@@ -912,7 +912,17 @@ class VotingSystem {
         // Filtro por UBCH
         const ubchFilterSelect = document.getElementById('ubch-filter-select');
         if (ubchFilterSelect) {
-            ubchFilterSelect.addEventListener('change', () => {
+            ubchFilterSelect.addEventListener('change', (e) => {
+                // Actualizar el filtro de comunidades cuando cambie la UBCH
+                this.populateCommunityFilter(e.target.value);
+                this.applyFilters();
+            });
+        }
+
+        // Filtro por Comunidad
+        const communityFilterSelect = document.getElementById('community-filter-select');
+        if (communityFilterSelect) {
+            communityFilterSelect.addEventListener('change', () => {
                 this.applyFilters();
             });
         }
@@ -1170,6 +1180,9 @@ class VotingSystem {
     renderListPage() {
         this.currentPage = 1;
         this.renderVotesTable();
+        
+        // Inicializar el filtro de comunidades
+        this.populateCommunityFilter();
     }
 
     renderVotesTable() {
@@ -1304,6 +1317,37 @@ class VotingSystem {
         });
     }
 
+    // Poblar el selector de filtro por Comunidades
+    populateCommunityFilter(selectedUBCH = '') {
+        const communitySelect = document.getElementById('community-filter-select');
+        if (!communitySelect) return;
+
+        // Obtener comunidades según la UBCH seleccionada
+        let availableCommunities;
+        if (selectedUBCH) {
+            // Si hay UBCH seleccionada, mostrar solo sus comunidades
+            availableCommunities = [...new Set(this.votes
+                .filter(vote => vote.ubch === selectedUBCH)
+                .map(vote => vote.community)
+                .filter(community => community)
+            )];
+        } else {
+            // Si no hay UBCH seleccionada, mostrar todas las comunidades
+            availableCommunities = [...new Set(this.votes.map(vote => vote.community).filter(community => community))];
+        }
+        
+        // Limpiar opciones existentes excepto la primera
+        communitySelect.innerHTML = '<option value="">Todas las Comunidades</option>';
+        
+        // Agregar opciones para cada comunidad
+        availableCommunities.sort().forEach(community => {
+            const option = document.createElement('option');
+            option.value = community;
+            option.textContent = community;
+            communitySelect.appendChild(option);
+        });
+    }
+
     handleFilterChange(filter) {
         // Actualizar botones de filtro
         document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -1315,7 +1359,7 @@ class VotingSystem {
         this.applyFilters();
     }
 
-    // Aplicar todos los filtros (estado de voto y UBCH)
+    // Aplicar todos los filtros (estado de voto, UBCH y comunidad)
     applyFilters() {
         const tbody = document.querySelector('#registros-table tbody');
         tbody.innerHTML = '';
@@ -1323,6 +1367,7 @@ class VotingSystem {
         // Obtener filtros activos
         const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
         const selectedUBCH = document.getElementById('ubch-filter-select').value;
+        const selectedCommunity = document.getElementById('community-filter-select').value;
 
         let filteredVotes = this.votes;
         
@@ -1338,8 +1383,20 @@ class VotingSystem {
             filteredVotes = filteredVotes.filter(vote => vote.ubch === selectedUBCH);
         }
 
-        // Renderizar votos filtrados
-        filteredVotes.forEach(vote => {
+        // Filtrar por Comunidad
+        if (selectedCommunity) {
+            filteredVotes = filteredVotes.filter(vote => vote.community === selectedCommunity);
+        }
+
+        // Aplicar paginación a los resultados filtrados
+        this.totalPages = Math.max(1, Math.ceil(filteredVotes.length / this.pageSize));
+        if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+        const startIdx = (this.currentPage - 1) * this.pageSize;
+        const endIdx = startIdx + this.pageSize;
+        const paginatedResults = filteredVotes.slice(startIdx, endIdx);
+
+        // Renderizar votos filtrados con paginación
+        paginatedResults.forEach(vote => {
             const tr = document.createElement('tr');
             const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
             tr.innerHTML = `
@@ -1355,7 +1412,7 @@ class VotingSystem {
                     </span>
                 </td>
                 <td>
-                    <button class="btn btn-danger" onclick="votingSystem.deleteVote(${vote.id})">
+                    <button class="btn btn-danger" onclick="votingSystem.deleteVote('${vote.id}')">
                         Eliminar
                     </button>
                 </td>
@@ -1363,8 +1420,11 @@ class VotingSystem {
             tbody.appendChild(tr);
         });
 
-        // Mostrar contador de resultados
+        // Actualizar contador de resultados (total filtrado, no solo la página actual)
         this.updateFilterCounter(filteredVotes.length);
+        
+        // Renderizar controles de paginación
+        this.renderPaginationControls(filteredVotes.length);
     }
 
     // Actualizar contador de resultados filtrados
@@ -1377,11 +1437,19 @@ class VotingSystem {
                 filterCounter.textContent = totalCount;
                 filterCounter.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
                 filterCounter.style.borderColor = '#10b981';
+                filterCounter.style.color = '#ffffff';
             } else {
                 filterCounter.textContent = `${count}/${totalCount}`;
-                filterCounter.style.background = 'linear-gradient(135deg, #1f2937 0%, #374151 100%)';
-                filterCounter.style.borderColor = '#4b5563';
+                filterCounter.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
+                filterCounter.style.borderColor = '#3b82f6';
+                filterCounter.style.color = '#ffffff';
             }
+            
+            // Agregar animación de actualización
+            filterCounter.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                filterCounter.style.transform = 'scale(1)';
+            }, 200);
         }
     }
 
