@@ -313,10 +313,6 @@
         <div id="projection-view" class="projection-view" style="display: none;">
             <div class="projection-header">
                 <h1>Proyección en Tiempo Real</h1>
-                <div class="projection-sync-info">
-                    <div id="projection-sync-indicator" class="sync-indicator success">🟢 Sincronizado</div>
-                    <div id="projection-timestamp" class="timestamp">Última actualización: --:--:--</div>
-                </div>
                 <button id="exit-projection-btn" class="btn btn-danger">Salir</button>
             </div>
             <div class="projection-content">
@@ -332,10 +328,6 @@
                 <div class="projection-stats">
                     <h2>Votos por UBCH</h2>
                     <div class="projection-list" id="projection-ubch-list"></div>
-                </div>
-                <div class="projection-sync-details">
-                    <div id="projection-sync-info" class="sync-details"></div>
-                    <div id="projection-queue-info" class="queue-details"></div>
                 </div>
             </div>
         </div>
@@ -425,8 +417,6 @@
     <script src="debug-ubch-filter.js"></script>
     <script src="test-filtro-ubch.js"></script>
     <script src="test-exportacion-mejorada.js"></script>
-    <script src="test-sincronizacion-tiempo-real.js"></script>
-    <script src="demo-sincronizacion-tiempo-real.js"></script>
     
     <script>
         const USUARIOS_INICIALES = [

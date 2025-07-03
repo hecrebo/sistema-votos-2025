@@ -1,6 +1,5 @@
 // admin-sync-panel.js
 // Panel de gestión de sincronización para el admin panel
-// Módulo independiente - eliminar archivo y div para quitar sin afectar sistema
 
 (function() {
     const container = document.getElementById('sync-panel');
@@ -234,4 +233,4 @@
     // Actualizar cada 10 segundos
     setInterval(updateSyncDisplay, 10000);
 
-})(); 
+})();

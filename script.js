@@ -340,21 +340,16 @@ class VotingSystem {
     }
 
     updateProjection() {
-        console.log('📊 Actualizando proyección...');
-        
         // Actualizar estadísticas en tiempo real
         this.renderStatisticsPage();
         
         // Actualizar contadores
         this.updateProjectionCounters();
         
-        // Mostrar información de sincronización mejorada
+        // Mostrar información de sincronización
         this.updateProjectionSyncInfo();
         
-        // Actualizar timestamp de última actualización
-        this.updateProjectionTimestamp();
-        
-        console.log('✅ Proyección actualizada');
+        console.log('📊 Proyección actualizada');
     }
 
     updateProjectionCounters() {
@@ -368,13 +363,13 @@ class VotingSystem {
             const type = counter.dataset.type;
             switch(type) {
                 case 'total':
-                    counter.textContent = totalVotes.toLocaleString();
+                    counter.textContent = totalVotes;
                     break;
                 case 'voted':
-                    counter.textContent = votedCount.toLocaleString();
+                    counter.textContent = votedCount;
                     break;
                 case 'pending':
-                    counter.textContent = pendingCount.toLocaleString();
+                    counter.textContent = pendingCount;
                     break;
                 case 'percentage':
                     const percentage = totalVotes > 0 ? Math.round((votedCount / totalVotes) * 100) : 0;
@@ -382,30 +377,9 @@ class VotingSystem {
                     break;
             }
         });
-        
-        // Actualizar estadísticas por UBCH en tiempo real
-        this.updateProjectionUBCHStats();
-    }
-
-    updateProjectionUBCHStats() {
-        const ubchStats = {};
-        const votedVotes = this.votes.filter(v => v.voted);
-        
-        votedVotes.forEach(vote => {
-            ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
-        });
-        
-        // Actualizar contadores por UBCH si existen
-        Object.keys(ubchStats).forEach(ubch => {
-            const counter = document.querySelector(`[data-ubch="${ubch}"]`);
-            if (counter) {
-                counter.textContent = ubchStats[ubch].toLocaleString();
-            }
-        });
     }
 
     updateProjectionSyncInfo() {
-        // Información de sincronización del sistema principal
         if (window.syncManager) {
             const stats = window.syncManager.getSyncStats();
             const syncInfo = document.getElementById('projection-sync-info');
@@ -419,27 +393,6 @@ class VotingSystem {
                     </div>
                 `;
             }
-        }
-        
-        // Información de cola si está disponible
-        if (window.queueManager) {
-            const queueStats = window.queueManager.getQueueStats();
-            const queueInfo = document.getElementById('projection-queue-info');
-            if (queueInfo) {
-                queueInfo.innerHTML = `
-                    <div class="queue-status">
-                        📋 Cola: ${queueStats.pending} pendientes | ${queueStats.processed} procesados
-                    </div>
-                `;
-            }
-        }
-    }
-
-    updateProjectionTimestamp() {
-        const timestampElement = document.getElementById('projection-timestamp');
-        if (timestampElement) {
-            const now = new Date();
-            timestampElement.textContent = `Última actualización: ${now.toLocaleTimeString('es-VE')}`;
         }
     }
 
@@ -1545,17 +1498,16 @@ class VotingSystem {
         // Aplicar estilos de proyección
         document.body.classList.add('projection-mode');
         
-        // Marcar modo proyección como activo
-        this.isProjectionModeActive = true;
-        
-        // Actualizar datos de proyección inmediatamente
+        // Actualizar datos de proyección
         this.updateProjection();
         
-        // Iniciar sincronización en tiempo real para proyección
-        this.startProjectionRealTimeSync();
+        // Iniciar actualizaciones automáticas cada 5 segundos
+        this.projectionInterval = setInterval(() => {
+            this.updateProjection();
+        }, 5000);
         
         // Mostrar mensaje de confirmación
-        this.showMessage('Modo proyección activado con sincronización en tiempo real', 'success');
+        this.showMessage('Modo proyección activado', 'success');
         
         console.log('✅ Modo proyección activado correctamente');
     }
@@ -1572,89 +1524,16 @@ class VotingSystem {
         // Remover estilos de proyección
         document.body.classList.remove('projection-mode');
         
-        // Marcar modo proyección como inactivo
-        this.isProjectionModeActive = false;
-        
-        // Detener sincronización en tiempo real
-        this.stopProjectionRealTimeSync();
+        // Detener actualizaciones automáticas
+        if (this.projectionInterval) {
+            clearInterval(this.projectionInterval);
+            this.projectionInterval = null;
+        }
         
         // Mostrar mensaje de confirmación
         this.showMessage('Modo proyección desactivado', 'info');
         
         console.log('✅ Modo proyección desactivado correctamente');
-    }
-
-    // === SINCRONIZACIÓN EN TIEMPO REAL PARA PROYECCIÓN ===
-    startProjectionRealTimeSync() {
-        console.log('🔄 Iniciando sincronización en tiempo real para proyección...');
-        
-        // Sincronización cada 3 segundos para proyección (más frecuente)
-        this.projectionSyncInterval = setInterval(async () => {
-            if (this.isProjectionModeActive) {
-                await this.syncProjectionData();
-            }
-        }, 3000);
-        
-        // Sincronización inmediata
-        setTimeout(() => {
-            this.syncProjectionData();
-        }, 1000);
-        
-        console.log('✅ Sincronización en tiempo real iniciada');
-    }
-
-    stopProjectionRealTimeSync() {
-        if (this.projectionSyncInterval) {
-            clearInterval(this.projectionSyncInterval);
-            this.projectionSyncInterval = null;
-            console.log('🛑 Sincronización en tiempo real detenida');
-        }
-    }
-
-    async syncProjectionData() {
-        try {
-            console.log('📡 Sincronizando datos para proyección...');
-            
-            // Sincronizar con Firebase si está disponible
-            if (window.votingSystem && typeof window.votingSystem.syncData === 'function') {
-                await window.votingSystem.syncData();
-            }
-            
-            // Sincronizar con cola si está disponible
-            if (window.queueManager) {
-                await window.queueManager.processQueue();
-            }
-            
-            // Recargar datos locales
-            await this.loadData();
-            
-            // Actualizar proyección con nuevos datos
-            this.updateProjection();
-            
-            // Actualizar indicador de sincronización
-            this.updateProjectionSyncStatus('success');
-            
-            console.log('✅ Datos de proyección sincronizados');
-            
-        } catch (error) {
-            console.error('❌ Error sincronizando datos de proyección:', error);
-            this.updateProjectionSyncStatus('error');
-        }
-    }
-
-    updateProjectionSyncStatus(status) {
-        const syncIndicator = document.getElementById('projection-sync-indicator');
-        if (syncIndicator) {
-            const statusText = {
-                'success': '🟢 Sincronizado',
-                'error': '🔴 Error de sincronización',
-                'syncing': '🔄 Sincronizando...',
-                'offline': '📴 Sin conexión'
-            };
-            
-            syncIndicator.textContent = statusText[status] || '❓ Estado desconocido';
-            syncIndicator.className = `sync-indicator ${status}`;
-        }
     }
 
     loadPdfLibraries() {

@@ -111,9 +111,9 @@ class VotingSystemFirebase extends VotingSystem {
 
             // Cargar configuración UBCH desde Firebase
             try {
-                const ubchSnapshot = await window.firebaseDB.ubchCollection.doc('config').get();
-                if (ubchSnapshot.exists) {
-                    this.ubchToCommunityMap = ubchSnapshot.data().mapping;
+            const ubchSnapshot = await window.firebaseDB.ubchCollection.doc('config').get();
+            if (ubchSnapshot.exists) {
+                this.ubchToCommunityMap = ubchSnapshot.data().mapping;
                     console.log('✅ Configuración UBCH cargada desde Firebase');
                 } else {
                     // Si no existe en Firebase, usar configuración por defecto
@@ -647,7 +647,7 @@ class VotingSystemFirebase extends VotingSystem {
                     this.showMessage('Error de sincronización. Inténtalo de nuevo.', 'error', 'check-in');
                 }
             } else {
-                this.showMessage('Error al confirmar el voto. Inténtalo de nuevo.', 'error', 'check-in');
+            this.showMessage('Error al confirmar el voto. Inténtalo de nuevo.', 'error', 'check-in');
             }
         }
     }
@@ -910,13 +910,13 @@ class VotingSystemFirebase extends VotingSystem {
             
             // Verificar que los resultados tengan IDs válidos (no temporales)
             results = results.filter(vote => !vote.id.startsWith('local_'));
-            
-            if (results.length === 0) {
+        
+        if (results.length === 0) {
                 this.showMessage(`No se encontró a ninguna persona con la cédula ${cleanCedula}.`, 'error', 'check-in');
-                return;
-            }
+            return;
+        }
 
-            this.renderSearchResults(results);
+        this.renderSearchResults(results);
             this.showMessage(`Se encontró ${results.length} persona(s) con la cédula ${cleanCedula}.`, 'success', 'check-in');
             
         } catch (error) {
