@@ -741,6 +741,101 @@ class VotingSystem {
         if (userInfo && this.currentUser) {
             userInfo.textContent = `${this.currentUser.username} (${this.currentUser.rol})`;
         }
+        
+        // Aplicar restricciones de acceso basadas en roles
+        this.applyRoleBasedAccess();
+    }
+    
+    // Control de acceso basado en roles
+    applyRoleBasedAccess() {
+        if (!this.currentUser) return;
+        
+        const userRole = this.currentUser.rol;
+        
+        // Definir permisos por rol
+        const permissions = {
+            'registrador': {
+                allowedPages: ['registration', 'check-in'],
+                hiddenElements: ['.export-btn', '#projection-btn', '#admin-panel-btn'],
+                disabledFeatures: ['delete', 'admin-functions']
+            },
+            'admin': {
+                allowedPages: ['registration', 'check-in', 'listado', 'dashboard', 'statistics'],
+                hiddenElements: ['#admin-panel-btn'],
+                disabledFeatures: []
+            },
+            'superusuario': {
+                allowedPages: ['registration', 'check-in', 'listado', 'dashboard', 'statistics', 'admin'],
+                hiddenElements: [],
+                disabledFeatures: []
+            }
+        };
+        
+        const userPermissions = permissions[userRole] || permissions['registrador'];
+        
+        // Ocultar botones de navegación no permitidos
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            const page = btn.dataset.page;
+            if (!userPermissions.allowedPages.includes(page)) {
+                btn.style.display = 'none';
+            }
+        });
+        
+        // Ocultar elementos específicos
+        userPermissions.hiddenElements.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => el.style.display = 'none');
+        });
+        
+        // Aplicar restricciones específicas por rol
+        this.applySpecificRoleRestrictions(userRole, userPermissions);
+    }
+    
+    // Aplicar restricciones específicas por rol
+    applySpecificRoleRestrictions(userRole, permissions) {
+        switch(userRole) {
+            case 'registrador':
+                // Solo puede registrar y confirmar votos
+                this.restrictRegistradorAccess();
+                break;
+                
+            case 'admin':
+                // Puede ver todo excepto funciones de superusuario
+                this.restrictAdminAccess();
+                break;
+                
+            case 'superusuario':
+                // Acceso completo - no hay restricciones
+                break;
+        }
+    }
+    
+    // Restricciones para registradores
+    restrictRegistradorAccess() {
+        // Ocultar botones de eliminación
+        const deleteButtons = document.querySelectorAll('.btn-danger');
+        deleteButtons.forEach(btn => {
+            if (btn.textContent.includes('Eliminar')) {
+                btn.style.display = 'none';
+            }
+        });
+        
+        // Ocultar botones de exportación
+        const exportButtons = document.querySelectorAll('#export-pdf-btn, #export-csv-btn, #export-stats-pdf-btn');
+        exportButtons.forEach(btn => btn.style.display = 'none');
+        
+        // Redirigir a página de registro si está en una página no permitida
+        if (!['registration', 'check-in'].includes(this.activePage)) {
+            this.navigateToPage('registration');
+        }
+    }
+    
+    // Restricciones para administradores
+    restrictAdminAccess() {
+        // Los administradores tienen acceso casi completo
+        // Solo se ocultan funciones de superusuario si las hay
+        const superUserElements = document.querySelectorAll('.superuser-only');
+        superUserElements.forEach(el => el.style.display = 'none');
     }
 
     // Actualizar estado de sincronización
