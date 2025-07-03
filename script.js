@@ -1433,17 +1433,21 @@ class VotingSystem {
         const filterCounter = document.getElementById('filter-counter');
         
         if (filterCounter) {
+            // Siempre mostrar solo el número de registros en la lista actual
+            filterCounter.textContent = count;
+            
+            // Cambiar color según si hay filtros aplicados o no
             if (count === totalCount) {
-                filterCounter.textContent = totalCount;
+                // Sin filtros aplicados - color verde
                 filterCounter.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
                 filterCounter.style.borderColor = '#10b981';
-                filterCounter.style.color = '#ffffff';
             } else {
-                filterCounter.textContent = `${count}/${totalCount}`;
+                // Con filtros aplicados - color azul
                 filterCounter.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
                 filterCounter.style.borderColor = '#3b82f6';
-                filterCounter.style.color = '#ffffff';
             }
+            
+            filterCounter.style.color = '#ffffff';
             
             // Agregar animación de actualización
             filterCounter.style.transform = 'scale(1.1)';
