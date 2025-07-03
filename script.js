@@ -1311,7 +1311,7 @@ class VotingSystem {
         });
         document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
 
-        // Aplicar filtros
+        // Aplicar filtros usando la función de filtrado dedicada
         this.applyFilters();
     }
 
