@@ -1,5 +1,7 @@
-class VotingSystemFirebase {
+class VotingSystemFirebase extends VotingSystem {
     constructor() {
+        super(); // Llamar al constructor de la clase padre
+        
         this.currentPage = 'registration';
         this.userId = this.generateUserId();
         
@@ -93,6 +95,12 @@ class VotingSystemFirebase {
         try {
             console.log('📥 Cargando datos desde Firebase...');
             
+            // Verificar si Firebase está disponible
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                console.log('⚠️ Firebase no disponible, cargando datos locales');
+                return this.loadDataLocally();
+            }
+            
             // Cargar votos desde Firebase
             const votesSnapshot = await window.firebaseDB.votesCollection.get();
             this.votes = votesSnapshot.docs.map(doc => ({
@@ -165,7 +173,55 @@ class VotingSystemFirebase {
 
         } catch (error) {
             console.error('❌ Error cargando datos de Firebase:', error);
-            throw error;
+            console.log('🔄 Intentando cargar datos locales como fallback');
+            return this.loadDataLocally();
+        }
+    }
+
+    // Método de fallback para cargar datos locales
+    loadDataLocally() {
+        try {
+            console.log('📥 Cargando datos locales...');
+            
+            // Cargar votos locales desde localStorage
+            const localVotes = localStorage.getItem('localVotes');
+            if (localVotes) {
+                this.votes = JSON.parse(localVotes);
+                console.log(`✅ ${this.votes.length} votos cargados desde localStorage`);
+            } else {
+                this.votes = [];
+                console.log('✅ No hay votos locales, iniciando con lista vacía');
+            }
+            
+            // Usar configuración UBCH por defecto
+            this.ubchToCommunityMap = {
+                "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO 4A ETAPA", "LA CAMACHERA"],
+                "LICEO JOSE FELIX RIBAS": ["EL CUJIJAL", "LAS FLORES", "LAS ESPERANZA 200", "VILLAS DEL CENTRO 2ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CAIPARICALLY I II", "EL BANCO", "CAIPARICHA I Y II"],
+                "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUADALUPE", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRA DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ADJUNTADA", "BUCARES", "GUAYABAL", "APARTATE", "EL REFUGIO", "LOS ROBLES", "ARAUCARIA"],
+                "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "LA PRIMAVERA"],
+                "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO"],
+                "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MATWINAS", "BRISAS DEL LAGO", "MANDANTO", "INDIANAPOLIS", "SUR DE ACOSTA"],
+                "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO"],
+                "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE"],
+                "CASA COMUNAL": ["LOS JABILLOS"],
+                "UNIDAD EDUCATIVA MONSEÑOR JACINTO SOTO LAYERA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II"],
+                "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["24 DE ENERO", "19 DE ABRIL", "EL PROGRESO"],
+                "ESCUELA ESTADAL ALEJO ZULOAGA": ["MAIQUETIA", "SAENZ", "PANAMERICANO"],
+                "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMEDIOS"],
+                "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE"],
+                "ESCUELA RECEPTORIA": ["CARMEN CENTRO"],
+                "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN"],
+                "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENECIANOS"],
+                "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA HACIENDA"],
+                "ESCUELA GRADUADA PEDRO GUAL": ["INDIANOS NORTE"]
+            };
+            
+            console.log(`✅ Configuración UBCH cargada: ${Object.keys(this.ubchToCommunityMap).length} UBCH disponibles`);
+            
+        } catch (error) {
+            console.error('❌ Error cargando datos locales:', error);
+            this.votes = [];
+            this.ubchToCommunityMap = {};
         }
     }
 
@@ -308,6 +364,12 @@ class VotingSystemFirebase {
         try {
             console.log('💾 Guardando en Firebase:', voteData);
             
+            // Verificar si Firebase está disponible
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                console.log('⚠️ Firebase no disponible, guardando localmente');
+                return this.saveVoteLocally(voteData);
+            }
+            
             const docRef = await window.firebaseDB.votesCollection.add({
                 ...voteData,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -318,7 +380,34 @@ class VotingSystemFirebase {
             return docRef.id;
         } catch (error) {
             console.error('❌ Error guardando en Firebase:', error);
-            throw error;
+            console.log('🔄 Intentando guardar localmente como fallback');
+            return this.saveVoteLocally(voteData);
+        }
+    }
+
+    // Método de fallback para guardar localmente
+    saveVoteLocally(voteData) {
+        try {
+            const localId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const localVote = {
+                id: localId,
+                ...voteData,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                isLocal: true
+            };
+            
+            // Agregar a la lista local
+            this.votes.push(localVote);
+            
+            // Guardar en localStorage
+            localStorage.setItem('localVotes', JSON.stringify(this.votes.filter(v => v.isLocal)));
+            
+            console.log('✅ Datos guardados localmente con ID:', localId);
+            return localId;
+        } catch (error) {
+            console.error('❌ Error guardando localmente:', error);
+            throw new Error('No se pudo guardar el registro');
         }
     }
 
@@ -346,6 +435,37 @@ class VotingSystemFirebase {
     // Resto de métodos igual que el script original...
     generateUserId() {
         return 'user_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // Método para obtener el usuario actual (compatible con Firebase)
+    getCurrentUser() {
+        try {
+            const userData = localStorage.getItem('currentUser');
+            if (!userData) return null;
+            
+            const user = JSON.parse(userData);
+            const sessionTime = localStorage.getItem('sessionTime');
+            
+            // Verificar si la sesión ha expirado (24 horas)
+            if (sessionTime && (Date.now() - parseInt(sessionTime)) > 24 * 60 * 60 * 1000) {
+                this.logout();
+                return null;
+            }
+            
+            return user;
+        } catch (error) {
+            console.error('Error al verificar sesión:', error);
+            return null;
+        }
+    }
+
+    // Método de logout específico para Firebase
+    logout() {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('sessionTime');
+        if (window.location.pathname !== '/login.html') {
+            window.location.href = 'login.html';
+        }
     }
 
     validateRegistrationData(data) {
@@ -418,33 +538,56 @@ class VotingSystemFirebase {
         this.setLoadingState('registration', true);
 
         try {
-            // Validar datos
-            const validation = this.validateRegistrationData(registrationData);
-            if (!validation.isValid) {
-                throw new Error(validation.message);
+            // Inicializar sistema de cola si no existe
+            if (!window.queueManager) {
+                window.queueManager = new QueueManager();
             }
 
-            // Verificar duplicados
-            const isDuplicate = this.votes.some(vote => vote.cedula === registrationData.cedula);
-            if (isDuplicate) {
-                throw new Error('Esta cédula ya está registrada');
-            }
-
-            // Guardar en Firebase
-            const voteId = await this.saveVoteToFirebase(registrationData);
+            // Agregar registro a la cola
+            const queueItem = window.queueManager.addToQueue(registrationData);
             
-            this.showMessage('¡Persona registrada con éxito!', 'success', 'registration');
+            this.showMessage(`✅ Registro agregado a la cola (ID: ${queueItem.id}). Se procesará automáticamente cuando haya conexión.`, 'success', 'registration');
             await this.generateThankYouMessage(name, ubch, community);
             
             // Limpiar formulario
             form.reset();
             document.getElementById('community').disabled = true;
             
+            // Mostrar estadísticas de la cola
+            this.updateQueueStatus();
+            
         } catch (error) {
             console.error('Error al registrar:', error);
             this.showMessage(error.message || 'Error al registrar persona. Inténtalo de nuevo.', 'error', 'registration');
         } finally {
             this.setLoadingState('registration', false);
+        }
+    }
+
+    /**
+     * Actualizar estado de la cola en la interfaz
+     */
+    updateQueueStatus() {
+        if (!window.queueManager) return;
+        
+        const stats = window.queueManager.getQueueStats();
+        const queueStatusElement = document.getElementById('queue-status');
+        
+        if (queueStatusElement) {
+            if (stats.total > 0) {
+                queueStatusElement.innerHTML = `
+                    <div class="queue-info">
+                        <span class="queue-count">📋 ${stats.total} en cola</span>
+                        <span class="queue-status ${stats.isOnline ? 'online' : 'offline'}">
+                            ${stats.isOnline ? '🌐 En línea' : '📴 Sin conexión'}
+                        </span>
+                        ${stats.isProcessing ? '<span class="processing">🔄 Procesando...</span>' : ''}
+                    </div>
+                `;
+                queueStatusElement.style.display = 'block';
+            } else {
+                queueStatusElement.style.display = 'none';
+            }
         }
     }
 
@@ -615,6 +758,14 @@ class VotingSystemFirebase {
         const ubchFilterSelect = document.getElementById('ubch-filter-select');
         if (ubchFilterSelect) {
             ubchFilterSelect.addEventListener('change', () => {
+                this.applyFilters();
+            });
+        }
+
+        // Filtro por Comunidad
+        const communityFilterSelect = document.getElementById('community-filter-select');
+        if (communityFilterSelect) {
+            communityFilterSelect.addEventListener('change', () => {
                 this.applyFilters();
             });
         }
@@ -808,26 +959,20 @@ class VotingSystemFirebase {
         const tbody = document.querySelector('#registros-table tbody');
         tbody.innerHTML = '';
 
-        // Poblar el selector de UBCH con las UBCH disponibles
+        // Poblar los selectores de filtro con las opciones disponibles
         this.populateUBCHFilter();
+        this.populateCommunityFilter();
 
-        // Filtrar votos según filtros activos
-        let filteredVotes = this.votes;
-        const activeFilterBtn = document.querySelector('.filter-btn.active');
-        const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
-        
-        if (activeFilterBtn) {
-            const filter = activeFilterBtn.dataset.filter;
-            if (filter === 'voted') {
-                filteredVotes = filteredVotes.filter(v => v.voted);
-            } else if (filter === 'not-voted') {
-                filteredVotes = filteredVotes.filter(v => !v.voted);
-            }
-        }
-        
-        if (selectedUBCH) {
-            filteredVotes = filteredVotes.filter(v => v.ubch === selectedUBCH);
-        }
+        // Renderizar todos los votos sin filtros
+        this.renderFilteredVotesTable(this.votes);
+    }
+    
+    // Nuevo método para renderizar votos filtrados
+    renderFilteredVotesTable(filteredVotes) {
+        const tbody = document.querySelector('#registros-table tbody');
+        tbody.innerHTML = '';
+
+        console.log(`🔄 Renderizando ${filteredVotes.length} votos en la tabla`);
 
         // Renderizar votos filtrados
         filteredVotes.forEach(vote => {
@@ -859,17 +1004,24 @@ class VotingSystemFirebase {
 
         // Actualizar contador de filtros
         this.updateFilterCounter(filteredVotes.length);
+        
+        console.log(`✅ Tabla renderizada con ${filteredVotes.length} votos`);
     }
 
     // Poblar el selector de filtro por UBCH
     populateUBCHFilter() {
         const ubchSelect = document.getElementById('ubch-filter-select');
-        if (!ubchSelect) return;
+        if (!ubchSelect) {
+            console.warn('⚠️ No se encontró el selector ubch-filter-select');
+            return;
+        }
 
         // Obtener todas las UBCH únicas de los registros
         const uniqueUBCHs = [...new Set(this.votes.map(vote => vote.ubch).filter(ubch => ubch))];
         
-        // Limpiar opciones existentes excepto la primera
+        console.log(`🔄 Poblando filtro UBCH con ${uniqueUBCHs.length} UBCH únicas:`, uniqueUBCHs);
+        
+        // Limpiar opciones existentes
         ubchSelect.innerHTML = '<option value="">Todas las UBCH</option>';
         
         // Agregar opciones para cada UBCH
@@ -879,6 +1031,53 @@ class VotingSystemFirebase {
             option.textContent = ubch;
             ubchSelect.appendChild(option);
         });
+        
+        console.log(`✅ Filtro UBCH poblado con ${ubchSelect.options.length} opciones`);
+        
+        // Verificar que el evento change esté funcionando
+        if (!ubchSelect.hasAttribute('data-event-bound')) {
+            ubchSelect.setAttribute('data-event-bound', 'true');
+            ubchSelect.addEventListener('change', (e) => {
+                console.log(`🔄 Filtro UBCH cambiado a: "${e.target.value}"`);
+                this.applyFilters();
+            });
+        }
+    }
+    
+    // Poblar el selector de filtro por Comunidad
+    populateCommunityFilter() {
+        const communitySelect = document.getElementById('community-filter-select');
+        if (!communitySelect) {
+            console.warn('⚠️ No se encontró el selector community-filter-select');
+            return;
+        }
+
+        // Obtener todas las comunidades únicas de los registros
+        const uniqueCommunities = [...new Set(this.votes.map(vote => vote.community).filter(community => community))];
+        
+        console.log(`🔄 Poblando filtro Comunidad con ${uniqueCommunities.length} comunidades únicas:`, uniqueCommunities);
+        
+        // Limpiar opciones existentes
+        communitySelect.innerHTML = '<option value="">Todas las Comunidades</option>';
+        
+        // Agregar opciones para cada comunidad
+        uniqueCommunities.sort().forEach(community => {
+            const option = document.createElement('option');
+            option.value = community;
+            option.textContent = community;
+            communitySelect.appendChild(option);
+        });
+        
+        console.log(`✅ Filtro Comunidad poblado con ${communitySelect.options.length} opciones`);
+        
+        // Verificar que el evento change esté funcionando
+        if (!communitySelect.hasAttribute('data-event-bound')) {
+            communitySelect.setAttribute('data-event-bound', 'true');
+            communitySelect.addEventListener('change', (e) => {
+                console.log(`🔄 Filtro Comunidad cambiado a: "${e.target.value}"`);
+                this.applyFilters();
+            });
+        }
     }
 
     // Actualizar contador de filtros
@@ -903,9 +1102,52 @@ class VotingSystemFirebase {
         this.renderVotesTable();
     }
 
-    // Aplicar filtros (para el selector de UBCH)
+    // Aplicar filtros (para el selector de UBCH y Comunidad)
     applyFilters() {
-        this.renderVotesTable();
+        console.log('🔄 Aplicando filtros...');
+        
+        // Obtener filtros activos
+        const activeFilterBtn = document.querySelector('.filter-btn.active');
+        const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
+        const selectedCommunity = document.getElementById('community-filter-select')?.value;
+        
+        console.log('   - Filtro de estado:', activeFilterBtn?.dataset.filter || 'ninguno');
+        console.log('   - Filtro UBCH:', selectedUBCH || 'todas');
+        console.log('   - Filtro Comunidad:', selectedCommunity || 'todas');
+        
+        // Aplicar filtros
+        let filteredVotes = this.votes;
+        
+        // Filtrar por estado de voto
+        if (activeFilterBtn) {
+            const filter = activeFilterBtn.dataset.filter;
+            if (filter === 'voted') {
+                filteredVotes = filteredVotes.filter(v => v.voted);
+                console.log(`   - Filtrando por votados: ${filteredVotes.length} votos`);
+            } else if (filter === 'not-voted') {
+                filteredVotes = filteredVotes.filter(v => !v.voted);
+                console.log(`   - Filtrando por no votados: ${filteredVotes.length} votos`);
+            }
+        }
+        
+        // Filtrar por UBCH
+        if (selectedUBCH) {
+            const beforeCount = filteredVotes.length;
+            filteredVotes = filteredVotes.filter(v => v.ubch === selectedUBCH);
+            console.log(`   - Filtrando por UBCH "${selectedUBCH}": ${beforeCount} → ${filteredVotes.length} votos`);
+        }
+        
+        // Filtrar por Comunidad
+        if (selectedCommunity) {
+            const beforeCount = filteredVotes.length;
+            filteredVotes = filteredVotes.filter(v => v.community === selectedCommunity);
+            console.log(`   - Filtrando por Comunidad "${selectedCommunity}": ${beforeCount} → ${filteredVotes.length} votos`);
+        }
+        
+        console.log(`✅ Filtros aplicados: ${filteredVotes.length} votos mostrados de ${this.votes.length} total`);
+        
+        // Renderizar tabla con votos filtrados
+        this.renderFilteredVotesTable(filteredVotes);
     }
 
     deleteVote(voteId) {
@@ -1182,43 +1424,255 @@ class VotingSystemFirebase {
         checkLibraries();
     }
 
+    // Obtener votos filtrados según los filtros activos
+    getFilteredVotes() {
+        let filteredVotes = this.votes;
+        
+        // Filtro por estado de voto
+        const activeFilterBtn = document.querySelector('.filter-btn.active');
+        if (activeFilterBtn) {
+            const filter = activeFilterBtn.dataset.filter;
+            if (filter === 'voted') {
+                filteredVotes = filteredVotes.filter(v => v.voted);
+            } else if (filter === 'not-voted') {
+                filteredVotes = filteredVotes.filter(v => !v.voted);
+            }
+        }
+        
+        // Filtro por UBCH
+        const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
+        if (selectedUBCH) {
+            filteredVotes = filteredVotes.filter(v => v.ubch === selectedUBCH);
+        }
+        
+        // Filtro por comunidad
+        const selectedCommunity = document.getElementById('community-filter-select')?.value;
+        if (selectedCommunity) {
+            filteredVotes = filteredVotes.filter(v => v.community === selectedCommunity);
+        }
+        
+        return filteredVotes;
+    }
+    
+    // Obtener información de filtros aplicados
+    getFilterInfo() {
+        const activeFilterBtn = document.querySelector('.filter-btn.active');
+        const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
+        const selectedCommunity = document.getElementById('community-filter-select')?.value;
+        
+        const filterInfo = {
+            hasFilters: false,
+            statusFilter: null,
+            ubchFilter: null,
+            communityFilter: null
+        };
+        
+        if (activeFilterBtn && activeFilterBtn.dataset.filter !== 'all') {
+            filterInfo.statusFilter = activeFilterBtn.dataset.filter === 'voted' ? 'Votaron' : 'No votaron';
+            filterInfo.hasFilters = true;
+        }
+        
+        if (selectedUBCH) {
+            filterInfo.ubchFilter = selectedUBCH;
+            filterInfo.hasFilters = true;
+        }
+        
+        if (selectedCommunity) {
+            filterInfo.communityFilter = selectedCommunity;
+            filterInfo.hasFilters = true;
+        }
+        
+        return filterInfo;
+    }
+    
+    // Generar nombre de archivo con información de filtros
+    generateFileName(extension, filterInfo) {
+        let fileName = 'listado-personas';
+        
+        if (filterInfo.hasFilters) {
+            const filters = [];
+            if (filterInfo.statusFilter) filters.push(filterInfo.statusFilter);
+            if (filterInfo.ubchFilter) filters.push(filterInfo.ubchFilter.replace(/[^a-zA-Z0-9]/g, '-'));
+            if (filterInfo.communityFilter) filters.push(filterInfo.communityFilter.replace(/[^a-zA-Z0-9]/g, '-'));
+            
+            fileName += `-filtrado-${filters.join('-')}`;
+        }
+        
+        fileName += `-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}`;
+        fileName += `.${extension}`;
+        
+        return fileName;
+    }
+
+    // Obtener votos filtrados según los filtros activos
+    getFilteredVotes() {
+        let filteredVotes = this.votes;
+        
+        // Filtro por estado de voto
+        const activeFilterBtn = document.querySelector('.filter-btn.active');
+        if (activeFilterBtn) {
+            const filter = activeFilterBtn.dataset.filter;
+            if (filter === 'voted') {
+                filteredVotes = filteredVotes.filter(v => v.voted);
+            } else if (filter === 'not-voted') {
+                filteredVotes = filteredVotes.filter(v => !v.voted);
+            }
+        }
+        
+        // Filtro por UBCH
+        const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
+        if (selectedUBCH) {
+            filteredVotes = filteredVotes.filter(v => v.ubch === selectedUBCH);
+        }
+        
+        // Filtro por comunidad
+        const selectedCommunity = document.getElementById('community-filter-select')?.value;
+        if (selectedCommunity) {
+            filteredVotes = filteredVotes.filter(v => v.community === selectedCommunity);
+        }
+        
+        return filteredVotes;
+    }
+    
+    // Obtener información de filtros aplicados
+    getFilterInfo() {
+        const activeFilterBtn = document.querySelector('.filter-btn.active');
+        const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
+        const selectedCommunity = document.getElementById('community-filter-select')?.value;
+        
+        const filterInfo = {
+            hasFilters: false,
+            statusFilter: null,
+            ubchFilter: null,
+            communityFilter: null
+        };
+        
+        if (activeFilterBtn && activeFilterBtn.dataset.filter !== 'all') {
+            filterInfo.statusFilter = activeFilterBtn.dataset.filter === 'voted' ? 'Votaron' : 'No votaron';
+            filterInfo.hasFilters = true;
+        }
+        
+        if (selectedUBCH) {
+            filterInfo.ubchFilter = selectedUBCH;
+            filterInfo.hasFilters = true;
+        }
+        
+        if (selectedCommunity) {
+            filterInfo.communityFilter = selectedCommunity;
+            filterInfo.hasFilters = true;
+        }
+        
+        return filterInfo;
+    }
+    
+    // Generar nombre de archivo con información de filtros
+    generateFileName(extension, filterInfo) {
+        let fileName = 'listado-personas';
+        
+        if (filterInfo.hasFilters) {
+            const filters = [];
+            if (filterInfo.statusFilter) filters.push(filterInfo.statusFilter);
+            if (filterInfo.ubchFilter) filters.push(filterInfo.ubchFilter.replace(/[^a-zA-Z0-9]/g, '-'));
+            if (filterInfo.communityFilter) filters.push(filterInfo.communityFilter.replace(/[^a-zA-Z0-9]/g, '-'));
+            
+            fileName += `-filtrado-${filters.join('-')}`;
+        }
+        
+        fileName += `-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}`;
+        fileName += `.${extension}`;
+        
+        return fileName;
+    }
+
     exportToPDF() {
         if (!window.jspdf || !window.jspdf.jsPDF) {
-            alert('No se encontró la librería jsPDF.');
+            this.showMessage('Error: Librería PDF no disponible', 'error', 'listado');
             return;
         }
-        const doc = new window.jspdf.jsPDF();
-        const columns = [
-            { header: 'Nombre', dataKey: 'name' },
-            { header: 'Cédula', dataKey: 'cedula' },
-            { header: 'Sexo', dataKey: 'sexo' },
-            { header: 'Edad', dataKey: 'edad' },
-            { header: 'UBCH', dataKey: 'ubch' },
-            { header: 'Comunidad', dataKey: 'community' },
-            { header: 'Votó', dataKey: 'voted' }
-        ];
-        const rows = this.votes.map(vote => ({
-            name: vote.name,
-            cedula: vote.cedula,
-            sexo: vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : '',
-            edad: vote.edad || '',
-            ubch: vote.ubch,
-            community: vote.community,
-            voted: vote.voted ? 'Sí' : 'No'
-        }));
-        doc.text('Listado de Personas Registradas', 14, 16);
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Obtener votos filtrados
+        const filteredVotes = this.getFilteredVotes();
+        const filterInfo = this.getFilterInfo();
+        
+        // Título
+        doc.setFontSize(18);
+        doc.text('Listado de Personas Registradas', 20, 20);
+
+        // Información de filtros aplicados
+        if (filterInfo.hasFilters) {
+            doc.setFontSize(10);
+            doc.text('Filtros aplicados:', 20, 30);
+            doc.setFontSize(8);
+            let yPos = 35;
+            if (filterInfo.statusFilter) {
+                doc.text(`• Estado: ${filterInfo.statusFilter}`, 25, yPos);
+                yPos += 5;
+            }
+            if (filterInfo.ubchFilter) {
+                doc.text(`• UBCH: ${filterInfo.ubchFilter}`, 25, yPos);
+                yPos += 5;
+            }
+            if (filterInfo.communityFilter) {
+                doc.text(`• Comunidad: ${filterInfo.communityFilter}`, 25, yPos);
+                yPos += 5;
+            }
+            doc.text(`• Total de registros: ${filteredVotes.length}`, 25, yPos);
+            yPos += 10;
+        } else {
+            doc.setFontSize(10);
+            doc.text(`Total de registros: ${filteredVotes.length}`, 20, 30);
+        }
+
+        // Fecha
+        doc.setFontSize(10);
+        doc.text(`Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}`, 20, filterInfo.hasFilters ? 55 : 40);
+
+        // Datos de la tabla
+        const tableData = filteredVotes.map(vote => [
+            vote.name,
+            vote.cedula,
+            vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A',
+            vote.edad || 'N/A',
+            vote.ubch,
+            vote.community,
+            vote.voted ? 'Sí' : 'No'
+        ]);
+
         doc.autoTable({
-            columns,
-            body: rows,
-            startY: 20,
-            styles: { fontSize: 9 }
+            head: [['Nombre', 'Cédula', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Votó']],
+            body: tableData,
+            startY: filterInfo.hasFilters ? 65 : 50,
+            styles: {
+                fontSize: 8,
+                cellPadding: 2
+            },
+            headStyles: {
+                fillColor: [41, 128, 185],
+                textColor: 255
+            },
+            alternateRowStyles: {
+                fillColor: [245, 245, 245]
+            }
         });
-        doc.save('listado-personas.pdf');
+
+        // Generar nombre de archivo con filtros
+        const fileName = this.generateFileName('pdf', filterInfo);
+        
+        // Guardar PDF
+        doc.save(fileName);
+        this.showMessage(`PDF generado: ${fileName}`, 'success', 'listado');
     }
 
     exportToCSV() {
+        // Obtener votos filtrados
+        const filteredVotes = this.getFilteredVotes();
+        const filterInfo = this.getFilterInfo();
+        
         const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Votó'];
-        const rows = this.votes.map(vote => [
+        const rows = filteredVotes.map(vote => [
             `"${(vote.name || '').replace(/"/g, '""')}"`,
             `"${(vote.cedula || '').replace(/"/g, '""')}"`,
             `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
@@ -1227,18 +1681,26 @@ class VotingSystemFirebase {
             `"${(vote.community || '').replace(/"/g, '""')}"`,
             `"${vote.voted ? 'Sí' : 'No'}"`
         ]);
+        
         let csvContent = headers.join(';') + '\r\n';
         rows.forEach(row => {
             csvContent += row.join(';') + '\r\n';
         });
+        
         const BOM = '\uFEFF';
         const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', `listado-personas-${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.csv`);
+        
+        // Generar nombre de archivo con filtros
+        const fileName = this.generateFileName('csv', filterInfo);
+        link.setAttribute('download', fileName);
+        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        this.showMessage(`CSV generado: ${fileName}`, 'success', 'listado');
     }
 }
 

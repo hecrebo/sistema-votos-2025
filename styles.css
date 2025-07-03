@@ -627,6 +627,38 @@ body {
     border-color: var(--primary-color);
 }
 
+.community-filter {
+    margin-left: 20px;
+}
+
+.community-filter label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.community-filter-select {
+    padding: 0.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: white;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 200px;
+}
+
+.community-filter-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.community-filter-select:hover {
+    border-color: var(--primary-color);
+}
+
 /* Statistics */
 .stats-grid {
     display: grid;
@@ -1908,4 +1940,364 @@ select:focus {
     border: 1px solid var(--border-color);
     font-size: 1rem;
     margin-left: 1rem;
+}
+
+/* Estilos para modo proyección */
+.projection-mode {
+    background: #000 !important;
+    color: #fff !important;
+}
+
+.projection-mode .header {
+    background: rgba(0, 0, 0, 0.9) !important;
+    border-bottom: 2px solid #667eea;
+}
+
+.projection-mode .page-title {
+    font-size: 3em !important;
+    text-align: center !important;
+    margin: 20px 0 !important;
+    color: #fff !important;
+}
+
+.projection-mode .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+    gap: 30px !important;
+}
+
+.projection-mode .stat-card {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 2px solid #667eea !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.projection-mode .stat-number {
+    font-size: 4em !important;
+    color: #667eea !important;
+}
+
+.projection-mode .stat-label {
+    font-size: 1.5em !important;
+    color: #fff !important;
+}
+
+/* Estilos para modo proyección global */
+.global-projection-mode {
+    background: linear-gradient(135deg, #000428 0%, #004e92 100%) !important;
+    color: #fff !important;
+    font-size: 1.2em !important;
+}
+
+.global-projection-mode .header {
+    background: rgba(0, 0, 0, 0.95) !important;
+    border-bottom: 3px solid #667eea !important;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3) !important;
+}
+
+.global-projection-mode .header-title {
+    font-size: 2.5em !important;
+    color: #fff !important;
+    text-shadow: 0 0 20px rgba(102, 126, 234, 0.5) !important;
+}
+
+.global-projection-mode .nav-btn {
+    background: rgba(102, 126, 234, 0.2) !important;
+    border: 2px solid #667eea !important;
+    color: #fff !important;
+    font-size: 1.1em !important;
+    padding: 15px 25px !important;
+}
+
+.global-projection-mode .nav-btn.active {
+    background: #667eea !important;
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.5) !important;
+}
+
+.global-projection-mode .page-title {
+    font-size: 4em !important;
+    text-align: center !important;
+    margin: 30px 0 !important;
+    color: #fff !important;
+    text-shadow: 0 0 30px rgba(102, 126, 234, 0.7) !important;
+}
+
+.global-projection-mode .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)) !important;
+    gap: 40px !important;
+    margin: 40px 0 !important;
+}
+
+.global-projection-mode .stat-card {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 3px solid #667eea !important;
+    backdrop-filter: blur(15px) !important;
+    border-radius: 20px !important;
+    padding: 40px !important;
+    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3) !important;
+}
+
+.global-projection-mode .stat-number {
+    font-size: 6em !important;
+    color: #667eea !important;
+    text-shadow: 0 0 30px rgba(102, 126, 234, 0.5) !important;
+    font-weight: 700 !important;
+}
+
+.global-projection-mode .stat-label {
+    font-size: 2em !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+.global-projection-mode .projection-counter {
+    font-size: 3em !important;
+    font-weight: 700 !important;
+    color: #667eea !important;
+    text-shadow: 0 0 20px rgba(102, 126, 234, 0.5) !important;
+}
+
+.global-projection-mode .sync-status {
+    font-size: 1.5em !important;
+    padding: 10px 20px !important;
+    border-radius: 10px !important;
+    margin: 10px 0 !important;
+}
+
+.global-projection-mode .sync-status.online {
+    background: rgba(40, 167, 69, 0.2) !important;
+    border: 2px solid #28a745 !important;
+    color: #28a745 !important;
+}
+
+.global-projection-mode .sync-status.offline {
+    background: rgba(220, 53, 69, 0.2) !important;
+    border: 2px solid #dc3545 !important;
+    color: #dc3545 !important;
+}
+
+/* Contadores de proyección */
+.projection-counter {
+    font-size: 2em;
+    font-weight: 700;
+    color: #667eea;
+    text-align: center;
+    margin: 10px 0;
+    padding: 20px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 15px;
+    border: 2px solid #667eea;
+}
+
+/* Información de sincronización para proyección */
+#projection-sync-info {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+#projection-sync-info .sync-status {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+#projection-sync-info .sync-stats {
+    font-size: 1em;
+    opacity: 0.8;
+}
+
+/* Estilos para el sistema de cola */
+.queue-status {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #0ea5e9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.queue-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.queue-count {
+    font-weight: 600;
+    color: #0c4a6e;
+    font-size: 1rem;
+}
+
+.queue-status.online {
+    color: #059669;
+    font-weight: 500;
+}
+
+.queue-status.offline {
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.processing {
+    color: #f59e0b;
+    font-weight: 500;
+    animation: pulse 2s infinite;
+}
+
+.queue-status .queue-info {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@media (max-width: 768px) {
+    .queue-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .queue-count {
+        font-size: 0.875rem;
+    }
+}
+
+/* Estilos para sincronización en tiempo real del modo proyección */
+.projection-sync-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 2rem;
+}
+
+.sync-indicator {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.sync-indicator.success {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.sync-indicator.error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    animation: pulse 2s infinite;
+}
+
+.sync-indicator.syncing {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    animation: spin 1s linear infinite;
+}
+
+.sync-indicator.offline {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.timestamp {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.projection-sync-details {
+    grid-column: 1 / -1;
+    background: #374151;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.sync-details, .queue-details {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #d1d5db;
+}
+
+.sync-details .sync-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.sync-details .sync-status.online {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.sync-details .sync-status.offline {
+    background: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+}
+
+.sync-details .sync-stats {
+    color: #9ca3af;
+}
+
+.queue-details .queue-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+}
+
+/* Animaciones para sincronización */
+@keyframes syncPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.05);
+    }
+}
+
+.sync-indicator.syncing {
+    animation: syncPulse 1.5s ease-in-out infinite;
+}
+
+/* Responsive para elementos de sincronización */
+@media (max-width: 768px) {
+    .projection-sync-info {
+        margin-right: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .projection-sync-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .sync-details, .queue-details {
+        width: 100%;
+        justify-content: space-between;
+    }
 } 

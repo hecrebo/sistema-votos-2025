@@ -44,6 +44,10 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="config.js"></script>
+    <script src="auto-init.js"></script>
+    <script src="test-automatico.js"></script>
+    <script src="test-proyeccion.js"></script>
+    <script src="queue-manager.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -175,6 +179,7 @@
                     </div>
                     
                     <div id="registration-message" class="message" style="display: none;"></div>
+                    <div id="queue-status" class="queue-status" style="display: none;"></div>
                     <div id="thank-you-message" class="thank-you-message" style="display: none;"></div>
                 </div>
             </div>
@@ -218,6 +223,12 @@
                             <label for="ubch-filter-select">Filtrar por UBCH:</label>
                             <select id="ubch-filter-select" class="ubch-filter-select">
                                 <option value="">Todas las UBCH</option>
+                            </select>
+                        </div>
+                        <div class="community-filter">
+                            <label for="community-filter-select">Filtrar por Comunidad:</label>
+                            <select id="community-filter-select" class="community-filter-select">
+                                <option value="">Todas las Comunidades</option>
                             </select>
                         </div>
                     </div>
@@ -302,6 +313,10 @@
         <div id="projection-view" class="projection-view" style="display: none;">
             <div class="projection-header">
                 <h1>Proyección en Tiempo Real</h1>
+                <div class="projection-sync-info">
+                    <div id="projection-sync-indicator" class="sync-indicator success">🟢 Sincronizado</div>
+                    <div id="projection-timestamp" class="timestamp">Última actualización: --:--:--</div>
+                </div>
                 <button id="exit-projection-btn" class="btn btn-danger">Salir</button>
             </div>
             <div class="projection-content">
@@ -317,6 +332,10 @@
                 <div class="projection-stats">
                     <h2>Votos por UBCH</h2>
                     <div class="projection-list" id="projection-ubch-list"></div>
+                </div>
+                <div class="projection-sync-details">
+                    <div id="projection-sync-info" class="sync-details"></div>
+                    <div id="projection-queue-info" class="queue-details"></div>
                 </div>
             </div>
         </div>
@@ -400,8 +419,14 @@
     <script src="firebase-config.js"></script>
     <script src="sync-manager.js"></script>
     <script src="service-manager.js"></script>
+    <script src="script.js"></script>
     <script src="script-firebase.js"></script>
     <script src="init-system.js"></script>
+    <script src="debug-ubch-filter.js"></script>
+    <script src="test-filtro-ubch.js"></script>
+    <script src="test-exportacion-mejorada.js"></script>
+    <script src="test-sincronizacion-tiempo-real.js"></script>
+    <script src="demo-sincronizacion-tiempo-real.js"></script>
     
     <script>
         const USUARIOS_INICIALES = [

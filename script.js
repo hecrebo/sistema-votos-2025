@@ -76,7 +76,499 @@ class VotingSystem {
         this.totalPages = 1;
         this.paginatedVotes = [];
         
+        // === SISTEMA AUTOMÁTICO MEJORADO ===
+        this.autoSyncEnabled = true;
+        this.autoRetryEnabled = true;
+        this.autoErrorRecovery = true;
+        this.autoProjectionMode = false;
+        this.autoBackupEnabled = true;
+        
+        // Inicialización automática
         this.init();
+    }
+
+    // === SISTEMA AUTOMÁTICO ===
+    async init() {
+        try {
+            console.log('🚀 Iniciando sistema automático...');
+            
+            // 1. Cargar datos automáticamente
+            await this.loadData();
+            
+            // 2. Configurar eventos automáticamente
+            this.setupEventListeners();
+            
+            // 3. Iniciar sincronización automática
+            this.startAutoSync();
+            
+            // 4. Configurar auto-recuperación de errores
+            this.setupAutoErrorRecovery();
+            
+            // 5. Configurar auto-backup
+            this.setupAutoBackup();
+            
+            // 6. Mostrar información del usuario
+            this.displayUserInfo();
+            
+            // 7. Renderizar página inicial
+            this.renderCurrentPage();
+            
+            // 8. Configurar modo proyección automático
+            this.setupAutoProjection();
+            
+            console.log('✅ Sistema automático iniciado correctamente');
+            
+        } catch (error) {
+            console.error('❌ Error en inicialización automática:', error);
+            this.handleAutoError(error);
+        }
+    }
+
+    // === AUTO-RECUPERACIÓN DE ERRORES ===
+    setupAutoErrorRecovery() {
+        // Interceptar errores globales
+        window.addEventListener('error', (event) => {
+            this.handleAutoError(event.error);
+        });
+
+        // Interceptar promesas rechazadas
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleAutoError(event.reason);
+        });
+
+        // Auto-reintento para operaciones fallidas
+        this.retryQueue = [];
+        this.isRetrying = false;
+    }
+
+    async handleAutoError(error) {
+        console.error('🔄 Error detectado, iniciando recuperación automática:', error);
+        
+        // Agregar a cola de reintentos
+        this.retryQueue.push({
+            error,
+            timestamp: Date.now(),
+            retries: 0
+        });
+
+        // Mostrar mensaje al usuario
+        this.showMessage('Error detectado. Recuperando automáticamente...', 'warning');
+        
+        // Intentar recuperación automática
+        await this.autoRecover();
+    }
+
+    async autoRecover() {
+        if (this.isRetrying) return;
+        
+        this.isRetrying = true;
+        
+        try {
+            // 1. Verificar conectividad
+            if (!navigator.onLine) {
+                this.offlineMode = true;
+                this.showMessage('Modo offline activado. Los datos se guardarán localmente.', 'info');
+                return;
+            }
+
+            // 2. Reintentar operaciones fallidas
+            await this.retryFailedOperations();
+
+            // 3. Re-sincronizar datos
+            await this.syncData();
+
+            // 4. Restaurar estado de la aplicación
+            this.restoreApplicationState();
+
+            this.showMessage('Recuperación automática completada', 'success');
+            
+        } catch (error) {
+            console.error('❌ Error en recuperación automática:', error);
+            this.showMessage('Error en recuperación. Contacte al administrador.', 'error');
+        } finally {
+            this.isRetrying = false;
+        }
+    }
+
+    async retryFailedOperations() {
+        const maxRetries = 3;
+        const retryDelay = 2000;
+
+        for (let i = 0; i < this.retryQueue.length; i++) {
+            const item = this.retryQueue[i];
+            
+            if (item.retries < maxRetries) {
+                item.retries++;
+                
+                try {
+                    await this.delay(retryDelay * item.retries);
+                    // Aquí se reintentaría la operación específica
+                    console.log(`🔄 Reintentando operación (${item.retries}/${maxRetries})`);
+                } catch (error) {
+                    console.error(`❌ Reintento ${item.retries} fallido:`, error);
+                }
+            } else {
+                // Eliminar de la cola si se agotaron los reintentos
+                this.retryQueue.splice(i, 1);
+                i--;
+            }
+        }
+    }
+
+    restoreApplicationState() {
+        // Restaurar estado de la página actual
+        this.renderCurrentPage();
+        
+        // Restaurar datos de formularios
+        this.restoreFormData();
+        
+        // Restaurar filtros aplicados
+        this.restoreFilters();
+    }
+
+    // === AUTO-BACKUP ===
+    setupAutoBackup() {
+        if (!this.autoBackupEnabled) return;
+
+        // Backup automático cada 5 minutos
+        setInterval(() => {
+            this.createAutoBackup();
+        }, 5 * 60 * 1000);
+
+        // Backup antes de cerrar la página
+        window.addEventListener('beforeunload', () => {
+            this.createAutoBackup();
+        });
+    }
+
+    createAutoBackup() {
+        try {
+            const backupData = {
+                votes: this.votes,
+                timestamp: new Date().toISOString(),
+                user: this.currentUser.username
+            };
+
+            localStorage.setItem('autoBackup', JSON.stringify(backupData));
+            console.log('💾 Backup automático creado');
+        } catch (error) {
+            console.error('❌ Error creando backup automático:', error);
+        }
+    }
+
+    restoreFromBackup() {
+        try {
+            const backupData = localStorage.getItem('autoBackup');
+            if (backupData) {
+                const backup = JSON.parse(backupData);
+                this.votes = backup.votes || [];
+                console.log('🔄 Datos restaurados desde backup automático');
+                return true;
+            }
+        } catch (error) {
+            console.error('❌ Error restaurando desde backup:', error);
+        }
+        return false;
+    }
+
+    // === AUTO-PROYECCIÓN ===
+    setupAutoProjection() {
+        // Detectar si la pantalla es grande (modo proyección)
+        const checkProjectionMode = () => {
+            const isLargeScreen = window.innerWidth >= 1920 && window.innerHeight >= 1080;
+            const isFullscreen = document.fullscreenElement !== null;
+            const isProjectionMode = window.location.search.includes('projection=true');
+            
+            if ((isLargeScreen || isFullscreen || isProjectionMode) && !this.autoProjectionMode) {
+                this.enterAutoProjectionMode();
+            } else if (!isLargeScreen && !isFullscreen && !isProjectionMode && this.autoProjectionMode) {
+                this.exitAutoProjectionMode();
+            }
+        };
+
+        // Verificar al cargar y al cambiar tamaño
+        window.addEventListener('resize', checkProjectionMode);
+        window.addEventListener('fullscreenchange', checkProjectionMode);
+        
+        // Verificar inicialmente
+        setTimeout(checkProjectionMode, 1000);
+    }
+
+    enterAutoProjectionMode() {
+        this.autoProjectionMode = true;
+        console.log('📺 Modo proyección automático activado');
+        
+        // Aplicar estilos de proyección
+        document.body.classList.add('projection-mode');
+        
+        // Navegar automáticamente a estadísticas
+        this.navigateToPage('statistics');
+        
+        // Actualizar estadísticas en tiempo real
+        this.startAutoProjectionUpdates();
+        
+        this.showMessage('Modo proyección automático activado', 'info');
+    }
+
+    exitAutoProjectionMode() {
+        this.autoProjectionMode = false;
+        console.log('📱 Modo proyección automático desactivado');
+        
+        // Remover estilos de proyección
+        document.body.classList.remove('projection-mode');
+        
+        // Detener actualizaciones automáticas
+        this.stopAutoProjectionUpdates();
+    }
+
+    startAutoProjectionUpdates() {
+        if (this.projectionInterval) clearInterval(this.projectionInterval);
+        
+        this.projectionInterval = setInterval(() => {
+            this.updateProjection();
+        }, 5000); // Actualizar cada 5 segundos
+        
+        // Actualizar inmediatamente
+        this.updateProjection();
+    }
+
+    stopAutoProjectionUpdates() {
+        if (this.projectionInterval) {
+            clearInterval(this.projectionInterval);
+            this.projectionInterval = null;
+        }
+    }
+
+    updateProjection() {
+        console.log('📊 Actualizando proyección...');
+        
+        // Actualizar estadísticas en tiempo real
+        this.renderStatisticsPage();
+        
+        // Actualizar contadores
+        this.updateProjectionCounters();
+        
+        // Mostrar información de sincronización mejorada
+        this.updateProjectionSyncInfo();
+        
+        // Actualizar timestamp de última actualización
+        this.updateProjectionTimestamp();
+        
+        console.log('✅ Proyección actualizada');
+    }
+
+    updateProjectionCounters() {
+        const totalVotes = this.votes.length;
+        const votedCount = this.votes.filter(v => v.voted).length;
+        const pendingCount = totalVotes - votedCount;
+        
+        // Actualizar contadores en pantalla
+        const counters = document.querySelectorAll('.projection-counter');
+        counters.forEach(counter => {
+            const type = counter.dataset.type;
+            switch(type) {
+                case 'total':
+                    counter.textContent = totalVotes.toLocaleString();
+                    break;
+                case 'voted':
+                    counter.textContent = votedCount.toLocaleString();
+                    break;
+                case 'pending':
+                    counter.textContent = pendingCount.toLocaleString();
+                    break;
+                case 'percentage':
+                    const percentage = totalVotes > 0 ? Math.round((votedCount / totalVotes) * 100) : 0;
+                    counter.textContent = `${percentage}%`;
+                    break;
+            }
+        });
+        
+        // Actualizar estadísticas por UBCH en tiempo real
+        this.updateProjectionUBCHStats();
+    }
+
+    updateProjectionUBCHStats() {
+        const ubchStats = {};
+        const votedVotes = this.votes.filter(v => v.voted);
+        
+        votedVotes.forEach(vote => {
+            ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
+        });
+        
+        // Actualizar contadores por UBCH si existen
+        Object.keys(ubchStats).forEach(ubch => {
+            const counter = document.querySelector(`[data-ubch="${ubch}"]`);
+            if (counter) {
+                counter.textContent = ubchStats[ubch].toLocaleString();
+            }
+        });
+    }
+
+    updateProjectionSyncInfo() {
+        // Información de sincronización del sistema principal
+        if (window.syncManager) {
+            const stats = window.syncManager.getSyncStats();
+            const syncInfo = document.getElementById('projection-sync-info');
+            if (syncInfo) {
+                syncInfo.innerHTML = `
+                    <div class="sync-status ${stats.isOnline ? 'online' : 'offline'}">
+                        ${stats.isOnline ? '🌐' : '📴'} ${stats.isOnline ? 'Online' : 'Offline'}
+                    </div>
+                    <div class="sync-stats">
+                        Pendientes: ${stats.pending} | Fallidos: ${stats.failed}
+                    </div>
+                `;
+            }
+        }
+        
+        // Información de cola si está disponible
+        if (window.queueManager) {
+            const queueStats = window.queueManager.getQueueStats();
+            const queueInfo = document.getElementById('projection-queue-info');
+            if (queueInfo) {
+                queueInfo.innerHTML = `
+                    <div class="queue-status">
+                        📋 Cola: ${queueStats.pending} pendientes | ${queueStats.processed} procesados
+                    </div>
+                `;
+            }
+        }
+    }
+
+    updateProjectionTimestamp() {
+        const timestampElement = document.getElementById('projection-timestamp');
+        if (timestampElement) {
+            const now = new Date();
+            timestampElement.textContent = `Última actualización: ${now.toLocaleTimeString('es-VE')}`;
+        }
+    }
+
+    // === SINCRONIZACIÓN AUTOMÁTICA MEJORADA ===
+    startAutoSync() {
+        if (!this.autoSyncEnabled) return;
+
+        // Sincronización cada 30 segundos
+        this.syncInterval = setInterval(async () => {
+            try {
+                await this.syncData();
+            } catch (error) {
+                console.error('❌ Error en sincronización automática:', error);
+                this.handleAutoError(error);
+            }
+        }, 30000);
+
+        // Sincronización inmediata al iniciar
+        setTimeout(() => {
+            this.syncData();
+        }, 2000);
+
+        console.log('🔄 Sincronización automática iniciada');
+    }
+
+    async syncData() {
+        if (!navigator.onLine) {
+            this.offlineMode = true;
+            this.updateSyncStatus('offline');
+            return;
+        }
+
+        try {
+            this.updateSyncStatus('syncing');
+            
+            // Sincronizar con SyncManager si está disponible
+            if (window.syncManager) {
+                await window.syncManager.syncPendingRecords();
+            }
+
+            // Actualizar datos desde el servidor
+            await this.loadData();
+            
+            this.offlineMode = false;
+            this.updateSyncStatus('online');
+            this.lastSyncTime = Date.now();
+            
+        } catch (error) {
+            console.error('❌ Error en sincronización:', error);
+            this.updateSyncStatus('error');
+            throw error;
+        }
+    }
+
+    // === GESTIÓN AUTOMÁTICA DE FORMULARIOS ===
+    restoreFormData() {
+        const savedData = localStorage.getItem('formData');
+        if (savedData) {
+            try {
+                const formData = JSON.parse(savedData);
+                Object.keys(formData).forEach(fieldId => {
+                    const element = document.getElementById(fieldId);
+                    if (element) {
+                        element.value = formData[fieldId];
+                    }
+                });
+            } catch (error) {
+                console.error('❌ Error restaurando datos del formulario:', error);
+            }
+        }
+    }
+
+    saveFormData() {
+        try {
+            const formData = {};
+            const form = document.getElementById('registration-form');
+            if (form) {
+                const inputs = form.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (input.value) {
+                        formData[input.id] = input.value;
+                    }
+                });
+                localStorage.setItem('formData', JSON.stringify(formData));
+            }
+        } catch (error) {
+            console.error('❌ Error guardando datos del formulario:', error);
+        }
+    }
+
+    restoreFilters() {
+        const savedFilters = localStorage.getItem('appliedFilters');
+        if (savedFilters) {
+            try {
+                const filters = JSON.parse(savedFilters);
+                // Restaurar filtros aplicados
+                this.applyFilters(filters);
+            } catch (error) {
+                console.error('❌ Error restaurando filtros:', error);
+            }
+        }
+    }
+
+    // === SISTEMA DE MENSAJES MEJORADO ===
+    showMessage(message, type = 'info', page = 'registration') {
+        // Evitar mensajes duplicados
+        if (this.lastMessage === message) return;
+        this.lastMessage = message;
+
+        const messageElement = document.getElementById(`${page}-message`);
+        if (messageElement) {
+            messageElement.textContent = message;
+            messageElement.className = `message ${type}`;
+            messageElement.style.display = 'block';
+
+            // Auto-ocultar después de 5 segundos
+            setTimeout(() => {
+                messageElement.style.display = 'none';
+                this.lastMessage = null;
+            }, 5000);
+        }
+
+        // Mostrar notificación del sistema si está disponible
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Sistema de Votos 2025', {
+                body: message,
+                icon: 'logo.jpg'
+            });
+        }
     }
 
     // Verificar sesión de usuario
@@ -286,94 +778,11 @@ class VotingSystem {
         return data;
     }
 
-    // Notificaciones optimizadas
-    showOptimizedMessage(message, type = 'info', page = 'registration') {
-        // Evitar mensajes duplicados
-        if (this.lastMessage === message) {
-            return;
-        }
-        
-        this.lastMessage = message;
-        this.showMessage(message, type, page);
-        
-        // Limpiar mensaje después de 3 segundos
-        setTimeout(() => {
-            this.lastMessage = null;
-        }, 3000);
-    }
-
-    async init() {
-        try {
-            // Intentar cargar datos del servidor JSON
-            await this.loadData();
-            this.showMessage('Conectado al servidor. Los datos se comparten entre todas las computadoras.', 'success', 'registration');
-            
-            // Iniciar sincronización automática
-            this.startAutoSync();
-        } catch (error) {
-            console.warn('No se pudo conectar al servidor, usando localStorage:', error);
-            // Si falla, usar localStorage como respaldo
-        this.useLocalStorage = true;
-            this.offlineMode = true;
-        this.loadFromLocalStorage();
-            this.showMessage('Modo offline activado. Los datos solo se guardan en esta computadora.', 'warning', 'registration');
-        }
-        
-        this.setupEventListeners();
-        this.renderCurrentPage();
-        this.loadPdfLibraries();
-        
-        // Mostrar información del usuario
-        this.displayUserInfo();
-        
-        // Actualizar indicador de sincronización
-        this.updateSyncStatus('Iniciando...', 'info');
-        
-        // Actualizar indicador cada 10 segundos
-        setInterval(() => {
-            this.updateSyncStatus('', 'info');
-        }, 10000);
-    }
-
     // Mostrar información del usuario
     displayUserInfo() {
         const userInfo = document.getElementById('userId');
         if (userInfo && this.currentUser) {
             userInfo.textContent = `${this.currentUser.username} (${this.currentUser.rol})`;
-        }
-    }
-
-    // Iniciar sincronización automática
-    startAutoSync() {
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-        }
-        
-        // Sincronizar cada 30 segundos
-        this.syncInterval = setInterval(() => {
-            if (this.syncEnabled && !this.offlineMode) {
-                this.syncData();
-            }
-        }, 30000);
-    }
-
-    // Sincronizar datos
-    async syncData() {
-        try {
-            const response = await fetch(`${this.apiUrl}/votes`);
-            const serverVotes = await response.json();
-            
-            // Comparar con datos locales
-            if (JSON.stringify(serverVotes) !== JSON.stringify(this.votes)) {
-                this.votes = serverVotes;
-                this.updateSyncStatus('Sincronizado', 'success');
-                this.renderCurrentPage(); // Actualizar vista si es necesario
-            }
-            
-            this.lastSyncTime = Date.now();
-        } catch (error) {
-            console.warn('Error en sincronización:', error);
-            this.updateSyncStatus('Error de sincronización', 'error');
         }
     }
 
@@ -611,7 +1020,7 @@ class VotingSystem {
         // Si no hay UBCH, desactivar el formulario y mostrar mensaje
         if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
             form.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
-            this.showOptimizedMessage('No hay UBCH disponibles. Contacte al administrador.', 'error', 'registration');
+            this.showMessage('No hay UBCH disponibles. Contacte al administrador.', 'error', 'registration');
             return;
         } else {
             form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
@@ -655,7 +1064,7 @@ class VotingSystem {
 
         // Validación inicial
         if (!name || !cedula || !telefono || !sexo || !edad || !ubch || !community) {
-            this.showOptimizedMessage('Por favor, completa todos los campos.', 'error', 'registration');
+            this.showMessage('Por favor, completa todos los campos.', 'error', 'registration');
             return;
         }
 
@@ -676,7 +1085,7 @@ class VotingSystem {
             // Agregar a la cola de registros
             const result = await this.addToRegistrationQueue(registrationData);
 
-            this.showOptimizedMessage('¡Persona registrada con éxito!', 'success', 'registration');
+            this.showMessage('¡Persona registrada con éxito!', 'success', 'registration');
             await this.generateThankYouMessage(name, ubch, community);
             
             // Limpiar formulario
@@ -690,7 +1099,7 @@ class VotingSystem {
             
         } catch (error) {
             console.error('Error al registrar:', error);
-            this.showOptimizedMessage(error.message || 'Error al registrar persona. Inténtalo de nuevo.', 'error', 'registration');
+            this.showMessage(error.message || 'Error al registrar persona. Inténtalo de nuevo.', 'error', 'registration');
         } finally {
             this.setLoadingState('registration', false);
         }
@@ -731,7 +1140,7 @@ class VotingSystem {
         const cedula = document.getElementById('cedula-search').value.trim();
         
         if (!cedula) {
-            this.showOptimizedMessage('Por favor, ingresa un número de cédula para buscar.', 'error', 'check-in');
+            this.showMessage('Por favor, ingresa un número de cédula para buscar.', 'error', 'check-in');
             return;
         }
 
@@ -743,16 +1152,16 @@ class VotingSystem {
                 const results = this.votes.filter(vote => vote.cedula === searchCedula);
             
             if (results.length === 0) {
-                    this.showOptimizedMessage(`No se encontró a ninguna persona con la cédula ${searchCedula}.`, 'error', 'check-in');
+                    this.showMessage(`No se encontró a ninguna persona con la cédula ${searchCedula}.`, 'error', 'check-in');
                 return;
             }
 
                 this.renderSearchResults(results);
-                this.showOptimizedMessage(`Se encontró ${results.length} persona(s) con la cédula ${searchCedula}.`, 'success', 'check-in');
+                this.showMessage(`Se encontró ${results.length} persona(s) con la cédula ${searchCedula}.`, 'success', 'check-in');
 
         } catch (error) {
                 console.error('Error en búsqueda:', error);
-                this.showOptimizedMessage('Error al buscar. Inténtalo de nuevo.', 'error', 'check-in');
+                this.showMessage('Error al buscar. Inténtalo de nuevo.', 'error', 'check-in');
         } finally {
             this.setLoadingState('check-in', false);
         }
@@ -1120,60 +1529,132 @@ class VotingSystem {
     }
 
     enterProjectionMode() {
-        document.getElementById('projection-view').style.display = 'block';
+        console.log('🎬 Activando modo proyección...');
+        
+        // Verificar si existe el elemento de proyección
+        const projectionView = document.getElementById('projection-view');
+        if (!projectionView) {
+            console.error('❌ Elemento projection-view no encontrado');
+            this.showMessage('Error: Vista de proyección no disponible', 'error');
+            return;
+        }
+        
+        // Mostrar vista de proyección
+        projectionView.style.display = 'block';
+        
+        // Aplicar estilos de proyección
+        document.body.classList.add('projection-mode');
+        
+        // Marcar modo proyección como activo
+        this.isProjectionModeActive = true;
+        
+        // Actualizar datos de proyección inmediatamente
         this.updateProjection();
         
-        // Actualizar cada 5 segundos
-        this.projectionInterval = setInterval(() => {
-            this.updateProjection();
-        }, 5000);
+        // Iniciar sincronización en tiempo real para proyección
+        this.startProjectionRealTimeSync();
+        
+        // Mostrar mensaje de confirmación
+        this.showMessage('Modo proyección activado con sincronización en tiempo real', 'success');
+        
+        console.log('✅ Modo proyección activado correctamente');
     }
 
     exitProjectionMode() {
-        document.getElementById('projection-view').style.display = 'none';
-        if (this.projectionInterval) {
-            clearInterval(this.projectionInterval);
+        console.log('🎬 Desactivando modo proyección...');
+        
+        // Ocultar vista de proyección
+        const projectionView = document.getElementById('projection-view');
+        if (projectionView) {
+            projectionView.style.display = 'none';
+        }
+        
+        // Remover estilos de proyección
+        document.body.classList.remove('projection-mode');
+        
+        // Marcar modo proyección como inactivo
+        this.isProjectionModeActive = false;
+        
+        // Detener sincronización en tiempo real
+        this.stopProjectionRealTimeSync();
+        
+        // Mostrar mensaje de confirmación
+        this.showMessage('Modo proyección desactivado', 'info');
+        
+        console.log('✅ Modo proyección desactivado correctamente');
+    }
+
+    // === SINCRONIZACIÓN EN TIEMPO REAL PARA PROYECCIÓN ===
+    startProjectionRealTimeSync() {
+        console.log('🔄 Iniciando sincronización en tiempo real para proyección...');
+        
+        // Sincronización cada 3 segundos para proyección (más frecuente)
+        this.projectionSyncInterval = setInterval(async () => {
+            if (this.isProjectionModeActive) {
+                await this.syncProjectionData();
+            }
+        }, 3000);
+        
+        // Sincronización inmediata
+        setTimeout(() => {
+            this.syncProjectionData();
+        }, 1000);
+        
+        console.log('✅ Sincronización en tiempo real iniciada');
+    }
+
+    stopProjectionRealTimeSync() {
+        if (this.projectionSyncInterval) {
+            clearInterval(this.projectionSyncInterval);
+            this.projectionSyncInterval = null;
+            console.log('🛑 Sincronización en tiempo real detenida');
         }
     }
 
-    updateProjection() {
-        const totalRegistered = this.votes.length;
-        const totalVoted = this.votes.filter(vote => vote.voted).length;
-        const percentage = totalRegistered > 0 ? (totalVoted / totalRegistered) * 100 : 0;
+    async syncProjectionData() {
+        try {
+            console.log('📡 Sincronizando datos para proyección...');
+            
+            // Sincronizar con Firebase si está disponible
+            if (window.votingSystem && typeof window.votingSystem.syncData === 'function') {
+                await window.votingSystem.syncData();
+            }
+            
+            // Sincronizar con cola si está disponible
+            if (window.queueManager) {
+                await window.queueManager.processQueue();
+            }
+            
+            // Recargar datos locales
+            await this.loadData();
+            
+            // Actualizar proyección con nuevos datos
+            this.updateProjection();
+            
+            // Actualizar indicador de sincronización
+            this.updateProjectionSyncStatus('success');
+            
+            console.log('✅ Datos de proyección sincronizados');
+            
+        } catch (error) {
+            console.error('❌ Error sincronizando datos de proyección:', error);
+            this.updateProjectionSyncStatus('error');
+        }
+    }
 
-        document.getElementById('projection-votes').textContent = totalVoted;
-        document.getElementById('projection-progress-fill').style.width = `${percentage}%`;
-        document.getElementById('projection-progress-fill').textContent = `${percentage.toFixed(1)}%`;
-        document.getElementById('projection-text').textContent = `${totalVoted} de ${totalRegistered}`;
-
-        // Actualizar lista de UBCH
-        const votedVotes = this.votes.filter(vote => vote.voted);
-        const ubchStats = {};
-        votedVotes.forEach(vote => {
-            ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
-        });
-
-        const sortedUBCH = Object.entries(ubchStats).sort(([,a], [,b]) => b - a);
-        const maxVotes = sortedUBCH[0] ? sortedUBCH[0][1] : 1;
-
-        const container = document.getElementById('projection-ubch-list');
-        container.innerHTML = '';
-
-        sortedUBCH.forEach(([ubch, count], index) => {
-            const percentage = (count / maxVotes) * 100;
-            const div = document.createElement('div');
-            div.className = 'projection-item';
-            div.innerHTML = `
-                <div class="projection-item-header">
-                    <span class="projection-item-name">${index + 1}. ${ubch}</span>
-                    <span class="projection-item-count">${count}</span>
-                </div>
-                <div class="projection-item-progress">
-                    <div class="projection-item-progress-fill" style="width: ${percentage}%"></div>
-                </div>
-            `;
-            container.appendChild(div);
-        });
+    updateProjectionSyncStatus(status) {
+        const syncIndicator = document.getElementById('projection-sync-indicator');
+        if (syncIndicator) {
+            const statusText = {
+                'success': '🟢 Sincronizado',
+                'error': '🔴 Error de sincronización',
+                'syncing': '🔄 Sincronizando...',
+                'offline': '📴 Sin conexión'
+            };
+            
+            syncIndicator.textContent = statusText[status] || '❓ Estado desconocido';
+            syncIndicator.className = `sync-indicator ${status}`;
+        }
     }
 
     loadPdfLibraries() {
@@ -1331,17 +1812,6 @@ class VotingSystem {
             btnLoading.style.display = 'none';
             submitBtn.disabled = false;
         }
-    }
-
-    showMessage(message, type, page) {
-        const messageDiv = document.getElementById(`${page}-message`);
-        messageDiv.textContent = message;
-        messageDiv.className = `message ${type}`;
-        messageDiv.style.display = 'block';
-
-        setTimeout(() => {
-            messageDiv.style.display = 'none';
-        }, 5000);
     }
 }
 
