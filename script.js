@@ -76,6 +76,10 @@ class VotingSystem {
         this.totalPages = 1;
         this.paginatedVotes = [];
         
+        // --- Cache para filtros (optimización) ---
+        this.filteredVotes = [];
+        this.lastFilterState = null;
+        
         // === SISTEMA AUTOMÁTICO MEJORADO ===
         this.autoSyncEnabled = true;
         this.autoRetryEnabled = true;
@@ -915,7 +919,7 @@ class VotingSystem {
             ubchFilterSelect.addEventListener('change', (e) => {
                 // Actualizar el filtro de comunidades cuando cambie la UBCH
                 this.populateCommunityFilter(e.target.value);
-                this.applyFilters();
+                this.renderFilteredTable();
             });
         }
 
@@ -923,7 +927,7 @@ class VotingSystem {
         const communityFilterSelect = document.getElementById('community-filter-select');
         if (communityFilterSelect) {
             communityFilterSelect.addEventListener('change', () => {
-                this.applyFilters();
+                this.renderFilteredTable();
             });
         }
 
@@ -1358,8 +1362,8 @@ class VotingSystem {
         // Resetear a página 1 cuando se cambia el filtro
         this.currentPage = 1;
         
-        // Usar renderVotesTable que ya tiene toda la lógica de filtrado integrada
-        this.renderVotesTable();
+        // Usar la función de filtrado optimizada
+        this.renderFilteredTable();
     }
 
     // Aplicar todos los filtros (estado de voto, UBCH y comunidad)
@@ -1428,6 +1432,97 @@ class VotingSystem {
         
         // Renderizar controles de paginación
         this.renderPaginationControls(filteredVotes.length);
+    }
+
+    // Función optimizada para renderizar tabla filtrada (mejor rendimiento)
+    renderFilteredTable() {
+        // Obtener estado actual de filtros
+        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+        const selectedUBCH = document.getElementById('ubch-filter-select')?.value || '';
+        const selectedCommunity = document.getElementById('community-filter-select')?.value || '';
+        
+        // Crear clave de estado de filtro para cache
+        const filterState = `${activeFilter}-${selectedUBCH}-${selectedCommunity}`;
+        
+        // Si el estado del filtro no ha cambiado, no re-renderizar
+        if (this.lastFilterState === filterState && this.filteredVotes.length > 0) {
+            // Solo actualizar la paginación
+            this.renderTablePage();
+            return;
+        }
+        
+        // Aplicar filtros (solo una vez)
+        this.filteredVotes = this.votes.filter(vote => {
+            // Filtro por estado de voto
+            if (activeFilter === 'voted' && !vote.voted) return false;
+            if (activeFilter === 'not-voted' && vote.voted) return false;
+            
+            // Filtro por UBCH
+            if (selectedUBCH && vote.ubch !== selectedUBCH) return false;
+            
+            // Filtro por Comunidad
+            if (selectedCommunity && vote.community !== selectedCommunity) return false;
+            
+            return true;
+        });
+        
+        // Guardar estado del filtro
+        this.lastFilterState = filterState;
+        
+        // Renderizar página actual
+        this.renderTablePage();
+        
+        // Actualizar contador y paginación
+        this.updateFilterCounter(this.filteredVotes.length);
+        this.renderPaginationControls(this.filteredVotes.length);
+    }
+    
+    // Renderizar solo la página actual (más rápido)
+    renderTablePage() {
+        const tbody = document.querySelector('#registros-table tbody');
+        
+        // Limpiar tbody de manera eficiente
+        tbody.innerHTML = '';
+        
+        // Calcular paginación
+        this.totalPages = Math.max(1, Math.ceil(this.filteredVotes.length / this.pageSize));
+        if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+        
+        const startIdx = (this.currentPage - 1) * this.pageSize;
+        const endIdx = startIdx + this.pageSize;
+        const pageVotes = this.filteredVotes.slice(startIdx, endIdx);
+        
+        // Usar DocumentFragment para mejor rendimiento
+        const fragment = document.createDocumentFragment();
+        
+        pageVotes.forEach(vote => {
+            const tr = document.createElement('tr');
+            const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
+            
+            tr.innerHTML = `
+                <td>${vote.name}</td>
+                <td>${vote.cedula}</td>
+                <td class="${sexoClass}">${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}</td>
+                <td>${vote.edad || 'N/A'}</td>
+                <td>${vote.ubch}</td>
+                <td>${vote.community}</td>
+                <td>
+                    <span class="vote-status ${vote.voted ? 'voted' : 'not-voted'}">
+                        ${vote.voted ? 'Sí' : 'No'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-danger" onclick="votingSystem.deleteVote('${vote.id}')">
+                        Eliminar
+                    </button>
+                </td>
+            `;
+            
+            fragment.appendChild(tr);
+        });
+        
+        // Agregar todo de una vez (más eficiente)
+        tbody.appendChild(fragment);
     }
 
     // Actualizar contador de resultados filtrados
