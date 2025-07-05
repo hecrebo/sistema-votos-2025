@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Sincronización - Sistema de Votos 2025</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: #fff;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        
+        .status.success { background: rgba(76, 175, 80, 0.8); }
+        .status.error { background: rgba(244, 67, 54, 0.8); }
+        .status.info { background: rgba(33, 150, 243, 0.8); }
+        .status.warning { background: rgba(255, 152, 0, 0.8); }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        
+        .data-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .sync-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        .sync-indicator.synced {
+            background: #4CAF50;
+            animation: none;
+        }
+        
+        .sync-indicator.error {
+            background: #f44336;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Test de Sincronización en Tiempo Real</h1>
+        
+        <div class="test-section">
+            <h2>📊 Estado de Conexión</h2>
+            <div id="connection-status" class="status info">Conectando...</div>
+            <div class="sync-indicator" id="sync-indicator"></div>
+            <span id="sync-text">Sincronizando...</span>
+        </div>
+        
+        <div class="test-section">
+            <h2>📈 Estadísticas en Tiempo Real</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-registrations">0</div>
+                    <div class="stat-label">Total Registros</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-votes">0</div>
+                    <div class="stat-label">Total Votos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-ubch">0</div>
+                    <div class="stat-label">UBCH Activas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="sync-status">🔄</div>
+                    <div class="stat-label">Estado Sincronización</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📝 Crear Registro de Prueba</h2>
+            <button onclick="createTestRecord()" class="success">Crear Registro de Prueba</button>
+            <button onclick="clearTestRecords()">Limpiar Registros de Prueba</button>
+            <div id="create-status" class="status info">Listo para crear registros</div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔍 Búsqueda de Cédulas</h2>
+            <input type="text" id="cedula-search" placeholder="Ingresa una cédula para buscar..." style="padding: 10px; border-radius: 5px; border: none; margin-right: 10px; width: 200px;">
+            <button onclick="searchCedula()">Buscar Cédula</button>
+            <div id="search-results" class="data-display">
+                <p>Ingresa una cédula para buscar...</p>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📋 Últimos Registros</h2>
+            <div id="recent-records" class="data-display">
+                <p>Cargando registros...</p>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📋 Logs de Sincronización</h2>
+            <div id="sync-logs" class="log"></div>
+            <button onclick="clearLogs()">Limpiar Logs</button>
+        </div>
+    </div>
+
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        let realtimeUnsubscribe = null;
+        let allRecords = [];
+        
+        // Función para log
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('sync-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #ccc;">[${timestamp}]</span> ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        // Función para actualizar estado
+        function updateStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+        
+        // Función para actualizar indicador de sincronización
+        function updateSyncIndicator(synced = false, error = false) {
+            const indicator = document.getElementById('sync-indicator');
+            const text = document.getElementById('sync-text');
+            
+            if (error) {
+                indicator.className = 'sync-indicator error';
+                text.textContent = 'Error de conexión';
+                document.getElementById('sync-status').textContent = '❌';
+            } else if (synced) {
+                indicator.className = 'sync-indicator synced';
+                text.textContent = 'Sincronizado';
+                document.getElementById('sync-status').textContent = '✅';
+            } else {
+                indicator.className = 'sync-indicator';
+                text.textContent = 'Sincronizando';
+                document.getElementById('sync-status').textContent = '🔄';
+            }
+        }
+        
+        // Inicializar Firebase
+        async function initFirebase() {
+            log('🚀 Iniciando conexión con Firebase...');
+            
+            try {
+                if (!window.firebaseDB) {
+                    throw new Error('Firebase no está inicializado');
+                }
+                
+                log('✅ Firebase configurado correctamente');
+                updateStatus('connection-status', '✅ Conectado a Firebase', 'success');
+                
+                // Inicializar configuración UBCH
+                await window.firebaseDB.initializeUBCHConfig();
+                
+                // Configurar listener en tiempo real
+                setupRealtimeListener();
+                
+                // Cargar datos iniciales
+                await loadCurrentData();
+                
+                updateSyncIndicator(true);
+                
+            } catch (error) {
+                log(`❌ Error de conexión: ${error.message}`);
+                updateStatus('connection-status', `❌ Error: ${error.message}`, 'error');
+                updateSyncIndicator(false, true);
+            }
+        }
+        
+        // Configurar listener en tiempo real
+        function setupRealtimeListener() {
+            log('🔄 Configurando listener en tiempo real...');
+            
+            realtimeUnsubscribe = window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
+                const count = snapshot.docs.length;
+                log(`📡 Cambio detectado: ${count} registros en Firebase`);
+                
+                // Actualizar datos locales
+                allRecords = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Actualizar displays
+                updateStats();
+                updateRecentRecords();
+                
+                // Actualizar indicador
+                updateSyncIndicator(true);
+                
+            }, (error) => {
+                log(`❌ Error en listener: ${error.message}`);
+                updateSyncIndicator(false, true);
+            });
+            
+            log('✅ Listener configurado correctamente');
+        }
+        
+        // Cargar datos actuales
+        async function loadCurrentData() {
+            try {
+                const snapshot = await window.firebaseDB.votesCollection.get();
+                allRecords = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                log(`📊 Datos cargados: ${allRecords.length} registros`);
+                updateStats();
+                updateRecentRecords();
+                
+            } catch (error) {
+                log(`❌ Error cargando datos: ${error.message}`);
+            }
+        }
+        
+        // Actualizar estadísticas
+        function updateStats() {
+            const totalRegistrations = allRecords.length;
+            const totalVotes = allRecords.filter(record => record.voted).length;
+            const uniqueUBCHs = new Set(allRecords.map(record => record.ubch).filter(ubch => ubch)).size;
+            
+            document.getElementById('total-registrations').textContent = totalRegistrations;
+            document.getElementById('total-votes').textContent = totalVotes;
+            document.getElementById('total-ubch').textContent = uniqueUBCHs;
+        }
+        
+        // Actualizar registros recientes
+        function updateRecentRecords() {
+            const recentDiv = document.getElementById('recent-records');
+            const recentRecords = allRecords.slice(-5).reverse();
+            
+            if (recentRecords.length === 0) {
+                recentDiv.innerHTML = '<p>No hay registros disponibles</p>';
+                return;
+            }
+            
+            let html = '<h3>Últimos 5 registros:</h3>';
+            recentRecords.forEach(record => {
+                html += `
+                    <div style="border-bottom: 1px solid rgba(255,255,255,0.2); padding: 10px 0;">
+                        <strong>${record.name}</strong> - Cédula: ${record.cedula}<br>
+                        UBCH: ${record.ubch} | Comunidad: ${record.community}<br>
+                        Votó: ${record.voted ? '✅ Sí' : '❌ No'} | Registrado: ${new Date(record.createdAt || record.registeredAt).toLocaleString()}
+                    </div>
+                `;
+            });
+            
+            recentDiv.innerHTML = html;
+        }
+        
+        // Crear registro de prueba
+        async function createTestRecord() {
+            try {
+                updateStatus('create-status', 'Creando registro de prueba...', 'info');
+                
+                const testData = {
+                    name: `Test User ${Date.now()}`,
+                    cedula: Math.floor(Math.random() * 90000000) + 10000000,
+                    telefono: `0412${Math.floor(Math.random() * 9000000) + 1000000}`,
+                    sexo: Math.random() > 0.5 ? 'M' : 'F',
+                    edad: Math.floor(Math.random() * 50) + 18,
+                    ubch: 'COLEGIO ASUNCION BELTRAN',
+                    community: 'EL VALLE',
+                    voted: false,
+                    registeredBy: 'test-user',
+                    registeredAt: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+                
+                await window.firebaseDB.votesCollection.add(testData);
+                
+                updateStatus('create-status', `✅ Registro de prueba creado: ${testData.name}`, 'success');
+                log(`✅ Registro de prueba creado: ${testData.name} - Cédula: ${testData.cedula}`);
+                
+            } catch (error) {
+                log(`❌ Error creando registro: ${error.message}`);
+                updateStatus('create-status', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Limpiar registros de prueba
+        async function clearTestRecords() {
+            try {
+                updateStatus('create-status', 'Limpiando registros de prueba...', 'info');
+                
+                const testRecords = allRecords.filter(record => 
+                    record.name && record.name.startsWith('Test User')
+                );
+                
+                for (const record of testRecords) {
+                    await window.firebaseDB.votesCollection.doc(record.id).delete();
+                }
+                
+                updateStatus('create-status', `✅ ${testRecords.length} registros de prueba eliminados`, 'success');
+                log(`✅ ${testRecords.length} registros de prueba eliminados`);
+                
+            } catch (error) {
+                log(`❌ Error limpiando registros: ${error.message}`);
+                updateStatus('create-status', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Buscar cédula
+        async function searchCedula() {
+            const cedula = document.getElementById('cedula-search').value.trim();
+            const resultsDiv = document.getElementById('search-results');
+            
+            if (!cedula) {
+                resultsDiv.innerHTML = '<p>Por favor, ingresa una cédula para buscar</p>';
+                return;
+            }
+            
+            const cleanCedula = cedula.replace(/\D/g, '');
+            const results = allRecords.filter(record => record.cedula === cleanCedula);
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = `<p>No se encontró ninguna persona con la cédula ${cleanCedula}</p>`;
+                return;
+            }
+            
+            let html = `<h3>Resultados para cédula ${cleanCedula}:</h3>`;
+            results.forEach(record => {
+                html += `
+                    <div style="border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; padding: 10px; margin: 10px 0;">
+                        <strong>${record.name}</strong><br>
+                        Teléfono: ${record.telefono}<br>
+                        Sexo: ${record.sexo === 'M' ? 'Masculino' : 'Femenino'}<br>
+                        Edad: ${record.edad} años<br>
+                        UBCH: ${record.ubch}<br>
+                        Comunidad: ${record.community}<br>
+                        Votó: ${record.voted ? '✅ Sí' : '❌ No'}
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Limpiar logs
+        function clearLogs() {
+            document.getElementById('sync-logs').innerHTML = '';
+        }
+        
+        // Inicializar al cargar la página
+        window.addEventListener('load', () => {
+            log('🚀 Página cargada. Iniciando test de sincronización...');
+            setTimeout(initFirebase, 1000);
+        });
+        
+        // Buscar con Enter
+        document.getElementById('cedula-search').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchCedula();
+            }
+        });
+    </script>
+</body>
+</html> 

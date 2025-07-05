@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Sincronización - Sistema de Votos 2025</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button.success { background-color: #28a745; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .sync-indicator {
+            font-size: 20px;
+            margin: 10px 0;
+        }
+        .data-display {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Test de Sincronización en Tiempo Real</h1>
+    
+    <div class="test-container">
+        <h2>📊 Estado de Conexión</h2>
+        <div id="connection-status" class="status info">Conectando...</div>
+        <div class="sync-indicator" id="sync-indicator">🔄</div>
+        <div id="sync-text">Sincronizando...</div>
+    </div>
+    
+    <div class="test-container">
+        <h2>📝 Crear Registro de Prueba</h2>
+        <button onclick="createTestRecord()" class="success">Crear Registro de Prueba</button>
+        <button onclick="clearTestRecords()">Limpiar Registros de Prueba</button>
+        <div id="create-status" class="status info">Listo para crear registros</div>
+    </div>
+    
+    <div class="test-container">
+        <h2>📋 Datos en Tiempo Real</h2>
+        <div id="data-status" class="status info">Cargando datos...</div>
+        <div id="data-display" class="data-display">
+            <p>Esperando datos...</p>
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2>📋 Logs de Sincronización</h2>
+        <div id="sync-logs" class="log"></div>
+        <button onclick="clearLogs()">Limpiar Logs</button>
+    </div>
+
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        let realtimeUnsubscribe = null;
+        let testRecords = [];
+        
+        function log(message) {
+            const logsDiv = document.getElementById('sync-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logsDiv.textContent += logEntry;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+        
+        function updateSyncIndicator(synced = false, error = false) {
+            const indicator = document.getElementById('sync-indicator');
+            const text = document.getElementById('sync-text');
+            
+            if (error) {
+                indicator.textContent = '❌';
+                text.textContent = 'Error de sincronización';
+            } else if (synced) {
+                indicator.textContent = '✅';
+                text.textContent = 'Sincronizado';
+            } else {
+                indicator.textContent = '🔄';
+                text.textContent = 'Sincronizando...';
+            }
+        }
+        
+        async function initFirebase() {
+            log('🚀 Iniciando conexión con Firebase...');
+            
+            try {
+                if (!window.firebaseDB) {
+                    throw new Error('Firebase no está inicializado');
+                }
+                
+                log('✅ Firebase configurado correctamente');
+                updateStatus('connection-status', '✅ Conectado a Firebase', 'success');
+                
+                // Configurar listener en tiempo real
+                setupRealtimeListener();
+                
+                // Cargar datos iniciales
+                await loadCurrentData();
+                
+                updateSyncIndicator(true);
+                
+            } catch (error) {
+                log(`❌ Error de conexión: ${error.message}`);
+                updateStatus('connection-status', `❌ Error: ${error.message}`, 'error');
+                updateSyncIndicator(false, true);
+            }
+        }
+        
+        function setupRealtimeListener() {
+            log('🔄 Configurando listener en tiempo real...');
+            
+            realtimeUnsubscribe = window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
+                const count = snapshot.docs.length;
+                log(`📡 Cambio detectado: ${count} registros en Firebase`);
+                
+                // Actualizar display de datos
+                updateDataDisplay(snapshot.docs);
+                
+                // Actualizar indicador
+                updateSyncIndicator(true);
+                
+            }, (error) => {
+                log(`❌ Error en listener: ${error.message}`);
+                updateSyncIndicator(false, true);
+            });
+            
+            log('✅ Listener configurado correctamente');
+        }
+        
+        function updateDataDisplay(docs) {
+            const dataDiv = document.getElementById('data-display');
+            const data = docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            if (data.length > 0) {
+                let html = `<h3>Registros en Firebase (${data.length})</h3>`;
+                html += '<table style="width:100%; border-collapse: collapse;">';
+                html += '<tr><th style="border:1px solid #ddd; padding:8px;">ID</th><th style="border:1px solid #ddd; padding:8px;">Nombre</th><th style="border:1px solid #ddd; padding:8px;">Cédula</th><th style="border:1px solid #ddd; padding:8px;">Test</th></tr>';
+                
+                data.slice(0, 10).forEach(item => {
+                    html += `<tr>
+                        <td style="border:1px solid #ddd; padding:8px;">${item.id}</td>
+                        <td style="border:1px solid #ddd; padding:8px;">${item.name || ''}</td>
+                        <td style="border:1px solid #ddd; padding:8px;">${item.cedula || ''}</td>
+                        <td style="border:1px solid #ddd; padding:8px;">${item.test ? 'Sí' : 'No'}</td>
+                    </tr>`;
+                });
+                
+                html += '</table>';
+                if (data.length > 10) {
+                    html += `<p>... y ${data.length - 10} registros más</p>`;
+                }
+                
+                dataDiv.innerHTML = html;
+            } else {
+                dataDiv.innerHTML = '<p>No hay registros en Firebase</p>';
+            }
+            
+            updateStatus('data-status', `✅ ${data.length} registros cargados`, 'success');
+        }
+        
+        async function loadCurrentData() {
+            log('📊 Cargando datos actuales...');
+            
+            try {
+                const snapshot = await window.firebaseDB.votesCollection.get();
+                updateDataDisplay(snapshot.docs);
+            } catch (error) {
+                log(`❌ Error cargando datos: ${error.message}`);
+                updateStatus('data-status', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createTestRecord() {
+            log('📝 Creando registro de prueba...');
+            updateStatus('create-status', 'Creando registro...', 'info');
+            
+            try {
+                const testData = {
+                    name: `Test User ${Date.now()}`,
+                    cedula: `999${Date.now()}`,
+                    telefono: '04999999999',
+                    sexo: 'M',
+                    edad: 25,
+                    ubch: 'TEST UBCH',
+                    community: 'TEST COMMUNITY',
+                    voted: false,
+                    test: true,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const docRef = await window.firebaseDB.votesCollection.add({
+                    ...testData,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                testRecords.push(docRef.id);
+                log(`✅ Registro creado: ${testData.name} (ID: ${docRef.id})`);
+                updateStatus('create-status', `✅ Registro creado: ${testData.name}`, 'success');
+                
+            } catch (error) {
+                log(`❌ Error creando registro: ${error.message}`);
+                updateStatus('create-status', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearTestRecords() {
+            log('🗑️ Limpiando registros de prueba...');
+            
+            try {
+                for (const id of testRecords) {
+                    await window.firebaseDB.votesCollection.doc(id).delete();
+                    log(`✅ Registro eliminado: ${id}`);
+                }
+                
+                testRecords = [];
+                log('✅ Registros de prueba eliminados');
+                
+            } catch (error) {
+                log(`❌ Error eliminando registros: ${error.message}`);
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('sync-logs').textContent = '';
+            log('🗑️ Logs limpiados');
+        }
+        
+        // Auto-inicialización
+        window.addEventListener('load', () => {
+            log('🚀 Página de test cargada');
+            setTimeout(initFirebase, 1000);
+        });
+    </script>
+</body>
+</html> 

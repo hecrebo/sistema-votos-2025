@@ -25,6 +25,170 @@
             padding: 30px 10px 40px 10px;
         }
         
+        /* Responsive para tablets */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .admin-container {
+                padding: 20px 15px;
+            }
+            
+            .admin-header {
+                padding: 30px 20px;
+            }
+            
+            .admin-header h1 {
+                font-size: 2.2em;
+            }
+            
+            .admin-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+            
+            .metric-card {
+                padding: 15px 8px;
+            }
+            
+            .metric-number {
+                font-size: 1.8em;
+            }
+        }
+        
+        /* Responsive para móviles grandes */
+        @media (max-width: 768px) and (min-width: 481px) {
+            .admin-container {
+                padding: 15px 10px;
+            }
+            
+            .admin-header {
+                padding: 25px 15px;
+            }
+            
+            .admin-header h1 {
+                font-size: 1.8em;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .admin-header p {
+                font-size: 1em;
+            }
+            
+            .admin-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .admin-card {
+                padding: 20px 15px;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .metric-card {
+                padding: 12px 6px;
+            }
+            
+            .metric-number {
+                font-size: 1.5em;
+            }
+            
+            .menu-toggle {
+                font-size: 22px;
+                padding: 10px;
+            }
+            
+            .menu-dropdown {
+                min-width: 180px;
+            }
+            
+            .menu-item {
+                padding: 15px 18px;
+                font-size: 1rem;
+            }
+        }
+        
+        /* Responsive para móviles pequeños */
+        @media (max-width: 480px) {
+            .admin-container {
+                padding: 10px 5px;
+            }
+            
+            .admin-header {
+                padding: 20px 10px;
+            }
+            
+            .admin-header h1 {
+                font-size: 1.5em;
+                flex-direction: column;
+                gap: 6px;
+                text-align: center;
+            }
+            
+            .admin-header p {
+                font-size: 0.9em;
+                text-align: center;
+            }
+            
+            .mobile-menu {
+                top: 15px;
+                right: 15px;
+            }
+            
+            .menu-toggle {
+                font-size: 20px;
+                padding: 8px;
+            }
+            
+            .menu-dropdown {
+                min-width: 160px;
+                right: -10px;
+            }
+            
+            .menu-item {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .menu-item .icon {
+                margin-right: 10px;
+                font-size: 16px;
+            }
+            
+            .admin-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .admin-card {
+                padding: 15px 10px;
+            }
+            
+            .admin-card h3 {
+                font-size: 1.1em;
+                margin-bottom: 12px;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .metric-card {
+                padding: 10px 5px;
+            }
+            
+            .metric-number {
+                font-size: 1.3em;
+            }
+            
+            .metric-label {
+                font-size: 0.8em;
+            }
+        }
+        
         .admin-header {
             background: white;
             padding: 40px 30px 30px 30px;

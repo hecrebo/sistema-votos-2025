@@ -99,16 +99,62 @@
                     
                     <!-- Selector de modo de registro -->
                     <div class="registration-mode-selector">
-                        <button class="mode-btn active" data-mode="individual" onclick="switchRegistrationMode('individual')">
+                        <button type="button" class="mode-btn active" data-mode="individual" onclick="switchRegistrationMode('individual')">
                             👤 Registro Individual
                         </button>
-                        <button class="mode-btn" data-mode="bulk" onclick="switchRegistrationMode('bulk')">
+                        <button type="button" class="mode-btn" data-mode="bulk" onclick="switchRegistrationMode('bulk')">
                             📊 Registro Masivo (Excel)
                         </button>
                     </div>
                     
-                    <!-- Formulario de registro individual -->
-                    <div id="individual-registration" class="registration-mode">
+                    <!-- Formulario de registro individual CLON (visible para el usuario) -->
+                    <div id="individual-registration-clon" class="registration-mode">
+                        <form id="registration-form-clon" class="registration-form" autocomplete="off">
+                            <div class="form-group">
+                                <label for="ubch-clon">UBCH (Unidad de Batalla Bolívar-Chávez)</label>
+                                <select id="ubch-clon" name="ubch" required>
+                                    <option value="">Selecciona una UBCH</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="community-clon">Comunidad vinculada a la UBCH</label>
+                                <select id="community-clon" name="community" required disabled>
+                                    <option value="">Selecciona una comunidad</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="name-clon">Nombre de la Persona</label>
+                                <input type="text" id="name-clon" name="name" placeholder="Ej: Juan Pérez" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="cedula-clon">Cédula</label>
+                                <input type="text" id="cedula-clon" name="cedula" placeholder="Ej: 12345678" required title="Introduce una cédula válida (solo números, 6 a 10 dígitos)" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="telefono-clon">Teléfono</label>
+                                <input type="text" id="telefono-clon" name="telefono" placeholder="Ej: 04121234567" required title="Introduce un teléfono válido (ej: 04121234567)" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="sexo-clon">Sexo</label>
+                                <select id="sexo-clon" name="sexo" required>
+                                    <option value="">Selecciona el sexo</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edad-clon">Edad</label>
+                                <input type="number" id="edad-clon" name="edad" placeholder="Ej: 25" min="16" max="120" required title="Introduce una edad válida (entre 16 y 120 años)" autocomplete="off">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-large" id="register-btn-clon">
+                                <span class="btn-text">Registrar Persona</span>
+                                <span class="btn-loading" style="display: none;">Registrando...</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Formulario de registro individual ORIGINAL (invisible, mantiene la lógica y sincronización) -->
+                    <div id="individual-registration" class="registration-mode" style="display:none;position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
                         <form id="registration-form" class="registration-form" autocomplete="off">
                             <div class="form-group">
                                 <label for="ubch">UBCH (Unidad de Batalla Bolívar-Chávez)</label>
@@ -146,7 +192,7 @@
                                 <label for="edad">Edad</label>
                                 <input type="number" id="edad" name="edad" placeholder="Ej: 25" min="16" max="120" required title="Introduce una edad válida (entre 16 y 120 años)" autocomplete="off">
                             </div>
-                            <button type="submit" class="btn btn-primary btn-large" id="register-btn">
+                            <button type="submit" class="btn btn-primary btn-large" id="register-btn" style="display:none;">
                                 <span class="btn-text">Registrar Persona</span>
                                 <span class="btn-loading" style="display: none;">Registrando...</span>
                             </button>
@@ -580,12 +626,88 @@
         let bulkRegistrations = [];
         let bulkFile = null;
 
+        // --- Persistencia temporal del formulario y modo de registro ---
+        function saveRegistrationDraft() {
+            const mode = localStorage.getItem('registrationMode') || 'individual';
+            const draft = { mode };
+            if (mode === 'individual') {
+                const form = document.getElementById('registration-form');
+                if (form) {
+                    draft.ubch = form.ubch ? form.ubch.value : '';
+                    draft.community = form.community ? form.community.value : '';
+                    draft.name = form.name ? form.name.value : '';
+                    draft.cedula = form.cedula ? form.cedula.value : '';
+                    draft.telefono = form.telefono ? form.telefono.value : '';
+                    draft.sexo = form.sexo ? form.sexo.value : '';
+                    draft.edad = form.edad ? form.edad.value : '';
+                }
+            }
+            localStorage.setItem('registrationDraft', JSON.stringify(draft));
+        }
+
+        function restoreRegistrationDraft() {
+            const draftStr = localStorage.getItem('registrationDraft');
+            if (!draftStr) return;
+            let draft;
+            try {
+                draft = JSON.parse(draftStr);
+            } catch (e) { return; }
+            if (draft.mode) {
+                switchRegistrationMode(draft.mode);
+            }
+            if (draft.mode === 'individual') {
+                const form = document.getElementById('registration-form');
+                if (form) {
+                    // Guardar valores para reintentar si los selects aún no están listos
+                    form._pendingDraft = draft;
+                    setRegistrationDraftValues(form, draft);
+                }
+            }
+        }
+
+        function setRegistrationDraftValues(form, draft) {
+            // Asigna los valores del borrador si existen las opciones
+            if (form.ubch && draft.ubch) {
+                form.ubch.value = draft.ubch;
+            }
+            if (form.community && draft.community) {
+                form.community.value = draft.community;
+            }
+            if (form.name) form.name.value = draft.name || '';
+            if (form.cedula) form.cedula.value = draft.cedula || '';
+            if (form.telefono) form.telefono.value = draft.telefono || '';
+            if (form.sexo) form.sexo.value = draft.sexo || '';
+            if (form.edad) form.edad.value = draft.edad || '';
+        }
+
+        function clearRegistrationDraft() {
+            localStorage.removeItem('registrationDraft');
+        }
+
+        // Reintentar asignar valores del borrador tras cargar UBCH y Comunidad
+        function onUBCHAndCommunityLoaded() {
+            const form = document.getElementById('registration-form');
+            if (form && form._pendingDraft) {
+                setRegistrationDraftValues(form, form._pendingDraft);
+                delete form._pendingDraft;
+            }
+        }
+
+        // Escuchar eventos personalizados de carga de UBCH y Comunidad
+        document.addEventListener('ubch-options-loaded', onUBCHAndCommunityLoaded);
+        document.addEventListener('community-options-loaded', onUBCHAndCommunityLoaded);
+
         // Configurar el input de archivo para registro masivo
         document.addEventListener('DOMContentLoaded', function() {
             const bulkFileInput = document.getElementById('bulk-excel-input');
             if (bulkFileInput) {
                 bulkFileInput.addEventListener('change', handleBulkFileSelect);
             }
+        });
+
+        // Restaurar borrador después de renderizar la UI
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(restoreRegistrationDraft, 200); // Espera breve para asegurar que el DOM esté listo
         });
 
         // Funciones para registro masivo
@@ -606,6 +728,8 @@
                 bulkBtn.classList.add('active');
                 individualBtn.classList.remove('active');
             }
+            localStorage.setItem('registrationMode', mode);
+            saveRegistrationDraft();
         }
 
         // Manejar selección de archivo para registro masivo
@@ -949,6 +1073,86 @@ UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
         window.addEventListener('appinstalled', () => {
             installBtn.style.display = 'none';
         });
+    </script>
+
+    <!-- Panel flotante de registro UBCH/Comunidad eliminado para una experiencia más profesional e integrada en el formulario principal -->
+    
+    <!-- <div id="registro-independiente" ...> ... </div> -->
+    <!-- <script src="registro-independiente.js"></script> -->
+    
+    <!-- --- Lógica robusta: la selección solo vive en el formulario visible (clon) ---
+    (Código agregado según solicitud de cambio)
+    --- -->
+    <script>
+        // --- Lógica autónoma para UBCH/Comunidad en el formulario visible ---
+        // Usar la fuente real de datos: ubchToCommunityMap desde localStorage o window
+function getUbchToCommunityMapReal() {
+    // Intentar obtener del localStorage (como hace el sistema principal)
+    let map = {};
+    try {
+        map = JSON.parse(localStorage.getItem('ubchToCommunityMap')) || {};
+    } catch (e) {}
+    // Si el sistema principal ya lo expone en window, usarlo
+    if (window.votingSystem && window.votingSystem.ubchToCommunityMap) {
+        map = window.votingSystem.ubchToCommunityMap;
+    }
+    return map;
+}
+
+function cargarUBCHClon() {
+    const ubchClon = document.getElementById('ubch-clon');
+    ubchClon.innerHTML = '<option value="">Selecciona una UBCH</option>';
+    const map = getUbchToCommunityMapReal();
+    Object.keys(map).forEach(ubch => {
+        const opt = document.createElement('option');
+        opt.value = ubch;
+        opt.textContent = ubch;
+        ubchClon.appendChild(opt);
+    });
+}
+function cargarComunidadesClon(ubchId) {
+    const communityClon = document.getElementById('community-clon');
+    communityClon.innerHTML = '<option value="">Selecciona una comunidad</option>';
+    communityClon.disabled = true;
+    const map = getUbchToCommunityMapReal();
+    if (ubchId && map[ubchId]) {
+        map[ubchId].forEach(com => {
+            const opt = document.createElement('option');
+            opt.value = com;
+            opt.textContent = com;
+            communityClon.appendChild(opt);
+        });
+        communityClon.disabled = false;
+    }
+}
+function guardarSeleccionClon() {
+    const ubch = document.getElementById('ubch-clon').value;
+    const community = document.getElementById('community-clon').value;
+    localStorage.setItem('registroSeleccionVisible', JSON.stringify({ ubch, community }));
+}
+function restaurarSeleccionClon() {
+    const seleccionStr = localStorage.getItem('registroSeleccionVisible');
+    if (!seleccionStr) return;
+    try {
+        const seleccion = JSON.parse(seleccionStr);
+        if (seleccion.ubch) {
+            document.getElementById('ubch-clon').value = seleccion.ubch;
+            cargarComunidadesClon(seleccion.ubch);
+        }
+        if (seleccion.community) {
+            document.getElementById('community-clon').value = seleccion.community;
+        }
+    } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', function() {
+    cargarUBCHClon();
+    restaurarSeleccionClon();
+    document.getElementById('ubch-clon').addEventListener('change', function() {
+        cargarComunidadesClon(this.value);
+        guardarSeleccionClon();
+    });
+    document.getElementById('community-clon').addEventListener('change', guardarSeleccionClon);
+});
     </script>
 </body>
 </html>

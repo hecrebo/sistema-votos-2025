@@ -1138,37 +1138,276 @@ body {
     border-radius: 1rem 1rem 0 0;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive Design Mejorado */
+
+/* Tablets (768px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .header-content {
+        max-width: 95%;
+    }
+    
     .header-title {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
     }
     
     .nav-menu {
-        flex-direction: column;
-        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .nav-btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.95rem;
     }
     
     .page-container {
-        padding: 1rem;
-        border-radius: 0.5rem;
+        padding: 1.5rem;
+        max-width: 95%;
+    }
+    
+    .form-group input, .form-group select {
+        font-size: 1rem;
+        padding: 0.8rem 1rem;
+        min-height: 44px; /* Mínimo para accesibilidad táctil */
+    }
+    
+    .btn, .btn-primary, .btn-secondary, .btn-danger, .btn-success {
+        font-size: 1rem;
+        padding: 0.8rem 1.2rem;
+        min-height: 44px;
+        border-radius: 0.6rem;
+    }
+    
+    .data-table {
+        font-size: 0.9rem;
+    }
+    
+    .data-table th, .data-table td {
+        padding: 0.7rem 0.5rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .filter-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .filter-buttons {
+        justify-content: center;
+    }
+    
+    .ubch-filter, .community-filter {
+        margin-left: 0;
+        text-align: center;
+    }
+    
+    .ubch-filter-select, .community-filter-select {
+        min-width: 180px;
+        font-size: 1rem;
+        padding: 0.7rem;
+    }
+}
+
+/* Móviles grandes y tablets pequeñas (481px - 768px) */
+@media (max-width: 768px) and (min-width: 481px) {
+    .header {
+        padding: 0.8rem;
+    }
+    
+    .header-top {
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .logo-container {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .header-title {
+        font-size: 1.6rem;
+        text-align: center;
+    }
+    
+    .nav-menu {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .nav-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: 120px;
+        max-width: 160px;
+    }
+    
+    .main-content {
+        padding: 1.5rem 0.8rem;
+    }
+    
+    .page-container {
+        padding: 1.2rem;
+        border-radius: 0.8rem;
+        margin: 0 0.5rem;
+    }
+    
+    .page-title {
+        font-size: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
     }
     
     .page-header {
         flex-direction: column;
         align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .page-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-group input, .form-group select {
+        font-size: 1.1rem;
+        padding: 1rem;
+        min-height: 50px;
+        border-radius: 0.8rem;
+        border: 2px solid var(--border-color);
+    }
+    
+    .btn, .btn-primary, .btn-secondary, .btn-danger, .btn-success {
+        font-size: 1.1rem;
+        padding: 1rem 1.5rem;
+        min-height: 50px;
+        border-radius: 0.8rem;
+        font-weight: 600;
     }
     
     .search-container {
         flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .search-container input {
+        width: 100%;
+        font-size: 1.1rem;
+        padding: 1rem;
+        min-height: 50px;
+        border-radius: 0.8rem;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -1.2rem;
+        padding: 0 1.2rem;
+    }
+    
+    .data-table {
+        min-width: 700px;
+        font-size: 0.9rem;
+    }
+    
+    .data-table th, .data-table td {
+        padding: 0.8rem 0.5rem;
+        white-space: nowrap;
+    }
+    
+    .filter-container {
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-buttons {
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-btn {
+        padding: 0.7rem 1rem;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .ubch-filter, .community-filter {
+        margin-left: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .ubch-filter-select, .community-filter-select {
+        width: 100%;
+        max-width: 300px;
+        font-size: 1rem;
+        padding: 0.8rem;
+        min-height: 44px;
     }
     
     .stats-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        padding: 1.5rem;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+    }
+    
+    .pagination-controls {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+    
+    .pagination-controls button, .pagination-controls select {
+        font-size: 1rem;
+        padding: 0.8rem 1rem;
+        min-height: 44px;
+    }
+    
+    .modal-content {
+        width: 95vw;
+        max-width: 95vw;
+        padding: 1.2rem;
+        border-radius: 1rem;
+        margin: 2% auto;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.8rem;
     }
     
     .projection-content {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
     
     .projection-header h1 {
@@ -1178,50 +1417,356 @@ body {
     .projection-number {
         font-size: 4rem;
     }
-    
-    .modal-actions {
-        flex-direction: column;
+}
+
+/* Móviles pequeños (hasta 480px) */
+@media (max-width: 480px) {
+    .header {
+        padding: 0.6rem;
     }
+    
+    .header-top {
+        flex-direction: column;
+        gap: 0.8rem;
+        margin-bottom: 0.6rem;
+    }
+    
+    .logo-container {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .header-title {
+        font-size: 1.3rem;
+        line-height: 1.2;
+    }
+    
+    .nav-menu {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.4rem;
+        margin-bottom: 0.6rem;
+    }
+    
+    .nav-btn {
+        padding: 0.8rem;
+        font-size: 1rem;
+        text-align: center;
+        width: 100%;
+    }
+    
+    .main-content {
+        padding: 1rem 0.5rem;
+    }
+    
+    .page-container {
+        padding: 1rem;
+        border-radius: 0.6rem;
+        margin: 0;
+    }
+    
+    .page-title {
+        font-size: 1.3rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.8rem;
+        text-align: center;
+    }
+    
+    .page-actions {
+        justify-content: center;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+        display: block;
+        text-align: left;
+    }
+    
+    .form-group input, .form-group select {
+        font-size: 1.2rem;
+        padding: 1.1rem;
+        min-height: 55px;
+        border-radius: 0.8rem;
+        border: 2px solid var(--border-color);
+        width: 100%;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+    
+    .btn, .btn-primary, .btn-secondary, .btn-danger, .btn-success {
+        font-size: 1.2rem;
+        padding: 1.1rem 1.5rem;
+        min-height: 55px;
+        border-radius: 0.8rem;
+        font-weight: 600;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .search-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .search-container input {
+        width: 100%;
+        font-size: 1.2rem;
+        padding: 1.1rem;
+        min-height: 55px;
+        border-radius: 0.8rem;
+    }
+    
     .table-container {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        margin: 0 -1rem;
+        padding: 0 1rem;
     }
+    
     .data-table {
-        min-width: 700px;
-        font-size: 0.95rem;
+        min-width: 600px;
+        font-size: 0.85rem;
     }
+    
+    .data-table th, .data-table td {
+        padding: 0.6rem 0.4rem;
+        white-space: nowrap;
+        font-size: 0.85rem;
+    }
+    
+    .data-table th {
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .filter-container {
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .filter-btn {
+        padding: 0.8rem;
+        font-size: 1rem;
+        width: 100%;
+        text-align: center;
+    }
+    
+    .filter-counter {
+        margin-left: 0;
+        margin-top: 0.5rem;
+        align-self: center;
+    }
+    
+    .ubch-filter, .community-filter {
+        margin-left: 0;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .ubch-filter label, .community-filter label {
+        margin-bottom: 0.5rem;
+        text-align: center;
+        font-weight: 600;
+    }
+    
+    .ubch-filter-select, .community-filter-select {
+        width: 100%;
+        font-size: 1.1rem;
+        padding: 1rem;
+        min-height: 50px;
+        border-radius: 0.6rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        padding: 1.5rem 1rem;
+        text-align: center;
+    }
+    
+    .stat-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2.2rem;
+    }
+    
     .pagination-controls {
-        flex-wrap: wrap;
-        gap: 0.3rem;
+        flex-direction: column;
+        gap: 0.8rem;
+        align-items: center;
     }
-    .pagination-controls button, .pagination-controls select {
+    
+    .pagination-controls button {
         font-size: 1.1rem;
-        padding: 0.7rem 1.2rem;
+        padding: 0.9rem 1.2rem;
+        min-height: 50px;
+        min-width: 120px;
     }
-    .btn, .btn-primary, .btn-secondary, .btn-danger, .btn-success {
+    
+    .pagination-controls select {
         font-size: 1.1rem;
-        padding: 0.9rem 1.5rem;
-        border-radius: 0.7rem;
+        padding: 0.9rem;
+        min-height: 50px;
+        min-width: 150px;
     }
-    .form-group input, .form-group select {
-        font-size: 1.1rem;
-        padding: 1rem 1.2rem;
-        border-radius: 0.7rem;
-    }
+    
     .modal-content {
         width: 98vw;
-        min-width: unset;
-        max-width: 99vw;
+        max-width: 98vw;
         padding: 1rem;
-        border-radius: 0.7rem;
+        border-radius: 0.8rem;
+        margin: 1% auto;
+        max-height: 95vh;
+        overflow-y: auto;
     }
+    
     .modal-actions {
         flex-direction: column;
-        gap: 0.7rem;
+        gap: 0.8rem;
     }
+    
+    .modal-actions .btn {
+        width: 100%;
+        margin: 0;
+    }
+    
     .bulk-preview-table {
-        min-width: 600px;
-        font-size: 0.95rem;
+        min-width: 500px;
+        font-size: 0.8rem;
+    }
+    
+    .bulk-preview-table th,
+    .bulk-preview-table td {
+        padding: 0.5rem 0.3rem;
+        font-size: 0.75rem;
+    }
+    
+    .registration-mode-selector {
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+    
+    .mode-btn {
+        padding: 1rem;
+        font-size: 1.1rem;
+        width: 100%;
+        text-align: center;
+    }
+    
+    .import-controls {
+        flex-direction: column;
+        gap: 0.8rem;
+        align-items: stretch;
+    }
+    
+    .projection-content {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .projection-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .projection-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .projection-number {
+        font-size: 3rem;
+    }
+    
+    .user-info {
+        font-size: 0.8rem;
+    }
+    
+    .sync-status {
+        flex-direction: column;
+        gap: 0.3rem;
+        align-items: center;
+    }
+    
+    /* Mejoras adicionales para móviles muy pequeños */
+    .mobile-menu {
+        display: block;
+    }
+    
+    .menu-dropdown {
+        z-index: 9999;
+    }
+    
+    /* Evitar que el texto se seleccione accidentalmente en móviles */
+    .nav-btn, .btn, .filter-btn {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Mejorar la zona de toque para elementos interactivos */
+    .nav-btn, .btn, .filter-btn, .form-group input, .form-group select {
+        touch-action: manipulation;
+    }
+    
+    /* Evitar zoom en inputs en iOS */
+    @media screen and (-webkit-min-device-pixel-ratio: 0) {
+        select:focus,
+        textarea:focus,
+        input:focus {
+            font-size: 16px !important;
+        }
+    }
+    
+    /* Asegurar que los modales se vean bien en pantallas muy pequeñas */
+    .modal {
+        padding: 0.5rem;
+    }
+    
+    /* Mejorar el indicador de carga en móviles */
+    .btn-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    /* Hacer que las tablas sean más fáciles de usar en móviles */
+    .data-table tr {
+        cursor: pointer;
+    }
+    
+    .data-table tr:active {
+        background-color: var(--primary-light) !important;
     }
 }
 
