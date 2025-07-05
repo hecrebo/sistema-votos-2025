@@ -706,11 +706,7 @@ class VotingSystem {
             throw new Error(validation.message);
         }
 
-        // Verificar duplicados
-        const isDuplicate = this.votes.some(vote => vote.cedula === registrationData.cedula);
-        if (isDuplicate) {
-            throw new Error('Esta cédula ya está registrada');
-        }
+        // La verificación de duplicados ahora la maneja QueueManager
 
         // Crear nuevo registro
         const newVote = {
@@ -1053,6 +1049,13 @@ class VotingSystem {
         // Cambio de UBCH
         document.getElementById('ubch').addEventListener('change', (e) => {
             this.handleUBCHChange(e.target.value);
+            localStorage.setItem('selectedUBCH', e.target.value);
+            localStorage.removeItem('selectedCommunity'); // Clear community selection when UBCH changes
+        });
+
+        // Cambio de Comunidad
+        document.getElementById('community').addEventListener('change', (e) => {
+            localStorage.setItem('selectedCommunity', e.target.value);
         });
 
         // Exportación
@@ -1180,6 +1183,9 @@ class VotingSystem {
             option.textContent = ubch;
             ubchSelect.appendChild(option);
         });
+
+        // Restore selection after populating
+        this.restoreFormSelection();
     }
 
     handleUBCHChange(selectedUBCH) {
@@ -1195,6 +1201,17 @@ class VotingSystem {
                 communitySelect.appendChild(option);
             });
         }
+
+        // Use a small timeout to ensure the DOM is updated before setting the value
+        setTimeout(() => {
+            const selectedCommunity = localStorage.getItem('selectedCommunity');
+            if (selectedCommunity) {
+                // Check if the option exists before setting it
+                if (Array.from(communitySelect.options).some(opt => opt.value === selectedCommunity)) {
+                    communitySelect.value = selectedCommunity;
+                }
+            }
+        }, 0);
     }
 
     async handleRegistration() {
@@ -1229,27 +1246,39 @@ class VotingSystem {
         this.setLoadingState('registration', true);
 
         try {
-            // Agregar a la cola de registros
-            const result = await this.addToRegistrationQueue(registrationData);
-
-            this.showMessage('¡Persona registrada con éxito!', 'success', 'registration');
-            await this.generateThankYouMessage(name, ubch, community);
-            
-            // Limpiar formulario
-            form.reset();
-            document.getElementById('community').disabled = true;
-            
-            // Mantener visible el mensaje de agradecimiento
-            setTimeout(() => {
-                document.getElementById('thank-you-message').style.display = 'none';
-            }, 10000);
-            
+            // Usar el QueueManager global si está disponible
+            if (window.queueManager) {
+                window.queueManager.addToQueue(registrationData);
+                this.showMessage('Registro enviado para procesamiento...', 'info', 'registration');
+            } else {
+                // Fallback si QueueManager no está listo
+                const result = await this.addToRegistrationQueue(registrationData);
+                this.handleSuccessfulRegistrationUI(registrationData); // Use the new UI handler
+            }
         } catch (error) {
             console.error('Error al registrar:', error);
             this.showMessage(error.message || 'Error al registrar persona. Inténtalo de nuevo.', 'error', 'registration');
         } finally {
             this.setLoadingState('registration', false);
         }
+    }
+
+    handleSuccessfulRegistrationUI(registrationData) {
+        const form = document.getElementById('registration-form');
+        this.showMessage('¡Persona registrada con éxito!', 'success', 'registration');
+        this.generateThankYouMessage(registrationData.name, registrationData.ubch, registrationData.community);
+        
+        // Limpiar formulario
+        form.reset();
+        document.getElementById('community').disabled = true;
+        
+        // Mantener visible el mensaje de agradecimiento
+        setTimeout(() => {
+            const thankYouMessage = document.getElementById('thank-you-message');
+            if (thankYouMessage) {
+                thankYouMessage.style.display = 'none';
+            }
+        }, 10000);
     }
 
     async generateThankYouMessage(name, ubch, community) {
@@ -2423,6 +2452,15 @@ class VotingSystem {
             
             // Usuario
             doc.text(`Usuario: ${this.currentUser.username}`, pageWidth - 60, pageHeight - 10);
+        }
+    }
+
+    restoreFormSelection() {
+        const selectedUBCH = localStorage.getItem('selectedUBCH');
+        if (selectedUBCH) {
+            const ubchSelect = document.getElementById('ubch');
+            ubchSelect.value = selectedUBCH;
+            this.handleUBCHChange(selectedUBCH); // This will populate and restore community
         }
     }
 
