@@ -758,9 +758,9 @@ class VotingSystem {
             return { isValid: false, message: 'Nombre inválido. Debe tener al menos 3 caracteres' };
         }
 
-        // Validar teléfono
-        if (!data.telefono || !/^04\d{9}$/.test(data.telefono)) {
-            return { isValid: false, message: 'Teléfono inválido. Debe tener formato: 04xxxxxxxxx' };
+        // Validar teléfono (opcional, pero si se ingresa, validar formato)
+        if (data.telefono && data.telefono.trim() !== "" && !/^04\d{9}$/.test(data.telefono)) {
+            return { isValid: false, message: 'Teléfono inválido. Si se ingresa, debe tener formato: 04xxxxxxxxx' };
         }
 
         // Validar sexo
@@ -832,21 +832,27 @@ class VotingSystem {
         if (!this.currentUser) return;
         
         const userRole = this.currentUser.rol;
+        const navUserRegistrations = document.getElementById('nav-user-registrations');
+
+        // Mostrar "Mis Registros" para todos los usuarios logueados
+        if (navUserRegistrations) {
+            navUserRegistrations.style.display = 'inline-block';
+        }
         
         // Definir permisos por rol
         const permissions = {
             'registrador': {
-                allowedPages: ['registration', 'check-in'],
-                hiddenElements: ['.export-btn', '#projection-btn', '#admin-panel-btn'],
+                allowedPages: ['registration', 'check-in', 'user-registrations'],
+                hiddenElements: ['.export-btn', '#projection-btn', '#admin-panel-btn', /* Ocultar exportaciones generales si es necesario */],
                 disabledFeatures: ['delete', 'admin-functions']
             },
             'admin': {
-                allowedPages: ['registration', 'check-in', 'listado', 'dashboard', 'statistics'],
-                hiddenElements: ['#admin-panel-btn'],
+                allowedPages: ['registration', 'check-in', 'listado', 'dashboard', 'statistics', 'user-registrations'],
+                hiddenElements: ['#admin-panel-btn'], // Admin no ve el panel de superadmin
                 disabledFeatures: []
             },
             'superusuario': {
-                allowedPages: ['registration', 'check-in', 'listado', 'dashboard', 'statistics', 'admin'],
+                allowedPages: ['registration', 'check-in', 'listado', 'dashboard', 'statistics', 'admin', 'user-registrations'],
                 hiddenElements: [],
                 disabledFeatures: []
             }
@@ -1110,12 +1116,125 @@ class VotingSystem {
         const communityFilterSelect = document.getElementById('community-filter-select');
         if (communityFilterSelect) {
             communityFilterSelect.addEventListener('change', () => {
-                this.renderFilteredTable();
+                this.renderFilteredTable(); // Para la tabla principal
             });
+        }
+
+        // Botones de exportación para "Mis Registros"
+        const exportUserPdfBtn = document.getElementById('export-user-pdf-btn');
+        if (exportUserPdfBtn) {
+            exportUserPdfBtn.addEventListener('click', () => this.exportUserRegistrationsToPDF());
+        }
+        const exportUserCsvBtn = document.getElementById('export-user-csv-btn');
+        if (exportUserCsvBtn) {
+            exportUserCsvBtn.addEventListener('click', () => this.exportUserRegistrationsToCSV());
         }
 
         // Mostrar ID de usuario
         document.getElementById('userId').textContent = this.userId;
+    }
+
+    exportUserRegistrationsToPDF() {
+        if (!this.currentUser || !this.currentUser.username) {
+            this.showMessage('Debe iniciar sesión para exportar sus registros.', 'error', 'user-registrations');
+            return;
+        }
+        const userRegistrations = this.votes.filter(vote => vote.registeredBy === this.currentUser.username)
+            .sort((a,b) => new Date(b.registeredAt || 0) - new Date(a.registeredAt || 0));
+
+        if (userRegistrations.length === 0) {
+            this.showMessage('No tiene registros para exportar.', 'info', 'user-registrations');
+            return;
+        }
+
+        if (!this.pdfLibrariesReady) {
+            this.showMessage('Las librerías para PDF no están listas. Intente de nuevo en unos segundos.', 'warning', 'user-registrations');
+            this.loadPdfLibraries(); // Intenta cargarlas de nuevo
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(18);
+        doc.text(`Mis Registros - Usuario: ${this.currentUser.username}`, 20, 20);
+        doc.setFontSize(10);
+        doc.text(`Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}`, 20, 30);
+        doc.text(`Total de registros: ${userRegistrations.length}`, 20, 35);
+
+
+        const tableColumn = ["Nombre", "Cédula", "Sexo", "Edad", "Centro de Votación", "Comunidad", "Votó", "Fecha Registro"];
+        const tableRows = [];
+
+        userRegistrations.forEach(vote => {
+            const registeredAtDate = vote.registeredAt ? new Date(vote.registeredAt).toLocaleString('es-VE') : 'N/A';
+            tableRows.push([
+                vote.name,
+                vote.cedula,
+                vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A',
+                vote.edad || 'N/A',
+                vote.ubch, // Asumiendo que ubch es Centro de Votación
+                vote.community,
+                vote.voted ? "Sí" : "No",
+                registeredAtDate
+            ]);
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 45,
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            alternateRowStyles: { fillColor: [245, 245, 245] }
+        });
+
+        doc.save(`mis_registros_${this.currentUser.username}_${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.pdf`);
+        this.showMessage('PDF de Mis Registros generado.', 'success', 'user-registrations');
+    }
+
+    exportUserRegistrationsToCSV() {
+        if (!this.currentUser || !this.currentUser.username) {
+            this.showMessage('Debe iniciar sesión para exportar sus registros.', 'error', 'user-registrations');
+            return;
+        }
+        const userRegistrations = this.votes.filter(vote => vote.registeredBy === this.currentUser.username)
+            .sort((a,b) => new Date(b.registeredAt || 0) - new Date(a.registeredAt || 0));
+
+        if (userRegistrations.length === 0) {
+            this.showMessage('No tiene registros para exportar.', 'info', 'user-registrations');
+            return;
+        }
+
+        const headers = ["Nombre", "Cédula", "Sexo", "Edad", "Teléfono", "Centro de Votación", "Comunidad", "Votó", "Fecha Registro"];
+        const csvRows = [
+            headers.join(';'),
+            ...userRegistrations.map(vote => {
+                const registeredAtDate = vote.registeredAt ? new Date(vote.registeredAt).toLocaleString('es-VE') : 'N/A';
+                return [
+                    `"${(vote.name || '').replace(/"/g, '""')}"`,
+                    `"${(vote.cedula || '').replace(/"/g, '""')}"`,
+                    `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}"`,
+                    `"${vote.edad || 'N/A'}"`,
+                    `"${(vote.telefono || '').replace(/"/g, '""')}"`, // Incluir teléfono si es relevante
+                    `"${(vote.ubch || '').replace(/"/g, '""')}"`, // Asumiendo ubch es Centro de Votación
+                    `"${(vote.community || '').replace(/"/g, '""')}"`,
+                    `"${vote.voted ? 'Sí' : 'No'}"`,
+                    `"${registeredAtDate}"`
+                ].join(';');
+            })
+        ];
+        const csvString = csvRows.join('\r\n');
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `mis_registros_${this.currentUser.username}_${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        this.showMessage('CSV de Mis Registros generado.', 'success', 'user-registrations');
     }
 
     navigateToPage(page) {
@@ -1154,64 +1273,123 @@ class VotingSystem {
             case 'statistics':
                 this.renderStatisticsPage();
                 break;
+            case 'user-registrations':
+                this.renderUserRegistrationsPage();
+                break;
         }
     }
 
+    renderUserRegistrationsPage() {
+        if (!this.currentUser || !this.currentUser.username) {
+            this.showMessage('Debe iniciar sesión para ver sus registros.', 'error', 'user-registrations');
+            // Opcionalmente, redirigir al login o deshabilitar la página.
+            document.getElementById('user-registros-table-body').innerHTML = '<tr><td colspan="8">No está autenticado.</td></tr>';
+            document.getElementById('user-filter-counter').textContent = '0';
+            return;
+        }
+
+        const userRegistrations = this.votes.filter(vote => vote.registeredBy === this.currentUser.username);
+
+        console.log(`Renderizando ${userRegistrations.length} registros para el usuario ${this.currentUser.username}`);
+
+        const tbody = document.getElementById('user-registros-table-body');
+        tbody.innerHTML = ''; // Limpiar tabla
+
+        document.getElementById('user-filter-counter').textContent = userRegistrations.length;
+
+        if (userRegistrations.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8">No ha realizado ningún registro aún.</td></tr>';
+            // Limpiar controles de paginación si es necesario
+            const paginationControls = document.getElementById('user-pagination-controls');
+            if (paginationControls) paginationControls.innerHTML = '';
+            return;
+        }
+
+        // Implementar paginación similar a renderVotesTable si es necesario
+        // Por ahora, mostramos todos los registros del usuario
+        userRegistrations.sort((a,b) => new Date(b.registeredAt || 0) - new Date(a.registeredAt || 0)); // Ordenar por más reciente
+
+        userRegistrations.forEach(vote => {
+            const tr = document.createElement('tr');
+            const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
+            const registeredAtDate = vote.registeredAt ? new Date(vote.registeredAt).toLocaleString('es-VE') : 'N/A';
+
+            tr.innerHTML = `
+                <td>${vote.name}</td>
+                <td>${vote.cedula}</td>
+                <td class="${sexoClass}">${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}</td>
+                <td>${vote.edad || 'N/A'}</td>
+                <td>${vote.ubch}</td>
+                <td>${vote.community}</td>
+                <td>
+                    <span class="vote-status ${vote.voted ? 'voted' : 'not-voted'}">
+                        ${vote.voted ? 'Sí' : 'No'}
+                    </span>
+                </td>
+                <td>${registeredAtDate}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Aquí se podría añadir la lógica para los botones de exportación PDF/CSV específicos para esta vista
+        // document.getElementById('export-user-pdf-btn').onclick = () => this.exportUserRegistrationsToPDF(userRegistrations);
+        // document.getElementById('export-user-csv-btn').onclick = () => this.exportUserRegistrationsToCSV(userRegistrations);
+    }
+
+
     renderRegistrationPage() {
-        const ubchSelect = document.getElementById('ubch');
-        const communitySelect = document.getElementById('community');
+        const ubchSelect = document.getElementById('ubch'); // Ahora es Centro de Votación
+        const communitySelect = document.getElementById('community'); // Ahora es Comunidad de Residencia
         const form = document.getElementById('registration-form');
 
         // Limpiar opciones
-        ubchSelect.innerHTML = '<option value="">Selecciona una UBCH</option>';
-        communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
-        communitySelect.disabled = true;
+        ubchSelect.innerHTML = '<option value="">Seleccione un Centro de Votación</option>';
+        communitySelect.innerHTML = '<option value="">Seleccione una Comunidad</option>';
+        // communitySelect.disabled = true; // Ya no se deshabilita, se puebla con todas las comunidades
 
-        // Si no hay UBCH, desactivar el formulario y mostrar mensaje
-        if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
+        const centrosVotacion = Object.keys(this.ubchToCommunityMap || {});
+        const todasComunidades = [...new Set(Object.values(this.ubchToCommunityMap || {}).flat())].sort();
+
+        if (centrosVotacion.length === 0) {
             form.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
-            this.showMessage('No hay UBCH disponibles. Contacte al administrador.', 'error', 'registration');
+            this.showMessage('No hay Centros de Votación disponibles. Contacte al administrador.', 'error', 'registration');
             return;
         } else {
             form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
         }
 
-        // Llenar UBCH
-        Object.keys(this.ubchToCommunityMap).forEach(ubch => {
+        // Llenar Centros de Votación (antes UBCH)
+        centrosVotacion.forEach(cv => {
             const option = document.createElement('option');
-            option.value = ubch;
-            option.textContent = ubch;
+            option.value = cv;
+            option.textContent = cv;
             ubchSelect.appendChild(option);
         });
 
-        // Restore selection after populating
-        this.restoreFormSelection();
-    }
-
-    handleUBCHChange(selectedUBCH) {
-        const communitySelect = document.getElementById('community');
-        communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
-        communitySelect.disabled = !selectedUBCH;
-
-        if (selectedUBCH && this.ubchToCommunityMap[selectedUBCH]) {
-            this.ubchToCommunityMap[selectedUBCH].forEach(community => {
+        // Llenar todas las Comunidades
+        if (todasComunidades.length > 0) {
+            communitySelect.disabled = false;
+            todasComunidades.forEach(community => {
                 const option = document.createElement('option');
                 option.value = community;
                 option.textContent = community;
                 communitySelect.appendChild(option);
             });
+        } else {
+            communitySelect.disabled = true;
+             this.showMessage('No hay Comunidades disponibles. Verifique la configuración.', 'warning', 'registration');
         }
 
-        // Use a small timeout to ensure the DOM is updated before setting the value
-        setTimeout(() => {
-            const selectedCommunity = localStorage.getItem('selectedCommunity');
-            if (selectedCommunity) {
-                // Check if the option exists before setting it
-                if (Array.from(communitySelect.options).some(opt => opt.value === selectedCommunity)) {
-                    communitySelect.value = selectedCommunity;
-                }
-            }
-        }, 0);
+        this.restoreFormSelection(); // Intentar restaurar selecciones previas
+    }
+
+    handleUBCHChange(selectedUBCH) {
+        // Ya no se filtra la comunidad basada en UBCH/Centro de Votación en el registro individual.
+        // Esta función podría eliminarse o adaptarse si se mantiene la lógica en el modal de edición.
+        // Por ahora, la dejamos vacía o con un log para el registro individual.
+        console.log("Centro de Votación seleccionado:", selectedUBCH);
+        localStorage.setItem('selectedUBCH', selectedUBCH);
+        // No se limpia selectedCommunity, ya que son independientes.
     }
 
     async handleRegistration() {
@@ -1234,13 +1412,16 @@ class VotingSystem {
 
         // Preparar datos para la cola
         const registrationData = {
-                name,
-            cedula: cedula.replace(/\D/g, ''),
-            telefono: telefono.replace(/\D/g, ''),
+            name,
+            cedula: cedula.replace(/\D/g, ''), // Asegurar que la cédula solo contenga números
+            telefono: telefono.replace(/\D/g, ''), // Limpiar teléfono también
             sexo,
             edad: parseInt(edad),
-                ubch,
-            community
+            ubch, // Este es el "Centro de Votación"
+            community,
+            registeredBy: this.currentUser ? this.currentUser.username : 'sistema', // Asegurar que registeredBy se guarda
+            voted: false, // Estado inicial de voto
+            // registeredAt y createdAt se añadirán en el gestor de cola o al guardar en Firebase
         };
 
         this.setLoadingState('registration', true);

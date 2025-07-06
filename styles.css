@@ -2707,4 +2707,46 @@ select:focus {
     .queue-count {
         font-size: 0.875rem;
     }
-} 
+}
+
+/* Estilos para tabla de pegado masivo */
+.table-responsive-bulk {
+    overflow-x: auto;
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    max-height: 400px; /* Ajusta según necesidad */
+}
+.bulk-paste-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+.bulk-paste-table th, .bulk-paste-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top; /* Para mejor edición multilínea si es necesario */
+}
+.bulk-paste-table th {
+    background-color: #f2f2f2;
+    position: sticky;
+    top: 0; /* Para que los encabezados se queden fijos al hacer scroll */
+    z-index: 1;
+}
+.bulk-paste-table td[contenteditable="true"] {
+    background-color: #fff;
+}
+.bulk-paste-table td[contenteditable="true"]:focus {
+    outline: 2px solid var(--primary-color);
+    background-color: #eef;
+}
+.bulk-paste-table input[type="checkbox"] {
+    cursor: pointer;
+}
+.bulk-table-controls {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}

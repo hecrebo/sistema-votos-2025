@@ -479,9 +479,9 @@ class VotingSystemFirebase extends VotingSystem {
             return { isValid: false, message: 'Nombre inválido. Debe tener al menos 3 caracteres' };
         }
 
-        // Validar teléfono
-        if (!data.telefono || !/^04\d{9}$/.test(data.telefono)) {
-            return { isValid: false, message: 'Teléfono inválido. Debe tener formato: 04xxxxxxxxx' };
+        // Validar teléfono (opcional, pero si se ingresa, validar formato)
+        if (data.telefono && data.telefono.trim() !== "" && !/^04\d{9}$/.test(data.telefono)) {
+            return { isValid: false, message: 'Teléfono inválido. Si se ingresa, debe tener formato: 04xxxxxxxxx' };
         }
 
         // Validar sexo
@@ -524,15 +524,14 @@ class VotingSystemFirebase extends VotingSystem {
         const registrationData = {
             name,
             cedula: cedula.replace(/\D/g, ''),
-            telefono: telefono.replace(/\D/g, ''),
+            telefono: telefono.replace(/\D/g, ''), // Teléfono es opcional, pero si viene, se limpia
             sexo,
             edad: parseInt(edad),
-            ubch,
-            community,
-            registeredBy: this.getCurrentUser()?.username || this.userId,
+            ubch, // Centro de Votación
+            community, // Comunidad de Residencia
+            registeredBy: this.currentUser ? this.currentUser.username : 'sistema_firebase', // Asegurar que registeredBy se guarda
             voted: false,
-            registeredAt: new Date().toISOString(),
-            createdAt: new Date().toISOString()
+            // registeredAt y createdAt se añadirán en Firebase o en el gestor de cola
         };
 
         this.setLoadingState('registration', true);
@@ -803,67 +802,68 @@ class VotingSystemFirebase extends VotingSystem {
             case 'statistics':
                 this.renderStatisticsPage();
                 break;
+            case 'user-registrations': // Asegurarse que la clase hija también conozca esta página
+                this.renderUserRegistrationsPage(); // Reutiliza el método de la clase base o lo sobreescribe si es necesario
+                break;
         }
     }
+
+    // Si renderUserRegistrationsPage en VotingSystemFirebase necesita lógica específica de Firebase (ej. query directa)
+    // se sobrescribiría aquí. Si no, la versión de la clase base VotingSystem es suficiente.
+    // Por ahora, asumimos que la lógica de filtrado en this.votes es suficiente y se hereda.
 
     renderRegistrationPage() {
-        const ubchSelect = document.getElementById('ubch');
-        const communitySelect = document.getElementById('community');
+        const ubchSelect = document.getElementById('ubch'); // Ahora Centro de Votación
+        const communitySelect = document.getElementById('community'); // Ahora Comunidad de Residencia
         const form = document.getElementById('registration-form');
 
-        // Limpiar opciones
-        ubchSelect.innerHTML = '<option value="">Selecciona una UBCH</option>';
-        communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
-        communitySelect.disabled = true;
+        ubchSelect.innerHTML = '<option value="">Seleccione un Centro de Votación</option>';
+        communitySelect.innerHTML = '<option value="">Seleccione una Comunidad</option>';
 
-        // Verificar si hay UBCH disponibles
-        if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
-            console.log('⚠️ No hay UBCH disponibles, intentando recargar...');
+        const centrosVotacion = Object.keys(this.ubchToCommunityMap || {});
+        const todasComunidades = [...new Set(Object.values(this.ubchToCommunityMap || {}).flat())].sort();
+
+        if (centrosVotacion.length === 0) {
             form.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
-            this.showMessage('Cargando UBCH...', 'info', 'registration');
-            
-            // Intentar recargar la configuración UBCH
-            this.loadDataFromFirebase().then(() => {
-                this.renderRegistrationPage();
-            }).catch(error => {
-                console.error('❌ Error recargando UBCH:', error);
-                this.showMessage('Error cargando UBCH. Contacte al administrador.', 'error', 'registration');
-            });
+            this.showMessage('No hay Centros de Votación disponibles. Contacte al administrador.', 'error', 'registration');
+            // Intentar recargar la configuración UBCH/CV si está vacía
+            this.loadDataFromFirebase().then(() => this.renderRegistrationPage() );
             return;
+        } else {
+            form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
         }
 
-        // Habilitar formulario
-        form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
-
-        // Llenar UBCH
-        console.log(`🔄 Cargando ${Object.keys(this.ubchToCommunityMap).length} UBCH en el formulario...`);
-        Object.keys(this.ubchToCommunityMap).forEach(ubch => {
+        centrosVotacion.forEach(cv => {
             const option = document.createElement('option');
-            option.value = ubch;
-            option.textContent = ubch;
+            option.value = cv;
+            option.textContent = cv;
             ubchSelect.appendChild(option);
         });
-        
-        console.log('✅ UBCH cargadas correctamente en el formulario');
-        this.showMessage('UBCH cargadas correctamente', 'success', 'registration');
-    }
 
-    handleUBCHChange(selectedUBCH) {
-        const communitySelect = document.getElementById('community');
-        communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
-        communitySelect.disabled = !selectedUBCH;
-
-        if (selectedUBCH && this.ubchToCommunityMap[selectedUBCH]) {
-            this.ubchToCommunityMap[selectedUBCH].forEach(community => {
+        if (todasComunidades.length > 0) {
+            communitySelect.disabled = false;
+            todasComunidades.forEach(community => {
                 const option = document.createElement('option');
                 option.value = community;
                 option.textContent = community;
                 communitySelect.appendChild(option);
             });
+        } else {
+            communitySelect.disabled = true;
+            this.showMessage('No hay Comunidades disponibles. Verifique la configuración.', 'warning', 'registration');
         }
+
+        // this.restoreFormSelection(); // Se hereda de VotingSystem
     }
 
-    handleEditUBCHChange(selectedUBCH) {
+    handleUBCHChange(selectedUBCH) { // selectedUBCH ahora es selectedCentroVotacion
+        // Ya no se filtra la comunidad basada en UBCH/Centro de Votación en el registro individual.
+        console.log("Centro de Votación seleccionado (en script-firebase):", selectedUBCH);
+        // La lógica de `localStorage.setItem('selectedUBCH', selectedUBCH);` está en la clase base.
+        // No se modifica `communitySelect` aquí.
+    }
+
+    handleEditUBCHChange(selectedUBCH) { // selectedUBCH ahora es selectedCentroVotacion
         const communitySelect = document.getElementById('edit-community');
         communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
         communitySelect.disabled = !selectedUBCH;
