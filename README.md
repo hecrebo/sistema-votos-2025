@@ -53,22 +53,55 @@ Sistema de votación electrónica desarrollado con HTML, CSS y JavaScript.
 
 ```bash
 npm install
+```
+Para iniciar el servidor de desarrollo (sirve los archivos HTML/CSS/JS, con recarga en vivo):
+```bash
 npm run dev
 ```
+Esto usualmente abrirá `http://localhost:8080` en tu navegador.
+
+Si necesitas la API simulada con `db.json` (para desarrollo sin Firebase o pruebas específicas):
+```bash
+npm run start
+```
+Esto iniciará `json-server` en `http://localhost:3000`.
+
+Consulta la `GUIA_DESARROLLO_LOCAL.md` para más detalles y alternativas.
 
 ## 📁 Estructura del Proyecto
 
-- `index.html` - Página principal
-- `styles.css` - Estilos
-- `script.js` - Lógica JavaScript
-- `db.json` - Base de datos JSON
-- `favicon.ico/` - Iconos del sitio
+- `index.html` - Página principal de la aplicación de votos.
+- `login.html` - Página de inicio de sesión.
+- `admin-panel.html` - Panel de administración.
+- `styles.css` - Estilos principales de la aplicación.
+- `script.js` - Lógica principal JavaScript para la interfaz de usuario y manejo de datos (versión base).
+- `script-firebase.js` - Extensión de `script.js` con lógica específica de Firebase.
+- `firebase-config.js` - Configuración de la conexión a Firebase.
+- `queue-manager.js` - Gestor de cola para registros offline/pendientes.
+- `sync-manager.js` - Gestor de sincronización de datos.
+- `service-manager.js` - Gestor de estado de servicios.
+- `auto-init.js` - Script para la inicialización automática del sistema.
+- `db.json` - Base de datos JSON de ejemplo para `json-server`.
+- `package.json` - Define dependencias y scripts del proyecto.
+- `netlify.toml`, `vercel.json` - Archivos de configuración para despliegue en Netlify y Vercel.
+- `*.md` - Archivos de documentación.
+- `favicon.ico/` - Iconos del sitio.
+- `test-*.js`, `test-*.html` - Archivos de prueba (algunos pueden ser eliminados por `npm run clean`).
 
-## 🔧 Scripts Disponibles
+## 🔧 Scripts Disponibles en `package.json`
 
-- `npm start` - Inicia JSON Server (puerto 3000)
-- `npm run dev` - Inicia servidor de desarrollo (puerto 8080)
-- `npm run build` - No requiere build (archivos estáticos)
+-   **`npm run dev`**: Inicia un servidor de desarrollo local con `live-server` en el puerto 8080 (recomendado para desarrollo).
+-   **`npm start`**: Inicia `json-server` para simular una API REST con `db.json` en el puerto 3000.
+-   **`npm run serve`**: Alias para `npm run dev`.
+-   **`npm run serve:py`**: Inicia un servidor HTTP simple usando Python en el puerto 8080.
+-   **`npm run serve:node`**: Inicia un servidor HTTP simple usando `http-server` (Node.js) en el puerto 8080.
+-   **`npm run json-server`**: Inicia `json-server` escuchando en todas las interfaces de red (`0.0.0.0`), útil para pruebas en red local.
+-   **`npm run clean`**: Ejecuta una limpieza de archivos de documentación (excepto README y AGENTS), pruebas y otros archivos misceláneos.
+    *   `npm run clean:docs`
+    *   `npm run clean:tests`
+    *   `npm run clean:misc`
+-   **`npm run build`**: Actualmente solo muestra un mensaje. Considera usar `npm run clean` para un estado similar al de producción.
+-   **`npm run deploy`**: Ejecuta `node deploy.js`, que muestra instrucciones de despliegue.
 
 ## 🌐 Notas Importantes
 

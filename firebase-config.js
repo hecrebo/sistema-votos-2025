@@ -1,15 +1,42 @@
 // Configuración de Firebase
+// IMPORTANTE: Estas credenciales deben ser gestionadas de forma segura,
+// preferiblemente a través de variables de entorno o un servicio de configuración.
+// NO DEBEN estar hardcodeadas en el código fuente en un repositorio público.
+
+// Intenta cargar desde variables de entorno (simulado para el navegador)
+// En un entorno Node.js o durante un proceso de build, usarías process.env
+// Para el navegador, esto es una SIMULACIÓN. El usuario deberá reemplazar estos
+// placeholders con su configuración real o implementar un sistema seguro.
 const firebaseConfig = {
-    apiKey: "AIzaSyBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    authDomain: "sistema-votos-2025.firebaseapp.com",
-    projectId: "sistema-votos-2025",
-    storageBucket: "sistema-votos-2025.appspot.com",
-    messagingSenderId: "123456789012",
-    appId: "1:123456789012:web:abcdefghijklmnop"
+    apiKey: window.FIREBASE_API_KEY || "TU_API_KEY_REAL_AQUI_O_USA_VARIABLES_DE_ENTORNO",
+    authDomain: window.FIREBASE_AUTH_DOMAIN || "tu-proyecto-id.firebaseapp.com",
+    projectId: window.FIREBASE_PROJECT_ID || "tu-proyecto-id",
+    storageBucket: window.FIREBASE_STORAGE_BUCKET || "tu-proyecto-id.appspot.com",
+    messagingSenderId: window.FIREBASE_MESSAGING_SENDER_ID || "tu-sender-id",
+    appId: window.FIREBASE_APP_ID || "tu-app-id",
+    measurementId: window.FIREBASE_MEASUREMENT_ID || "tu-measurement-id" // Opcional, para Analytics
 };
 
+// Verificar si la configuración es válida (simplificado)
+if (firebaseConfig.apiKey === "TU_API_KEY_REAL_AQUI_O_USA_VARIABLES_DE_ENTORNO" || !firebaseConfig.projectId.includes("tu-proyecto-id") === false) {
+    console.warn("⚠️ CONFIGURACIÓN DE FIREBASE INCOMPLETA O DE EJEMPLO. Reemplaza los placeholders en firebase-config.js o configura variables de entorno.");
+    // Podrías deshabilitar Firebase aquí o mostrar un mensaje al usuario
+    // Por ahora, permitiremos que intente inicializar para no romper el flujo si el usuario ya lo configuró.
+}
+
 // Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
+try {
+    if (firebase.apps.length === 0) { // Evitar re-inicialización
+        firebase.initializeApp(firebaseConfig);
+        console.log("🔥 Firebase inicializado correctamente.");
+    } else {
+        console.log("🔥 Firebase ya está inicializado.");
+    }
+} catch (error) {
+    console.error("❌ Error al inicializar Firebase:", error);
+    console.error("   Asegúrate de que la configuración en firebase-config.js sea correcta y que las librerías de Firebase estén cargadas.");
+    // Aquí podrías implementar un fallback a modo local si la inicialización falla.
+}
 
 // Referencias a la base de datos
 const db = firebase.firestore();
