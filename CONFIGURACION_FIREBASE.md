@@ -79,19 +79,40 @@ const firebaseConfig = {
 ### **Paso 5: Configurar Reglas de Seguridad**
 
 1. **En Firestore**: "Reglas"
-2. **Reemplazar** con estas reglas:
+2. **Reemplazar** con estas reglas (ejemplo básico, ajustar según necesidades):
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permitir lectura y escritura para todos (modo desarrollo)
-    match /{document=**} {
-      allow read, write: if true;
+    // Colección 'votes': Solo usuarios autenticados pueden leer y escribir.
+    // Considerar reglas más granulares para creación vs actualización vs eliminación.
+    match /votes/{voteId} {
+      allow read, write: if request.auth != null;
     }
+
+    // Colección 'ubchData': Podría ser pública para lectura si la configuración de UBCH no es sensible,
+    // o restringida si solo los administradores deben modificarla.
+    // Ejemplo: Pública para lectura, restringida para escritura a usuarios autenticados (administradores).
+    match /ubchData/{docId} {
+      allow read: if true; // Cualquiera puede leer la configuración de UBCH
+      allow write: if request.auth != null; // Solo usuarios autenticados pueden escribir (idealmente, solo admins)
+    }
+
+    // Ejemplo de colección de usuarios (si se usa Firebase Auth y se guardan perfiles de usuario)
+    // match /users/{userId} {
+    //   allow read: if true; // o if request.auth != null;
+    //   allow write: if request.auth != null && request.auth.uid == userId; // El usuario solo puede escribir sus propios datos
+    // }
   }
 }
 ```
+**Nota Importante sobre Seguridad:** Las reglas `allow read, write: if true;` son **INSEGURAS** para producción, ya que permiten que cualquiera lea y escriba en tu base de datos. Las reglas de ejemplo anteriores son un punto de partida. Debes ajustarlas cuidadosamente según los roles de usuario y los permisos que necesites. Considera:
+    - Quién puede crear registros de votos.
+    - Quién puede leer la lista de votos.
+    - Quién puede actualizar el estado de un voto (ej. marcar como 'votado').
+    - Quién puede eliminar votos.
+    - Quién puede administrar la configuración de UBCH.
 
 3. **Hacer clic**: "Publicar"
 

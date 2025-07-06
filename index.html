@@ -416,76 +416,13 @@
     <script src="test-exportacion-mejorada.js"></script>
     
     <script>
-        const USUARIOS_INICIALES = [
-            // Superusuarios
-            { username: "superadmin_01", password: "Sup3r_Adm1n#2o24", rol: "superusuario" },
-            { username: "superadmin_02", password: "aB5!zP9$qW_sU", rol: "superusuario" },
-            { username: "superadmin_03", password: "rT7@eX3&yU_sU", rol: "superusuario" },
-            { username: "superadmin_04", password: "kL9#mN1!bV_sU", rol: "superusuario" },
-            { username: "superadmin_05", password: "zX8$cV6@fG_sU", rol: "superusuario" },
-            // Administradores
-            { username: "admin_01", password: "P@ssw0rd_Adm_01", rol: "admin" },
-            { username: "admin_02", password: "Adm_Secure_02!", rol: "admin" },
-            { username: "admin_03", password: "Gestion_2024_03", rol: "admin" },
-            { username: "admin_04", password: "4dminUser_p4ss", rol: "admin" },
-            { username: "admin_05", password: "Adm!n_Syst3m_05", rol: "admin" },
-            { username: "admin_06", password: "UserAdmin_06#", rol: "admin" },
-            { username: "admin_07", password: "Control_Panel_07", rol: "admin" },
-            { username: "admin_08", password: "Adm_Access_08$", rol: "admin" },
-            { username: "admin_09", password: "My_Admin_P@ss09", rol: "admin" },
-            { username: "admin_10", password: "P@ss_Adm_Global", rol: "admin" },
-            // Registradores
-            { username: "registrador_01", password: "RegUsr_2o24_01", rol: "registrador" },
-            { username: "registrador_02", password: "UserReg_Pass_02", rol: "registrador" },
-            { username: "registrador_03", password: "Reg!strador_03", rol: "registrador" },
-            { username: "registrador_04", password: "Acc3s_Reg_04", rol: "registrador" },
-            { username: "registrador_05", password: "DataEntry_05$", rol: "registrador" },
-            { username: "registrador_06", password: "RegUsr_2o24_06", rol: "registrador" },
-            { username: "registrador_07", password: "UserReg_Pass_07", rol: "registrador" },
-            { username: "registrador_08", password: "Reg!strador_08", rol: "registrador" },
-            { username: "registrador_09", password: "Acc3s_Reg_09", rol: "registrador" },
-            { username: "registrador_10", password: "DataEntry_10$", rol: "registrador" },
-            { username: "registrador_11", password: "RegUsr_2o24_11", rol: "registrador" },
-            { username: "registrador_12", password: "UserReg_Pass_12", rol: "registrador" },
-            { username: "registrador_13", password: "Reg!strador_13", rol: "registrador" },
-            { username: "registrador_14", password: "Acc3s_Reg_14", rol: "registrador" },
-            { username: "registrador_15", password: "DataEntry_15$", rol: "registrador" },
-            { username: "registrador_16", password: "RegUsr_2o24_16", rol: "registrador" },
-            { username: "registrador_17", password: "UserReg_Pass_17", rol: "registrador" },
-            { username: "registrador_18", password: "Reg!strador_18", rol: "registrador" },
-            { username: "registrador_19", password: "Acc3s_Reg_19", rol: "registrador" },
-            { username: "registrador_20", password: "DataEntry_20$", rol: "registrador" },
-            { username: "registrador_21", password: "RegUsr_2o24_21", rol: "registrador" },
-            { username: "registrador_22", password: "UserReg_Pass_22", rol: "registrador" },
-            { username: "registrador_23", password: "Reg!strador_23", rol: "registrador" },
-            { username: "registrador_24", password: "Acc3s_Reg_24", rol: "registrador" },
-            { username: "registrador_25", password: "DataEntry_25$", rol: "registrador" },
-            { username: "registrador_26", password: "RegUsr_2o24_26", rol: "registrador" },
-            { username: "registrador_27", password: "UserReg_Pass_27", rol: "registrador" },
-            { username: "registrador_28", password: "Reg!strador_28", rol: "registrador" },
-            { username: "registrador_29", password: "Acc3s_Reg_29", rol: "registrador" },
-            { username: "registrador_30", password: "DataEntry_30$", rol: "registrador" },
-            { username: "registrador_31", password: "RegUsr_2o24_31", rol: "registrador" },
-            { username: "registrador_32", password: "UserReg_Pass_32", rol: "registrador" },
-            { username: "registrador_33", password: "Reg!strador_33", rol: "registrador" },
-            { username: "registrador_34", password: "Acc3s_Reg_34", rol: "registrador" },
-            { username: "registrador_35", password: "DataEntry_35$", rol: "registrador" },
-            { username: "registrador_36", password: "RegUsr_2o24_36", rol: "registrador" },
-            { username: "registrador_37", password: "UserReg_Pass_37", rol: "registrador" },
-            { username: "registrador_38", password: "Reg!strador_38", rol: "registrador" },
-            { username: "registrador_39", password: "Acc3s_Reg_39", rol: "registrador" },
-            { username: "registrador_40", password: "DataEntry_40$", rol: "registrador" },
-            { username: "registrador_41", password: "RegUsr_2o24_41", rol: "registrador" },
-            { username: "registrador_42", password: "UserReg_Pass_42", rol: "registrador" },
-            { username: "registrador_43", password: "Reg!strador_43", rol: "registrador" },
-            { username: "registrador_44", password: "Acc3s_Reg_44", rol: "registrador" },
-            { username: "registrador_45", password: "DataEntry_45$", rol: "registrador" },
-            { username: "registrador_46", password: "RegUsr_2o24_46", rol: "registrador" },
-            { username: "registrador_47", password: "UserReg_Pass_47", rol: "registrador" },
-            { username: "registrador_48", password: "Reg!strador_48", rol: "registrador" },
-            { username: "registrador_49", password: "Acc3s_Reg_49", rol: "registrador" },
-            { username: "registrador_50", password: "RegUsr_Final_50", rol: "registrador" }
-        ];
+        // ADVERTENCIA DE SEGURIDAD:
+        // La constante USUARIOS_INICIALES ha sido eliminada de este archivo.
+        // Las credenciales NUNCA deben estar hardcodeadas en el código del cliente.
+        // Implemente un sistema de autenticación seguro (ej. Firebase Authentication)
+        // y un mecanismo para crear usuarios administradores iniciales de forma segura
+        // (ej. un script de setup del lado del servidor o una interfaz de superadministrador).
+        // const USUARIOS_INICIALES = []; // Eliminada
 
         function showMessage(message, type = 'info') {
             const loginMessage = document.getElementById('login-message');

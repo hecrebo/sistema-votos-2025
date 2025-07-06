@@ -6,7 +6,15 @@
   "scripts": {
     "start": "json-server --watch db.json --port 3000",
     "dev": "live-server --port 8080",
-    "build": "echo 'No build step required for static files'",
+    "serve": "live-server --port=8080",
+    "serve:py": "python -m http.server 8080",
+    "serve:node": "npx http-server -p 8080",
+    "json-server": "json-server --watch db.json --port 3000 --host 0.0.0.0",
+    "clean:docs": "node -e \"const fs = require('fs'); const path = require('path'); fs.readdirSync('.').forEach(file => { if (file.endsWith('.md') && file !== 'README.md' && file !== 'AGENTS.md') fs.unlinkSync(path.join('.', file)); }); console.log('Archivos .md (excepto README.md y AGENTS.md) eliminados.');\"",
+    "clean:tests": "node -e \"const fs = require('fs'); const path = require('path'); fs.readdirSync('.').forEach(file => { if (file.startsWith('test-') && (file.endsWith('.html') || file.endsWith('.js'))) fs.unlinkSync(path.join('.', file)); }); console.log('Archivos de prueba (test-*.html, test-*.js) eliminados.');\"",
+    "clean:misc": "node -e \"const fs = require('fs'); const path = require('path'); const filesToDelete = ['.DS_Store', 'Thumbs.db', 'db.json.bk', '*.pyc', '*.log', '*.bak', '*.zip', '*.pdf', '*.py', '*.ttf', '*.ods', '*.xlsx', '*.csv']; filesToDelete.forEach(pattern => { fs.readdirSync('.').forEach(file => { if (require('minimatch')(file, pattern)) fs.unlinkSync(path.join('.', file)); }) }); try { fs.rmSync('dejavu-fonts-ttf-2.37', { recursive: true, force: true }); console.log('Directorio dejavu-fonts-ttf-2.37 eliminado.'); } catch(e) { console.log('Directorio dejavu-fonts-ttf-2.37 no encontrado o no se pudo eliminar.'); } console.log('Archivos misceláneos y de datos temporales eliminados.');\"",
+    "clean": "npm run clean:docs && npm run clean:tests && npm run clean:misc",
+    "build": "echo 'No build step required for static files. Consider running npm run clean for production-like state.'",
     "deploy": "node deploy.js"
   },
   "keywords": [
