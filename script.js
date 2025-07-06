@@ -1412,13 +1412,16 @@ class VotingSystem {
 
         // Preparar datos para la cola
         const registrationData = {
-                name,
-            cedula: cedula.replace(/\D/g, ''),
-            telefono: telefono.replace(/\D/g, ''),
+            name,
+            cedula: cedula.replace(/\D/g, ''), // Asegurar que la cédula solo contenga números
+            telefono: telefono.replace(/\D/g, ''), // Limpiar teléfono también
             sexo,
             edad: parseInt(edad),
-                ubch,
-            community
+            ubch, // Este es el "Centro de Votación"
+            community,
+            registeredBy: this.currentUser ? this.currentUser.username : 'sistema', // Asegurar que registeredBy se guarda
+            voted: false, // Estado inicial de voto
+            // registeredAt y createdAt se añadirán en el gestor de cola o al guardar en Firebase
         };
 
         this.setLoadingState('registration', true);

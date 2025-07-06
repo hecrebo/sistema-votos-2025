@@ -524,15 +524,14 @@ class VotingSystemFirebase extends VotingSystem {
         const registrationData = {
             name,
             cedula: cedula.replace(/\D/g, ''),
-            telefono: telefono.replace(/\D/g, ''),
+            telefono: telefono.replace(/\D/g, ''), // Teléfono es opcional, pero si viene, se limpia
             sexo,
             edad: parseInt(edad),
-            ubch,
-            community,
-            registeredBy: this.getCurrentUser()?.username || this.userId,
+            ubch, // Centro de Votación
+            community, // Comunidad de Residencia
+            registeredBy: this.currentUser ? this.currentUser.username : 'sistema_firebase', // Asegurar que registeredBy se guarda
             voted: false,
-            registeredAt: new Date().toISOString(),
-            createdAt: new Date().toISOString()
+            // registeredAt y createdAt se añadirán en Firebase o en el gestor de cola
         };
 
         this.setLoadingState('registration', true);
