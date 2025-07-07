@@ -257,14 +257,102 @@ class VotingSystemFirebase extends VotingSystem {
             this.updateAllDataDisplays();
             
         }, (error) => {
-            console.error('❌ Error en listener de Firebase:', error);
-            this.showMessage('Error de sincronización. Reintentando...', 'error', 'registration');
+            console.error('❌ Error en listener de Firebase (votesCollection):', error);
+            this.showMessage('Error de sincronización de votos. Reintentando...', 'error', 'registration');
         });
         
         // Guardar la función de unsubscribe para limpiar después
-        this.unsubscribeListener = unsubscribe;
-        console.log('✅ Listener en tiempo real configurado correctamente');
+        this.unsubscribeVotesListener = unsubscribe; // Renombrado para claridad
+        console.log('✅ Listener en tiempo real para votos configurado correctamente');
+
+        // Configurar listener para notificaciones globales
+        this.listenForGlobalNotifications();
     }
+
+    listenForGlobalNotifications() {
+        if (!window.firebaseDB || !window.firebaseDB.db) {
+            console.warn("Firebase DB no disponible para el listener de notificaciones.");
+            return;
+        }
+        const notificationsRef = window.firebaseDB.db.collection('notifications').orderBy('timestamp', 'desc').limit(1);
+
+        this.unsubscribeNotificationsListener = notificationsRef.onSnapshot(snapshot => {
+            if (snapshot.empty) {
+                // console.log('No hay notificaciones nuevas.');
+                return;
+            }
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const notificationData = change.doc.data();
+                    console.log("Nueva notificación recibida:", notificationData);
+                    // Evitar mostrar notificaciones muy viejas al cargar por primera vez
+                    // o si el listener se reconecta después de mucho tiempo.
+                    const now = new Date();
+                    const notificationTime = notificationData.timestamp ? notificationData.timestamp.toDate() : now; // Fallback si no hay timestamp
+
+                    // Considerar mostrar solo si es relativamente nueva (ej. últimos 10 minutos)
+                    // Esto evita un bombardeo de notificaciones antiguas si el cliente estuvo desconectado mucho tiempo.
+                    // O, alternativamente, gestionar un ID de última notificación vista.
+                    if ((now - notificationTime) < (10 * 60 * 1000)) { // Notificación de menos de 10 minutos
+                        this.showGlobalNotificationToast(notificationData.message);
+                    } else {
+                        console.log("Notificación antigua omitida:", notificationData.message);
+                    }
+                }
+            });
+        }, error => {
+            console.error("Error escuchando notificaciones globales:", error);
+            // Podrías querer mostrar un mensaje al usuario aquí también o reintentar la conexión.
+        });
+        console.log('✅ Listener en tiempo real para notificaciones globales configurado.');
+    }
+
+    showGlobalNotificationToast(message) {
+        const toastElement = document.getElementById('global-notification-toast');
+        if (!toastElement) {
+            console.error("Elemento #global-notification-toast no encontrado en el DOM.");
+            return;
+        }
+
+        const toastMessageElement = toastElement.querySelector('.toast-message');
+        if (!toastMessageElement) {
+            console.error("Elemento .toast-message no encontrado dentro del toast.");
+            // Crear el elemento de mensaje si no existe (más robusto)
+            // toastMessageElement = document.createElement('span');
+            // toastMessageElement.className = 'toast-message';
+            // toastElement.insertBefore(toastMessageElement, toastElement.firstChild);
+             toastElement.textContent = message; // Fallback simple
+        } else {
+            toastMessageElement.textContent = message;
+        }
+
+        toastElement.classList.add('show');
+
+        // Ocultar después de 10 segundos
+        setTimeout(() => {
+            toastElement.classList.remove('show');
+        }, 10000); // 10 segundos
+
+        // Permitir cerrar manualmente
+        const closeButton = toastElement.querySelector('.toast-close-btn');
+        if (closeButton && !closeButton.getAttribute('data-listener-attached')) {
+            closeButton.setAttribute('data-listener-attached', 'true'); // Evitar múltiples listeners
+            closeButton.onclick = () => {
+                toastElement.classList.remove('show');
+            };
+        } else if (!closeButton) { // Si no hay botón de cierre, añadir uno programáticamente
+            const newCloseButton = document.createElement('button');
+            newCloseButton.className = 'toast-close-btn';
+            newCloseButton.innerHTML = '&times;';
+            newCloseButton.onclick = () => {
+                toastElement.classList.remove('show');
+            };
+            // Añadirlo después del mensaje o al final del toast
+            if (toastMessageElement) toastMessageElement.insertAdjacentElement('afterend', newCloseButton);
+            else toastElement.appendChild(newCloseButton);
+        }
+    }
+
 
     // Función para actualizar todas las pantallas de datos
     updateAllDataDisplays() {
