@@ -190,7 +190,6 @@
                                 <button class="btn btn-success" onclick="importPasteTable()">Cargar a Firebase</button>
                                 <button class="btn btn-warning" onclick="clearPasteTable()">Limpiar Tabla</button>
                                 <button class="btn btn-info" onclick="limpiarColaYForzarSync()">🔄 Limpiar Cola & Sincronizar</button>
-                                <button class="btn btn-primary" onclick="descargarPlantilla()">📥 Descargar Plantilla</button>
                             </div>
                             <div id="import-massive-status" class="import-status info" style="display:none;"></div>
                         </div>
@@ -868,7 +867,7 @@
             } else if (count > 0 && errors > 0) {
                 importStatus.className = 'import-status warning';
                 importStatus.textContent = `⚠️ ${count} registros cargados. ${errors} filas con errores o duplicados.`;
-                            } else {
+                } else {
                 importStatus.className = 'import-status error';
                 importStatus.textContent = `❌ No se cargaron registros. Verifica los datos.`;
             }
@@ -897,35 +896,18 @@
         };
 
         // Función para limpiar la cola y forzar sincronización
-        function limpiarColaYForzarSync() {
+        async function limpiarColaYForzarSync() {
             if (window.offlineQueueManager) {
-                window.offlineQueueManager.limpiarCola();
-                window.offlineQueueManager.forzarSincronizacion();
-                alert('Cola limpiada y sincronización forzada.');
+                // Limpiar cola local
+                window.offlineQueueManager.limpiarColaLocal();
+                
+                // Forzar sincronización
+                await window.offlineQueueManager.forzarSincronizacion();
+                
+                alert('✅ Cola limpiada y sincronización forzada');
                 } else {
-                alert('Gestor de cola no disponible.');
-            }
-        }
-
-        // Función para descargar la plantilla de registro masivo
-        function descargarPlantilla() {
-            // Crear un enlace para descargar el archivo existente
-            const a = document.createElement('a');
-            a.href = 'registros_prueba.csv';
-            a.download = 'plantilla_registro_masivo.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            // Mostrar mensaje de confirmación
-            if (importStatus) {
-                importStatus.style.display = 'block';
-                importStatus.className = 'import-status success';
-                importStatus.textContent = '✅ Plantilla descargada correctamente. Llena los campos y pega aquí.';
-            setTimeout(() => {
-                    importStatus.style.display = 'none';
-                }, 3000);
-            }
+                alert('❌ Gestor de cola no disponible');
+                }
         }
     </script>
 </body>

@@ -8,13 +8,13 @@
 // Para el navegador, esto es una SIMULACIÓN. El usuario deberá reemplazar estos
 // placeholders con su configuración real o implementar un sistema seguro.
 const firebaseConfig = {
-    apiKey: window.FIREBASE_API_KEY || "TU_API_KEY_REAL_AQUI_O_USA_VARIABLES_DE_ENTORNO",
-    authDomain: window.FIREBASE_AUTH_DOMAIN || "tu-proyecto-id.firebaseapp.com",
-    projectId: window.FIREBASE_PROJECT_ID || "tu-proyecto-id",
-    storageBucket: window.FIREBASE_STORAGE_BUCKET || "tu-proyecto-id.appspot.com",
-    messagingSenderId: window.FIREBASE_MESSAGING_SENDER_ID || "tu-sender-id",
-    appId: window.FIREBASE_APP_ID || "tu-app-id",
-    measurementId: window.FIREBASE_MEASUREMENT_ID || "tu-measurement-id" // Opcional, para Analytics
+    apiKey: "AIzaSyBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    authDomain: "sistema-votos-2025.firebaseapp.com",
+    projectId: "sistema-votos-2025",
+    storageBucket: "sistema-votos-2025.appspot.com",
+    messagingSenderId: "123456789012",
+    appId: "1:123456789012:web:abcdefghijklmnop",
+    measurementId: "G-XXXXXXXXXX"
 };
 
 // Verificar si la configuración es válida (simplificado)
