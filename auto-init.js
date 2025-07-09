@@ -277,8 +277,10 @@ class AutoInitSystem {
             await window.syncManager.retryFailedRecords();
         }
         
-        if (window.votingSystem) {
+        if (window.votingSystem && typeof window.votingSystem.syncData === 'function') {
             await window.votingSystem.syncData();
+        } else {
+            console.warn('⚠️ syncData no disponible en votingSystem');
         }
     }
 
@@ -482,9 +484,74 @@ class AutoInitSystem {
     }
 
     async initVotingSystem() {
-        if (!window.votingSystem) {
+        try {
             console.log('🔧 Inicializando sistema de votos...');
-            window.votingSystem = new VotingSystem();
+            
+            // Verificar si ya existe una instancia válida
+            if (window.votingSystem && window.votingSystemInitialized) {
+                console.log('✅ Sistema de votos ya inicializado, usando instancia existente');
+                return;
+            }
+            
+            // Verificar si VotingSystemFirebase está disponible
+            if (typeof VotingSystemFirebase !== 'undefined') {
+                // Solo crear nueva instancia si no existe
+                if (!window.votingSystem) {
+                    window.votingSystem = new VotingSystemFirebase();
+                    console.log('✅ Sistema de votos Firebase inicializado');
+                } else {
+                    console.log('⚠️ Instancia de sistema de votos ya existe');
+                }
+            } else if (typeof VotingSystem !== 'undefined') {
+                if (!window.votingSystem) {
+                    window.votingSystem = new VotingSystem();
+                    console.log('✅ Sistema de votos básico inicializado');
+                }
+            } else {
+                console.warn('⚠️ No se encontró sistema de votos disponible');
+                // Crear un sistema básico de fallback solo si no existe
+                if (!window.votingSystem) {
+                    window.votingSystem = {
+                        currentPage: 'registration',
+                        votes: [],
+                        init: async () => console.log('🔧 Sistema de fallback inicializado'),
+                        setupEventListeners: () => console.log('🔧 Event listeners de fallback configurados'),
+                        renderCurrentPage: () => console.log('📄 Renderizado de fallback'),
+                        showMessage: (msg, type, page) => console.log(`💬 [${type}] ${msg}`),
+                        setLoadingState: (page, loading) => console.log(`⏳ [${page}] Loading: ${loading}`),
+                        syncData: async () => {
+                            console.log('🔄 Sincronización de fallback ejecutada');
+                            return true;
+                        }
+                    };
+                }
+            }
+            
+            // Inicializar el sistema si tiene método init y no se ha inicializado
+            if (window.votingSystem && typeof window.votingSystem.init === 'function' && !window.votingSystemInitialized) {
+                await window.votingSystem.init();
+                window.votingSystemInitialized = true;
+                console.log('✅ Sistema de votos inicializado completamente');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error inicializando sistema de votos:', error);
+            // Crear sistema de fallback en caso de error solo si no existe
+            if (!window.votingSystem) {
+                window.votingSystem = {
+                    currentPage: 'registration',
+                    votes: [],
+                    init: async () => console.log('🔧 Sistema de fallback por error inicializado'),
+                    setupEventListeners: () => console.log('🔧 Event listeners de fallback por error configurados'),
+                    renderCurrentPage: () => console.log('📄 Renderizado de fallback por error'),
+                    showMessage: (msg, type, page) => console.log(`💬 [${type}] ${msg}`),
+                    setLoadingState: (page, loading) => console.log(`⏳ [${page}] Loading: ${loading}`),
+                    syncData: async () => {
+                        console.log('🔄 Sincronización de fallback por error ejecutada');
+                        return true;
+                    }
+                };
+            }
         }
     }
 

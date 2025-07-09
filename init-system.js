@@ -12,7 +12,7 @@ if (window.votingSystem) {
 // Verificar Firebase
 if (!window.firebaseDB) {
     console.error('❌ Firebase no está disponible');
-    alert('Error: Firebase no está configurado correctamente');
+    alert('Error: Firebase no está configurado correctamente.');
 } else {
     console.log('✅ Firebase configurado correctamente');
 }
@@ -23,10 +23,12 @@ async function initializeFirebaseSystem() {
         console.log('🔄 Inicializando sistema Firebase...');
         
         // Crear instancia del sistema Firebase
-        window.votingSystem = new VotingSystemFirebase();
+        // Comentado para evitar conflictos con auto-init.js
+        // window.votingSystem = new VotingSystemFirebase();
         
         // Inicializar el sistema
-        await window.votingSystem.init();
+        // Comentado para evitar conflictos con auto-init.js
+        // await window.votingSystem.init();
         
         console.log('✅ Sistema Firebase inicializado correctamente');
         
@@ -124,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     if (!window.firebaseDB) {
         console.error('❌ Firebase no disponible después de múltiples intentos');
-        showMessage('Error: No se pudo conectar con Firebase', 'error');
+        showMessage('Error: No se pudo conectar con Firebase.', 'error');
         return;
     }
     
@@ -172,4 +174,4 @@ window.showMessage = showMessage;
 window.toggleMenu = toggleMenu;
 window.checkUserSession = checkUserSession;
 
-console.log('📋 Funciones globales configuradas'); 
+console.log('📋 Funciones globales configuradas');

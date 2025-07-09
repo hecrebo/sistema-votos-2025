@@ -48,10 +48,15 @@
     <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js"></script>
     
     <script src="config.js"></script>
+    <script src="script-firebase.js"></script>
     <script src="auto-init.js"></script>
     <script src="test-automatico.js"></script>
     <script src="test-proyeccion.js"></script>
     <script src="queue-manager.js"></script>
+    
+    <!-- Agregar Choices.js para autocomplete -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <link rel="stylesheet" href="choices.min.css">
 </head>
 <body>
     <div class="app-container">
@@ -79,6 +84,12 @@
                         <span class="sync-indicator" id="sync-indicator">🔄</span>
                         <span class="sync-text" id="sync-text">Sincronizando</span>
                     </div>
+                    <!-- Indicador de estado offline -->
+                    <div class="offline-indicator" id="offline-indicator">
+                        <span class="offline-icon">📴</span>
+                        <span class="offline-text">Sin conexión</span>
+                                    </div>
+                    <!-- Eliminar panel y botones de migración -->
                 </div>
                 <!-- Menú desplegable móvil -->
                 <div class="mobile-menu">
@@ -107,16 +118,12 @@
                         </button>
                     </div>
                     
-                    <!-- Formulario de registro individual ORIGINAL (ahora visible y único) -->
+                    <!-- Formulario de registro único con listas independientes -->
                     <div id="individual-registration" class="registration-mode">
                         <form id="registration-form" class="registration-form" autocomplete="off">
                             <div class="form-group">
-                                <label for="ubch">UBCH (Unidad de Batalla Bolívar-Chávez)</label>
-                                <select id="ubch" name="ubch" required></select>
-                            </div>
-                            <div class="form-group">
-                                <label for="community">Comunidad vinculada a la UBCH</label>
-                                <select id="community" name="community" required disabled></select>
+                                <label for="community">Comunidad</label>
+                                <select id="community" name="community" required></select>
                             </div>
                             <div class="form-group">
                                 <label for="name">Nombre de la Persona</label>
@@ -127,8 +134,8 @@
                                 <input type="text" id="cedula" name="cedula" placeholder="Ej: 12345678" required title="Introduce una cédula válida (solo números, 6 a 10 dígitos)" autocomplete="off">
                             </div>
                             <div class="form-group">
-                                <label for="telefono">Teléfono</label>
-                                <input type="text" id="telefono" name="telefono" placeholder="Ej: 04121234567" required title="Introduce un teléfono válido (ej: 04121234567)" autocomplete="off">
+                                <label for="telefono">Teléfono (opcional)</label>
+                                <input type="text" id="telefono" name="telefono" placeholder="Ej: 04121234567" title="Introduce un teléfono válido (ej: 04121234567)" autocomplete="off">
                             </div>
                             <div class="form-group">
                                 <label for="sexo">Sexo</label>
@@ -142,6 +149,10 @@
                                 <label for="edad">Edad</label>
                                 <input type="number" id="edad" name="edad" placeholder="Ej: 25" min="16" max="120" required title="Introduce una edad válida (entre 16 y 120 años)" autocomplete="off">
                             </div>
+                            <div class="form-group">
+                                <label for="ubch">Centro de Votación (CV)</label>
+                                <select id="ubch" name="ubch" required></select>
+                            </div>
                             <button type="submit" class="btn btn-primary btn-large" id="register-btn">
                                 <span class="btn-text">Registrar Persona</span>
                                 <span class="btn-loading" style="display: none;">Registrando...</span>
@@ -151,30 +162,37 @@
                     
                     <!-- Registro masivo desde Excel -->
                     <div id="bulk-registration" class="registration-mode" style="display: none;">
-                        <div class="bulk-import-section">
+                        <div class="admin-card import-section">
+                            <h3>📋 Registro Masivo (Pega los datos de Excel aquí)</h3>
                             <div class="import-info">
-                                <h4>📊 Registro Masivo desde Excel</h4>
-                                <p><strong>Formato requerido:</strong> CSV con columnas: UBCH, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</p>
-                                <p><strong>Valores válidos:</strong> Sexo: M/F, Edad: 16-120, Cédula: solo números</p>
+                                <p>Pega los datos copiados de Excel directamente en la tabla. Puedes editar los valores antes de cargar.</p>
+                                <p>Columnas esperadas: <b>UBCH, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</b></p>
+                            </div>
+                            <div style="overflow-x:auto;">
+                                <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false" style="min-width:800px;">
+                                    <thead>
+                                        <tr>
+                                            <th>UBCH</th>
+                                            <th>Comunidad</th>
+                                            <th>Nombre</th>
+                                            <th>Cédula</th>
+                                            <th>Teléfono</th>
+                                            <th>Sexo</th>
+                                            <th>Edad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="paste-table-body">
+                                        <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                    </tbody>
+                                </table>
                             </div>
                             <div class="import-controls">
-                                <input type="file" id="bulk-excel-input" accept=".csv,.xlsx,.xls" style="display: none;">
-                                <button class="btn btn-primary" onclick="document.getElementById('bulk-excel-input').click()">
-                                    📁 Seleccionar Archivo Excel
-                                </button>
-                                <button class="btn btn-info" onclick="downloadBulkTemplate()">
-                                    📥 Descargar Plantilla
-                                </button>
+                                <button class="btn btn-success" onclick="importPasteTable()">Cargar a Firebase</button>
+                                <button class="btn btn-warning" onclick="clearPasteTable()">Limpiar Tabla</button>
+                                <button class="btn btn-info" onclick="limpiarColaYForzarSync()">🔄 Limpiar Cola & Sincronizar</button>
+                                <button class="btn btn-primary" onclick="descargarPlantilla()">📥 Descargar Plantilla</button>
                             </div>
-                            <div id="bulk-import-preview" class="bulk-import-preview" style="display: none;">
-                                <h5>📋 Vista Previa de Registros a Importar</h5>
-                                <div id="bulk-preview-content"></div>
-                                <div class="bulk-import-summary">
-                                    <p><strong>Resumen:</strong> <span id="bulk-summary-text"></span></p>
-                                </div>
-                                <button class="btn btn-success" onclick="confirmBulkImport()">✅ Confirmar Registro Masivo</button>
-                                <button class="btn btn-secondary" onclick="cancelBulkImport()">❌ Cancelar</button>
-                            </div>
+                            <div id="import-massive-status" class="import-status info" style="display:none;"></div>
                         </div>
                     </div>
                     
@@ -350,14 +368,8 @@
                 <h3>Editar Registro</h3>
                 <form id="edit-form" class="edit-form">
                     <div class="form-group">
-                        <label for="edit-ubch">UBCH</label>
-                        <select id="edit-ubch" name="ubch" required>
-                            <option value="">Selecciona una UBCH</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
                         <label for="edit-community">Comunidad</label>
-                        <select id="edit-community" name="community" required disabled>
+                        <select id="edit-community" name="community" required>
                             <option value="">Selecciona una comunidad</option>
                         </select>
                     </div>
@@ -370,8 +382,8 @@
                         <input type="text" id="edit-cedula" name="cedula" required>
                     </div>
                     <div class="form-group">
-                        <label for="edit-telefono">Teléfono</label>
-                        <input type="text" id="edit-telefono" name="telefono" required>
+                        <label for="edit-telefono">Teléfono (opcional)</label>
+                        <input type="text" id="edit-telefono" name="telefono">
                     </div>
                     <div class="form-group">
                         <label for="edit-sexo">Sexo</label>
@@ -384,6 +396,12 @@
                     <div class="form-group">
                         <label for="edit-edad">Edad</label>
                         <input type="number" id="edit-edad" name="edad" min="16" max="120" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-ubch">Centro de Votación (CV)</label>
+                        <select id="edit-ubch" name="ubch" required>
+                            <option value="">Selecciona un Centro de Votación</option>
+                        </select>
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-secondary" id="cancel-edit">Cancelar</button>
@@ -408,12 +426,8 @@
     <script src="firebase-config.js"></script>
     <script src="sync-manager.js"></script>
     <script src="service-manager.js"></script>
-    <script src="script.js"></script>
-    <script src="script-firebase.js"></script>
     <script src="init-system.js"></script>
-    <script src="debug-ubch-filter.js"></script>
-    <script src="test-filtro-ubch.js"></script>
-    <script src="test-exportacion-mejorada.js"></script>
+    <script src="choices.min.js"></script>
     
     <script>
         const USUARIOS_INICIALES = [
@@ -661,420 +675,258 @@
             }
         });
 
-        // Funciones para registro masivo
+        // === FUNCIONES PARA CAMBIO DE MODO DE REGISTRO ===
+        
+        // Cambiar entre registro individual y masivo
         function switchRegistrationMode(mode) {
-            const individualMode = document.getElementById('individual-registration');
-            const bulkMode = document.getElementById('bulk-registration');
-            const individualBtn = document.querySelector('[data-mode="individual"]');
-            const bulkBtn = document.querySelector('[data-mode="bulk"]');
-
-            if (mode === 'individual') {
-                individualMode.style.display = 'block';
-                bulkMode.style.display = 'none';
-                individualBtn.classList.add('active');
-                bulkBtn.classList.remove('active');
-            } else {
-                individualMode.style.display = 'none';
-                bulkMode.style.display = 'block';
-                bulkBtn.classList.add('active');
-                individualBtn.classList.remove('active');
-            }
-            localStorage.setItem('registrationMode', mode);
-            saveRegistrationDraft();
-        }
-
-        // Manejar selección de archivo para registro masivo
-        function handleBulkFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            bulkFile = file;
-            const reader = new FileReader();
+            const individualDiv = document.getElementById('individual-registration');
+            const bulkDiv = document.getElementById('bulk-registration');
+            const modeButtons = document.querySelectorAll('.mode-btn');
             
-            reader.onload = function(e) {
-                try {
-                    const content = e.target.result;
-                    const registrations = parseBulkCSV(content);
-                    
-                    if (registrations.length === 0) {
-                        showBulkStatus('❌ No se encontraron datos válidos en el archivo', 'error');
-                        return;
-                    }
-
-                    bulkRegistrations = registrations;
-                    showBulkPreview(registrations);
-                    showBulkStatus(`📋 ${registrations.length} registros encontrados para importar`, 'success');
-                    
-                } catch (error) {
-                    showBulkStatus(`❌ Error procesando archivo: ${error.message}`, 'error');
+            // Actualizar botones
+            modeButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('active');
                 }
-            };
-
-            reader.readAsText(file);
-        }
-
-        // Parsear archivo CSV para registro masivo
-        function parseBulkCSV(content) {
-            const lines = content.split('\n').filter(line => line.trim());
-            if (lines.length < 2) {
-                throw new Error('El archivo debe tener al menos una fila de encabezados y una fila de datos');
-            }
-
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const requiredHeaders = ['ubch', 'comunidad', 'nombre', 'cédula', 'teléfono', 'sexo', 'edad'];
-            
-            // Verificar que los encabezados sean correctos
-            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-            if (missingHeaders.length > 0) {
-                throw new Error(`Faltan columnas requeridas: ${missingHeaders.join(', ')}`);
-            }
-
-            const registrations = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
-                if (values.length < 7) continue;
-
-                const registration = {
-                    ubch: values[headers.indexOf('ubch')],
-                    comunidad: values[headers.indexOf('comunidad')],
-                    nombre: values[headers.indexOf('nombre')],
-                    cedula: values[headers.indexOf('cédula')],
-                    telefono: values[headers.indexOf('teléfono')],
-                    sexo: values[headers.indexOf('sexo')].toUpperCase(),
-                    edad: parseInt(values[headers.indexOf('edad')])
-                };
-
-                // Validar datos
-                if (!registration.nombre || !registration.cedula || !registration.telefono) {
-                    continue; // Saltar filas incompletas
-                }
-
-                if (!['M', 'F'].includes(registration.sexo)) {
-                    registration.sexo = 'M'; // Sexo por defecto si no es válido
-                }
-
-                if (isNaN(registration.edad) || registration.edad < 16 || registration.edad > 120) {
-                    registration.edad = 18; // Edad por defecto si no es válida
-                }
-
-                registrations.push(registration);
-            }
-
-            return registrations;
-        }
-
-        // Mostrar vista previa de registro masivo
-        function showBulkPreview(registrations) {
-            const previewDiv = document.getElementById('bulk-import-preview');
-            const contentDiv = document.getElementById('bulk-preview-content');
-            const summaryDiv = document.getElementById('bulk-summary-text');
-            
-            if (!previewDiv || !contentDiv) return;
-
-            let tableHTML = `
-                <table class="bulk-preview-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Cédula</th>
-                            <th>UBCH</th>
-                            <th>Comunidad</th>
-                            <th>Sexo</th>
-                            <th>Edad</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            let validCount = 0;
-            let invalidCount = 0;
-
-            registrations.forEach(registration => {
-                const status = validateBulkRegistration(registration);
-                const statusClass = status === '✅ Válido' ? 'valid' : 'invalid';
-                
-                if (status === '✅ Válido') {
-                    validCount++;
-                } else {
-                    invalidCount++;
-                }
-                
-                tableHTML += `
-                    <tr>
-                        <td>${registration.nombre}</td>
-                        <td>${registration.cedula}</td>
-                        <td>${registration.ubch}</td>
-                        <td>${registration.comunidad}</td>
-                        <td>${registration.sexo}</td>
-                        <td>${registration.edad}</td>
-                        <td class="bulk-status ${statusClass}">${status}</td>
-                    </tr>
-                `;
             });
-
-            tableHTML += '</tbody></table>';
-            contentDiv.innerHTML = tableHTML;
             
-            if (summaryDiv) {
-                summaryDiv.textContent = `${validCount} válidos, ${invalidCount} con problemas`;
+            // Mostrar/ocultar secciones
+            if (mode === 'individual') {
+                individualDiv.style.display = 'block';
+                bulkDiv.style.display = 'none';
+            } else if (mode === 'bulk') {
+                individualDiv.style.display = 'none';
+                bulkDiv.style.display = 'block';
             }
             
-            previewDiv.style.display = 'block';
+            console.log(`✅ Modo de registro cambiado a: ${mode}`);
         }
 
-        // Validar registro individual
-        function validateBulkRegistration(registration) {
-            if (!registration.nombre || registration.nombre.length < 2) {
-                return '❌ Nombre muy corto';
-            }
-            if (!registration.cedula || !/^\d{6,10}$/.test(registration.cedula)) {
-                return '❌ Cédula inválida';
-            }
-            if (!registration.telefono || !/^\d{10,11}$/.test(registration.telefono)) {
-                return '❌ Teléfono inválido';
-            }
-            if (!['M', 'F'].includes(registration.sexo)) {
-                return '❌ Sexo inválido';
-            }
-            if (isNaN(registration.edad) || registration.edad < 16 || registration.edad > 120) {
-                return '❌ Edad inválida';
-            }
-            return '✅ Válido';
-        }
+        // === FUNCIONES PARA REGISTRO MASIVO SIMPLE ===
+        
+        // Variables para el registro masivo
+        let pasteTable, pasteTableBody, importStatus;
 
-        // Mostrar estado de registro masivo
-        function showBulkStatus(message, type) {
-            const previewDiv = document.getElementById('bulk-import-preview');
-            if (!previewDiv) return;
+        // Inicializar elementos cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            pasteTable = document.getElementById('paste-table');
+            pasteTableBody = document.getElementById('paste-table-body');
+            importStatus = document.getElementById('import-massive-status');
 
-            const statusDiv = document.createElement('div');
-            statusDiv.className = `bulk-status ${type}`;
-            statusDiv.textContent = message;
-            
-            // Insertar al inicio del preview
-            previewDiv.insertBefore(statusDiv, previewDiv.firstChild);
-            
-            // Remover después de 5 segundos
-            setTimeout(() => {
-                if (statusDiv.parentNode) {
-                    statusDiv.parentNode.removeChild(statusDiv);
+            // Permitir pegar datos desde Excel
+            if (pasteTable) {
+                pasteTable.addEventListener('paste', function (e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text');
+                    const rows = text.split('\n').filter(row => row.trim() !== '');
+                    pasteTableBody.innerHTML = '';
+                    rows.forEach(row => {
+                        const cols = row.split('\t');
+                        const tr = document.createElement('tr');
+                        for (let i = 0; i < 7; i++) {
+                            const td = document.createElement('td');
+                            td.contentEditable = 'true';
+                            td.textContent = cols[i] ? cols[i].trim() : '';
+                            tr.appendChild(td);
+                        }
+                        pasteTableBody.appendChild(tr);
+                    });
+                });
+            }
+
+            // Resaltar celda activa y fila activa
+            if (pasteTableBody) {
+                pasteTableBody.addEventListener('focusin', function(e) {
+                    if (e.target.tagName === 'TD') {
+                        // Quitar resaltado previo
+                        Array.from(pasteTableBody.rows).forEach(row => row.classList.remove('active-row'));
+                        e.target.parentElement.classList.add('active-row');
+                    }
+                });
+                
+                pasteTableBody.addEventListener('focusout', function(e) {
+                    if (e.target.tagName === 'TD') {
+                        e.target.parentElement.classList.remove('active-row');
+                    }
+                });
+
+                // Limpiar placeholder al enfocar
+                pasteTableBody.addEventListener('focusin', function(e) {
+                    if (e.target.classList.contains('placeholder')) {
+                        e.target.classList.remove('placeholder');
+                        e.target.textContent = '';
+                    }
+                });
+            }
+
+            // También después de pegar, si la tabla queda vacía
+            if (pasteTable) {
+                pasteTable.addEventListener('paste', function() {
+                    setTimeout(showPastePlaceholder, 100);
+                });
+            }
+
+            // Mostrar placeholder al cargar
+            setTimeout(showPastePlaceholder, 500);
+        });
+
+        // Limpiar tabla
+        function clearPasteTable() {
+            if (pasteTableBody) {
+                pasteTableBody.innerHTML = '<tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>';
+                if (importStatus) {
+                    importStatus.style.display = 'none';
                 }
-            }, 5000);
+            }
         }
 
-        // Confirmar registro masivo
-        async function confirmBulkImport() {
-            if (bulkRegistrations.length === 0) {
-                showBulkStatus('❌ No hay registros para importar', 'error');
+        // Validar y cargar datos a Firebase
+        async function importPasteTable() {
+            if (!pasteTableBody || !importStatus) {
+                alert('Error: Elementos de la tabla no encontrados');
                 return;
             }
 
-            try {
-                let importedCount = 0;
-                let skippedCount = 0;
-                let errorCount = 0;
-
-                for (const registration of bulkRegistrations) {
-                    try {
-                        // Verificar si ya existe un registro con esa cédula
-                        const existingQuery = await window.firebaseDB.votesCollection
-                            .where('cedula', '==', registration.cedula)
-                            .get();
-
-                        if (!existingQuery.empty) {
-                            skippedCount++;
-                            continue; // Saltar registro existente
-                        }
-
-                        // Crear nuevo registro
-                        const newRegistration = {
-                            ubch: registration.ubch,
-                            comunidad: registration.comunidad,
-                            nombre: registration.nombre,
-                            cedula: registration.cedula,
-                            telefono: registration.telefono,
-                            sexo: registration.sexo,
-                            edad: registration.edad,
-                            voted: false,
-                            createdAt: new Date().toISOString(),
-                            createdBy: JSON.parse(localStorage.getItem('currentUser')).name || 'Sistema'
-                        };
-
-                        await window.firebaseDB.votesCollection.add(newRegistration);
-                        importedCount++;
-
-                        // Mostrar progreso cada 10 registros
-                        if (importedCount % 10 === 0) {
-                            showBulkStatus(`📊 Progreso: ${importedCount} registros importados...`, 'success');
-                        }
-
-                    } catch (error) {
-                        console.error('Error importando registro:', error);
-                        errorCount++;
-                    }
-                }
-
-                // Mostrar resultados finales
-                let resultMessage = `✅ ${importedCount} registros importados exitosamente`;
-                if (skippedCount > 0) {
-                    resultMessage += `, ${skippedCount} registros existentes omitidos`;
-                }
-                if (errorCount > 0) {
-                    resultMessage += `, ${errorCount} errores`;
-                }
-                
-                showBulkStatus(resultMessage, 'success');
-                
-                // Actualizar contadores en la interfaz
-                if (window.updateDashboard) {
-                    window.updateDashboard();
-                }
-                if (window.loadRegistrations) {
-                    window.loadRegistrations();
-                }
-
-                // Limpiar vista previa
-                cancelBulkImport();
-
-            } catch (error) {
-                showBulkStatus(`❌ Error en importación: ${error.message}`, 'error');
+            // Verificar que Firebase esté disponible
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                alert('Error: Firebase no está disponible. Intenta recargar la página.');
+                return;
             }
-        }
 
-        // Cancelar registro masivo
-        function cancelBulkImport() {
-            bulkRegistrations = [];
-            bulkFile = null;
+            importStatus.style.display = 'block';
+            importStatus.className = 'import-status info';
+            importStatus.textContent = 'Validando y cargando datos...';
             
-            const previewDiv = document.getElementById('bulk-import-preview');
-            const fileInput = document.getElementById('bulk-excel-input');
+            let count = 0, errors = 0;
             
-            if (previewDiv) {
-                previewDiv.style.display = 'none';
-            }
-            if (fileInput) {
-                fileInput.value = '';
-            }
-        }
-
-        function downloadBulkTemplate() {
-            const template = `UBCH,Comunidad,Nombre,Cédula,Teléfono,Sexo,Edad
-UBCH-001,Comunidad A,Juan Pérez,12345678,04121234567,M,25
-UBCH-002,Comunidad B,María García,87654321,04261234567,F,30
-UBCH-003,Comunidad C,Carlos López,11223344,04141234567,M,28`;
-
-            const blob = new Blob([template], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'plantilla-registro-masivo.csv';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // Agregar función de logout al menú móvil
-        function setupMobileMenu() {
-            const menuDropdown = document.getElementById('menu-dropdown');
-            if (menuDropdown) {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            for (let tr of pasteTableBody.rows) {
+                const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
                 
-                let menuHTML = '';
-                
-                menuHTML += '<a href="admin-panel.html" class="menu-item"><span class="icon">⚙️</span>Panel de Administración</a>';
-                menuHTML += '<a href="#" onclick="logout()" class="menu-item danger"><span class="icon">🚪</span>Cerrar Sesión</a>';
-                
-                menuDropdown.innerHTML = menuHTML;
-            }
-        }
-
-        // Configurar menú móvil
-        document.addEventListener('DOMContentLoaded', function() {
-            setupMobileMenu();
-        });
-
-        if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(reg => console.log('Service Worker registrado:', reg))
-                    .catch(err => console.log('Error al registrar Service Worker:', err));
-            });
-        }
-
-        // Botón Instalar como App
-        let deferredPrompt;
-        const installBtn = document.getElementById('install-app-btn');
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block';
-        });
-        installBtn && installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    installBtn.style.display = 'none';
+                // Validación básica
+                if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
                 }
-                deferredPrompt = null;
-            }
-        });
-        // Ocultar si ya está instalada
-        window.addEventListener('appinstalled', () => {
-            installBtn.style.display = 'none';
-        });
-        // --- Protección de selects UBCH/Comunidad para evitar refrescos indeseados ---
-        function protectSelectPersistence() {
-            const form = document.getElementById('registration-form');
-            if (!form) return;
-            let lastUBCH = form.ubch ? form.ubch.value : '';
-            let lastCommunity = form.community ? form.community.value : '';
-
-            const ubchSelect = form.ubch;
-            const communitySelect = form.community;
-            if (ubchSelect) {
-                const observer = new MutationObserver(() => {
-                    if (lastUBCH && Array.from(ubchSelect.options).some(opt => opt.value === lastUBCH)) {
-                        ubchSelect.value = lastUBCH;
+                if (!/^\d{6,10}$/.test(cedula)) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (!/^04\d{9}$/.test(telefono)) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (!['M','F','m','f'].includes(sexo)) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (isNaN(edad) || edad < 16 || edad > 120) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                
+                // Preparar datos
+                const data = {
+                    ubch,
+                    community,
+                    name,
+                    cedula: cedula.replace(/\D/g, ''),
+                    telefono: telefono.replace(/\D/g, ''),
+                    sexo: sexo.toUpperCase(),
+                    edad: parseInt(edad),
+                    registeredBy: JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin',
+                    voted: false,
+                    registeredAt: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+                
+                try {
+                    // Verificar duplicados por cédula
+                    const existing = await window.firebaseDB.votesCollection.where('cedula','==',data.cedula).get();
+                    if (!existing.empty) {
+                        tr.style.background = '#ffeaa7'; // Amarillo: duplicado
+                        continue;
                     }
-                });
-                observer.observe(ubchSelect, { childList: true });
-                ubchSelect.addEventListener('change', () => {
-                    lastUBCH = ubchSelect.value;
-                    // Cuando cambia la UBCH, intentar restaurar comunidad si sigue siendo válida
-                    if (communitySelect) {
-                        setTimeout(() => {
-                            if (lastCommunity && Array.from(communitySelect.options).some(opt => opt.value === lastCommunity)) {
-                                communitySelect.value = lastCommunity;
+                    
+                    await window.firebaseDB.votesCollection.add(data);
+                    tr.style.background = '#d4edda'; // Verde: éxito
+                    count++;
+                } catch (err) {
+                    tr.style.background = '#f8d7da'; // Rojo: error
+                    errors++;
+                }
+            }
+            
+            if (count > 0 && errors === 0) {
+                importStatus.className = 'import-status success';
+                importStatus.textContent = `✅ ${count} registros cargados exitosamente.`;
+            } else if (count > 0 && errors > 0) {
+                importStatus.className = 'import-status warning';
+                importStatus.textContent = `⚠️ ${count} registros cargados. ${errors} filas con errores o duplicados.`;
                             } else {
-                                // Si la comunidad previa ya no existe, seleccionar la primera opción válida
-                                const firstValid = Array.from(communitySelect.options).find(opt => opt.value);
-                                if (firstValid) communitySelect.value = firstValid.value;
-                                lastCommunity = communitySelect.value;
-                            }
-                        }, 50);
-                    }
-                });
-            }
-            if (communitySelect) {
-                const observer2 = new MutationObserver(() => {
-                    if (lastCommunity && Array.from(communitySelect.options).some(opt => opt.value === lastCommunity)) {
-                        communitySelect.value = lastCommunity;
-                    } else {
-                        // Si la comunidad previa ya no existe, seleccionar la primera opción válida
-                        const firstValid = Array.from(communitySelect.options).find(opt => opt.value);
-                        if (firstValid) communitySelect.value = firstValid.value;
-                        lastCommunity = communitySelect.value;
-                    }
-                });
-                observer2.observe(communitySelect, { childList: true });
-                communitySelect.addEventListener('change', () => {
-                    lastCommunity = communitySelect.value;
-                });
+                importStatus.className = 'import-status error';
+                importStatus.textContent = `❌ No se cargaron registros. Verifica los datos.`;
             }
         }
-        document.addEventListener('DOMContentLoaded', protectSelectPersistence);
+
+        // Sugerencia visual en la primera celda si la tabla está vacía
+        function showPastePlaceholder() {
+            if (pasteTableBody && pasteTableBody.rows.length === 1) {
+                const firstRow = pasteTableBody.rows[0];
+                let empty = true;
+                for (let td of firstRow.cells) {
+                    if (td.textContent.trim() !== '') empty = false;
+                }
+                if (empty) {
+                    firstRow.cells[0].classList.add('placeholder');
+                    firstRow.cells[0].textContent = 'Haz clic aquí y pega los datos de Excel';
+                }
+            }
+        }
+        
+        // También después de limpiar la tabla
+        const oldClearPasteTable = clearPasteTable;
+        clearPasteTable = function() {
+            oldClearPasteTable();
+            setTimeout(showPastePlaceholder, 100);
+        };
+
+        // Función para limpiar la cola y forzar sincronización
+        function limpiarColaYForzarSync() {
+            if (window.offlineQueueManager) {
+                window.offlineQueueManager.limpiarCola();
+                window.offlineQueueManager.forzarSincronizacion();
+                alert('Cola limpiada y sincronización forzada.');
+                } else {
+                alert('Gestor de cola no disponible.');
+            }
+        }
+
+        // Función para descargar la plantilla de registro masivo
+        function descargarPlantilla() {
+            // Crear un enlace para descargar el archivo existente
+            const a = document.createElement('a');
+            a.href = 'registros_prueba.csv';
+            a.download = 'plantilla_registro_masivo.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Mostrar mensaje de confirmación
+            if (importStatus) {
+                importStatus.style.display = 'block';
+                importStatus.className = 'import-status success';
+                importStatus.textContent = '✅ Plantilla descargada correctamente. Llena los campos y pega aquí.';
+            setTimeout(() => {
+                    importStatus.style.display = 'none';
+                }, 3000);
+            }
+        }
     </script>
 </body>
 </html>
