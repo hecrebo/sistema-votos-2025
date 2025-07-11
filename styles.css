@@ -4060,11 +4060,12 @@ select:focus {
     flex-direction: column;
     gap: 10px;
     max-width: 90vw;
+    width: 400px;
 }
 
 .notification {
     background-color: #ffffff;
-    padding: 1rem 1.5rem;
+    padding: 1.2rem 1.5rem;
     border-radius: 0.75rem;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     display: flex;
@@ -4072,7 +4073,9 @@ select:focus {
     gap: 0.75rem;
     animation: slideIn 0.5s ease-out forwards;
     transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-    max-width: 400px;
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid #e5e7eb;
 }
 
 @keyframes slideIn {
@@ -4088,15 +4091,22 @@ select:focus {
 
 .notification.info {
     border-left: 5px solid #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
 }
+
 .notification.success {
     border-left: 5px solid #10b981;
+    background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
 }
+
 .notification.warning {
     border-left: 5px solid #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
 }
+
 .notification.error {
     border-left: 5px solid #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
 }
 
 .notification-avatar {
@@ -4107,6 +4117,7 @@ select:focus {
     flex-shrink: 0;
     animation: pulse-border 2s infinite alternate;
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    border: 2px solid #e5e7eb;
 }
 
 @keyframes pulse-border {
@@ -4126,6 +4137,8 @@ select:focus {
     color: #374151;
     font-weight: 500;
     flex: 1;
+    line-height: 1.4;
+    word-wrap: break-word;
 }
 
 .notification-close {
@@ -4136,11 +4149,19 @@ select:focus {
     cursor: pointer;
     margin-left: auto;
     transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+    padding: 5px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .notification-close:hover {
     color: #4b5563;
     transform: scale(1.1);
+    background: #f3f4f6;
 }
 
 .notification.fade-out {
@@ -4155,11 +4176,13 @@ select:focus {
         right: 10px;
         left: 10px;
         max-width: none;
+        width: auto;
     }
     
     .notification {
         max-width: none;
-        padding: 0.75rem 1rem;
+        padding: 1rem 1.2rem;
+        min-height: 70px;
     }
     
     .notification-avatar {
@@ -4170,6 +4193,38 @@ select:focus {
     .notification-message {
         font-size: 0.95rem;
     }
+    
+    .notification-close {
+        font-size: 1.3rem;
+        width: 28px;
+        height: 28px;
+    }
+}
+
+/* Mejoras específicas para el panel de administración */
+.admin-panel .notification {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    border: 2px solid #e5e7eb;
+}
+
+.admin-panel .notification.info {
+    border-left-color: #667eea;
+    background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%);
+}
+
+.admin-panel .notification.success {
+    border-left-color: #28a745;
+    background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
+}
+
+.admin-panel .notification.warning {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, #fffbf0 0%, #ffffff 100%);
+}
+
+.admin-panel .notification.error {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
 }
 
 /* === MEJORAS PARA LA SECCIÓN LISTADO === */

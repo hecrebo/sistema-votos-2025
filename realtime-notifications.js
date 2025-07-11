@@ -53,18 +53,46 @@ class RealtimeNotificationSystem {
      * Muestra una notificación en tiempo real
      */
     showRealtimeNotification(notificationData) {
-        const { message, type, sender, timestamp, id } = notificationData;
+        const { message, type, sender, timestamp, target, role, userId } = notificationData;
         
         // Evitar mostrar notificaciones propias
         if (sender === this.currentUser.username) {
+            console.log('🔇 Notificación propia ignorada:', message);
             return;
         }
+
+        // Verificar si la notificación es para este usuario/rol
+        const currentUserRole = this.currentUser.rol;
+        
+        // Lógica de filtrado mejorada
+        let shouldShow = false;
+        
+        if (target === 'all') {
+            // Para todos los usuarios
+            shouldShow = true;
+        } else if (target === 'role' && role === currentUserRole) {
+            // Para un rol específico
+            shouldShow = true;
+        } else if (target === 'user' && userId === this.currentUser.username) {
+            // Para un usuario específico
+            shouldShow = true;
+        }
+
+        if (!shouldShow) {
+            console.log(`🔇 Notificación filtrada - Target: ${target}, Role: ${role}, User: ${userId}, Current: ${currentUserRole}`);
+            return;
+        }
+
+        console.log(`📨 Notificación recibida: ${message} (${type}) de ${sender}`);
 
         // Mostrar notificación usando el sistema existente
         if (window.notificationSystem) {
             window.notificationSystem.show(message, type, true, 5000);
         } else if (window.showNotification) {
             window.showNotification(message, type, true);
+        } else {
+            // Fallback: mostrar como alerta simple
+            alert(`Notificación: ${message}`);
         }
     }
 
