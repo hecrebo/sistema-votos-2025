@@ -6,6 +6,7 @@
     <title>Sistema de Registro de Votos 2025</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#667eea">
+    <meta name="msapplication-TileColor" content="#667eea">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1015,11 +1016,26 @@
                 navigator.serviceWorker.register('./service-worker.js')
                     .then(function(registration) {
                         console.log('✅ Service Worker registrado exitosamente:', registration.scope);
+                        console.log('📱 PWA Status:', {
+                            scope: registration.scope,
+                            active: registration.active,
+                            installing: registration.installing,
+                            waiting: registration.waiting
+                        });
+                        
+                        // Verificar si la página está controlada por el SW
+                        if (navigator.serviceWorker.controller) {
+                            console.log('✅ Página controlada por Service Worker');
+                        } else {
+                            console.log('⚠️ Página no controlada por Service Worker');
+                        }
                     })
                     .catch(function(error) {
                         console.error('❌ Error registrando Service Worker:', error);
                     });
             });
+        } else {
+            console.log('❌ Service Worker no soportado en este navegador');
         }
     </script>
 </body>
