@@ -5,6 +5,7 @@ const urlsToCache = [
   './index.html',
   './login.html',
   './admin-panel.html',
+  './offline.html',
 
   // Styles
   './styles.css',
@@ -28,7 +29,7 @@ const urlsToCache = [
   './logo.jpg',
 
   // PWA Manifest & Core Icons (ensure these paths match your manifest and HTML)
-  './favicon.ico/manifest.json',
+  './manifest.json',
   './favicon.ico/favicon.ico',
   './favicon.ico/android-icon-192x192.png',
   './favicon.ico/apple-icon-180x180.png',
@@ -187,7 +188,7 @@ self.addEventListener('fetch', event => {
         .catch(() => {
           return caches.match(event.request)
             .then(response => {
-              return response || caches.match('./index.html'); // Fallback to index.html or an offline.html page
+              return response || caches.match('./offline.html'); // Use custom offline page
             });
         })
     );
