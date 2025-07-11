@@ -1756,7 +1756,7 @@
         // El sistema de notificaciones ahora está en notification-system.js
 
         // Funciones para notificaciones desde el panel de administración
-        function sendGlobalNotificationFromAdmin() {
+        async function sendGlobalNotificationFromAdmin() {
             const textarea = document.getElementById('custom-notification');
             const message = textarea.value.trim();
             
@@ -1765,17 +1765,26 @@
                 return;
             }
             
-            if (window.sendGlobalNotification) {
-                window.sendGlobalNotification(message, 'info', true);
-                showNotification('✅ Notificación enviada a todos los usuarios', 'success', true);
-            } else {
-                showNotification('❌ Sistema de notificaciones globales no disponible', 'error', true);
+            try {
+                if (window.realtimeNotificationSystem && window.realtimeNotificationSystem.isInitialized) {
+                    await window.realtimeNotificationSystem.sendGlobalNotification(message, 'info', true);
+                    showNotification('✅ Notificación enviada a todos los usuarios', 'success', true);
+                    log('📤 Notificación global enviada: ' + message, 'success');
+                } else {
+                    // Fallback al sistema local
+                    showNotification(message, 'info', true);
+                    showNotification('✅ Notificación enviada localmente', 'success', true);
+                    log('📤 Notificación local enviada: ' + message, 'success');
+                }
+            } catch (error) {
+                showNotification('❌ Error enviando notificación: ' + error.message, 'error', true);
+                log('❌ Error enviando notificación: ' + error.message, 'error');
             }
             
             textarea.value = '';
         }
 
-        function sendRoleNotificationFromAdmin(role) {
+        async function sendRoleNotificationFromAdmin(role) {
             const textarea = document.getElementById('custom-notification');
             const message = textarea.value.trim();
             
@@ -1784,13 +1793,50 @@
                 return;
             }
             
-            if (window.sendRoleNotification) {
-                window.sendRoleNotification(role, message, 'info', true);
-                showNotification(`✅ Notificación enviada a ${role}s`, 'success', true);
-            } else {
-                showNotification('❌ Sistema de notificaciones por rol no disponible', 'error', true);
+            try {
+                if (window.realtimeNotificationSystem && window.realtimeNotificationSystem.isInitialized) {
+                    await window.realtimeNotificationSystem.sendRoleNotification(role, message, 'info', true);
+                    showNotification(`✅ Notificación enviada a ${role}s`, 'success', true);
+                    log(`📤 Notificación enviada a rol ${role}: ${message}`, 'success');
+                } else {
+                    // Fallback al sistema local
+                    showNotification(`[${role.toUpperCase()}] ${message}`, 'info', true);
+                    showNotification(`✅ Notificación enviada localmente a ${role}s`, 'success', true);
+                    log(`📤 Notificación local enviada a rol ${role}: ${message}`, 'success');
+                }
+            } catch (error) {
+                showNotification('❌ Error enviando notificación: ' + error.message, 'error', true);
+                log('❌ Error enviando notificación: ' + error.message, 'error');
             }
             
+            textarea.value = '';
+        }
+
+        // Función para probar notificaciones
+        function testNotification(type) {
+            const messages = {
+                'info': 'Esta es una notificación de información del sistema.',
+                'success': '¡Operación completada exitosamente!',
+                'warning': 'Advertencia: El sistema detectó actividad inusual.',
+                'error': 'Error: No se pudo procesar la solicitud.'
+            };
+            
+            showNotification(messages[type], type, true);
+            log(`🧪 Notificación de prueba enviada (${type}): ${messages[type]}`, 'info');
+        }
+
+        // Función para enviar notificación personalizada
+        function sendCustomNotification() {
+            const textarea = document.getElementById('custom-notification');
+            const message = textarea.value.trim();
+            
+            if (!message) {
+                showNotification('Por favor, escribe un mensaje antes de enviar.', 'warning', true);
+                return;
+            }
+            
+            showNotification(message, 'info', false);
+            log('📤 Notificación personalizada enviada: ' + message, 'info');
             textarea.value = '';
         }
 
