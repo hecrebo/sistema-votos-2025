@@ -54,6 +54,8 @@
     <script src="test-automatico.js"></script>
     <script src="test-proyeccion.js"></script>
     <script src="queue-manager.js"></script>
+    <script src="notification-system.js"></script>
+    <script src="realtime-notifications.js"></script>
     
     <!-- Agregar Choices.js para autocomplete -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
@@ -228,46 +230,171 @@
                         <h2 class="page-title">Listado de Personas Registradas</h2>
                         <div class="page-actions">
                             <button id="export-pdf-btn" class="btn btn-secondary">Generar PDF</button>
-                            <button id="export-csv-btn" class="btn btn-secondary">Generar CSV</button>
+                            <button id="export-csv-btn" class="btn btn-secondary" title="Exporta registros seleccionados o todos los filtrados">📊 Generar CSV</button>
                         </div>
                     </div>
                     <div class="filter-container">
-                        <div class="filter-buttons">
-                            <button class="filter-btn active" data-filter="all">Todos</button>
-                            <button class="filter-btn" data-filter="voted">Votaron</button>
-                            <button class="filter-btn" data-filter="not-voted">No Votaron</button>
-                            <span class="filter-counter" id="filter-counter">0</span>
+                        <!-- Primera fila: Búsqueda y contadores -->
+                        <div class="filter-row-1">
+                            <div class="search-bar-container">
+                                <div class="search-input-group">
+                                    <input type="text" id="list-search" placeholder="Buscar por nombre, cédula, comunidad..." class="search-input">
+                                    <button type="button" id="clear-search" class="clear-search-btn" style="display: none;">✕</button>
+                                </div>
+                                <div class="search-options">
+                                    <select id="search-field" class="search-field-select">
+                                        <option value="all">Todos los campos</option>
+                                        <option value="name">Nombre</option>
+                                        <option value="cedula">Cédula</option>
+                                        <option value="community">Comunidad</option>
+                                        <option value="ubch">CV</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="general-counters">
+                                <div class="counter-item">
+                                    <span class="counter-label">Total:</span>
+                                    <span class="counter-value" id="total-counter">0</span>
+                                </div>
+                                <div class="counter-item">
+                                    <span class="counter-label">Votaron:</span>
+                                    <span class="counter-value voted" id="voted-counter">0</span>
+                                </div>
+                                <div class="counter-item">
+                                    <span class="counter-label">No Votaron:</span>
+                                    <span class="counter-value not-voted" id="not-voted-counter">0</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="ubch-filter">
-                            <label for="ubch-filter-select">Filtrar por CV:</label>
-                            <select id="ubch-filter-select" class="ubch-filter-select">
-                                <option value="">Todos los CV</option>
-                            </select>
+                        
+                        <!-- Segunda fila: Filtros principales y avanzados -->
+                        <div class="filter-row-2">
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" data-filter="all">
+                                    <span class="filter-text">Todos</span>
+                                    <span class="filter-count" id="all-count">0</span>
+                                </button>
+                                <button class="filter-btn" data-filter="voted">
+                                    <span class="filter-text">Votaron</span>
+                                    <span class="filter-count" id="voted-count">0</span>
+                                </button>
+                                <button class="filter-btn" data-filter="not-voted">
+                                    <span class="filter-text">No Votaron</span>
+                                    <span class="filter-count" id="not-voted-count">0</span>
+                                </button>
+                            </div>
+                            
+                            <div class="advanced-filters">
+                                <div class="ubch-filter">
+                                    <label for="ubch-filter-select">CV:</label>
+                                    <select id="ubch-filter-select" class="ubch-filter-select">
+                                        <option value="">Todos los CV</option>
+                                    </select>
+                                </div>
+                                <div class="community-filter">
+                                    <label for="community-filter-select">Comunidad:</label>
+                                    <select id="community-filter-select" class="community-filter-select">
+                                        <option value="">Todas las Comunidades</option>
+                                    </select>
+                                </div>
+                                <div class="age-filter">
+                                    <label for="age-filter-select">Edad:</label>
+                                    <select id="age-filter-select" class="age-filter-select">
+                                        <option value="">Todas las edades</option>
+                                        <option value="16-25">16-25 años</option>
+                                        <option value="26-35">26-35 años</option>
+                                        <option value="36-45">36-45 años</option>
+                                        <option value="46-55">46-55 años</option>
+                                        <option value="56+">56+ años</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <div class="community-filter">
-                            <label for="community-filter-select">Filtrar por Comunidad:</label>
-                            <select id="community-filter-select" class="community-filter-select">
-                                <option value="">Todas las Comunidades</option>
-                            </select>
+                        
+                        <!-- Información de filtros aplicados -->
+                        <div class="filter-info" id="filter-info" style="display: none;">
+                            <span class="filter-info-text">Filtros aplicados</span>
                         </div>
                     </div>
+                    <!-- Acciones masivas -->
+                    <div id="bulk-actions" class="bulk-actions">
+                        <div class="bulk-select-all">
+                            <input type="checkbox" id="select-all-checkbox" class="row-checkbox">
+                            <label for="select-all-checkbox">Seleccionar todos</label>
+                        </div>
+                        <div class="bulk-actions-buttons">
+                            <button class="btn btn-success btn-small" onclick="votingSystem.bulkConfirmVotes()">🎯 Confirmar Votos</button>
+                            <button class="btn btn-danger btn-small" onclick="votingSystem.bulkDeleteVotes()">❌ Eliminar</button>
+                        </div>
+                    </div>
+
+                    <!-- Vista detallada -->
+                    <div id="detail-view" class="detail-view">
+                        <div class="detail-header">
+                            <h3 class="detail-title">Detalles del Registro</h3>
+                            <button class="detail-close" onclick="votingSystem.closeDetailView()">✕</button>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-section">
+                                <h4>Información Personal</h4>
+                                <div class="detail-info"><strong>Nombre:</strong> <span id="detail-name"></span></div>
+                                <div class="detail-info"><strong>Cédula:</strong> <span id="detail-cedula"></span></div>
+                                <div class="detail-info"><strong>Teléfono:</strong> <span id="detail-telefono"></span></div>
+                                <div class="detail-info"><strong>Sexo:</strong> <span id="detail-sexo"></span></div>
+                                <div class="detail-info"><strong>Edad:</strong> <span id="detail-edad"></span></div>
+                            </div>
+                            <div class="detail-section">
+                                <h4>Información Electoral</h4>
+                                <div class="detail-info"><strong>Centro de Votación:</strong> <span id="detail-ubch"></span></div>
+                                <div class="detail-info"><strong>Comunidad:</strong> <span id="detail-community"></span></div>
+                                <div class="detail-info"><strong>Estado del Voto:</strong> <span id="detail-vote-status"></span></div>
+                                <div class="detail-info"><strong>Fecha de Registro:</strong> <span id="detail-registered-at"></span></div>
+                                <div class="detail-info"><strong>Registrado por:</strong> <span id="detail-registered-by"></span></div>
+                            </div>
+                            <div class="detail-section">
+                                <h4>Acciones</h4>
+                                <div class="detail-actions">
+                                    <button class="btn btn-primary" onclick="votingSystem.editFromDetail()">🔄 Editar</button>
+                                    <button class="btn btn-success" onclick="votingSystem.confirmFromDetail()">🎯 Confirmar Voto</button>
+                                    <button class="btn btn-danger" onclick="votingSystem.deleteFromDetail()">❌ Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-container">
+                        <div class="loading-overlay" id="table-loading" style="display: none;">
+                            <div class="loading-spinner"></div>
+                        </div>
                         <table id="registros-table" class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Nombre</th>
-                                    <th>Cédula</th>
-                                    <th>Sexo</th>
-                                    <th>Edad</th>
-                                    <th>CV</th>
-                                    <th>Comunidad</th>
-                                    <th>Votó</th>
+                                    <th><input type="checkbox" id="header-checkbox" class="row-checkbox"></th>
+                                    <th class="sortable-header" data-sort="name">Nombre ↕</th>
+                                    <th class="sortable-header" data-sort="cedula">Cédula ↕</th>
+                                    <th class="sortable-header" data-sort="sexo">Sexo ↕</th>
+                                    <th class="sortable-header" data-sort="edad">Edad ↕</th>
+                                    <th class="sortable-header" data-sort="ubch">CV ↕</th>
+                                    <th class="sortable-header" data-sort="community">Comunidad ↕</th>
+                                    <th class="sortable-header" data-sort="voted">Votó ↕</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
-                        <div id="pagination-controls" class="pagination-controls"></div>
+                        <div id="pagination-container" class="pagination-container">
+                            <div class="pagination-info">
+                                Mostrando <span id="pagination-start">0</span> a <span id="pagination-end">0</span> de <span id="pagination-total">0</span> registros
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn" id="first-page">« Primera</button>
+                                <button class="pagination-btn" id="prev-page">‹ Anterior</button>
+                                <div id="page-numbers"></div>
+                                <button class="pagination-btn" id="next-page">Siguiente ›</button>
+                                <button class="pagination-btn" id="last-page">Última »</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

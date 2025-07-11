@@ -502,6 +502,159 @@
             box-shadow: 0 2px 8px rgba(102,126,234,0.04);
         }
 
+        /* Sistema de Notificaciones */
+        #notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 90vw;
+        }
+
+        .notification {
+            background-color: #ffffff;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.5s ease-out forwards;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            max-width: 400px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .notification.info {
+            border-left: 5px solid #667eea;
+        }
+        .notification.success {
+            border-left: 5px solid #28a745;
+        }
+        .notification.warning {
+            border-left: 5px solid #ffc107;
+        }
+        .notification.error {
+            border-left: 5px solid #dc3545;
+        }
+
+        .notification-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            animation: pulse-border 2s infinite alternate;
+            box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+        }
+
+        @keyframes pulse-border {
+            0% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(102, 126, 234, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+            }
+        }
+
+        .notification-message {
+            font-size: 1.05rem;
+            color: #374151;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #9ca3af;
+            cursor: pointer;
+            margin-left: auto;
+            transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+        }
+
+        .notification-close:hover {
+            color: #4b5563;
+            transform: scale(1.1);
+        }
+
+        .notification.fade-out {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+
+        /* Botón para probar notificaciones */
+        .notification-test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+
+        .notification-test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .notification-test-btn.success {
+            background: linear-gradient(135deg, #28a745 0%, #43e97b 100%);
+        }
+
+        .notification-test-btn.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ffecb3 100%);
+            color: #333;
+        }
+
+        .notification-test-btn.error {
+            background: linear-gradient(135deg, #dc3545 0%, #ff758c 100%);
+        }
+
+        /* Responsive para notificaciones */
+        @media (max-width: 768px) {
+            #notification-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+            
+            .notification {
+                max-width: none;
+                padding: 0.75rem 1rem;
+            }
+            
+            .notification-avatar {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .notification-message {
+                font-size: 0.95rem;
+            }
+        }
+
         .import-section h3 {
             color: #1976d2;
             margin: 0 0 15px 0;
@@ -845,6 +998,43 @@
                     <button class="btn btn-primary" onclick="optimizeSystem()">⚡ Optimizar</button>
                 </div>
                 <div class="log-container" id="maintenance-logs">
+            </div>
+
+            <!-- Sistema de Notificaciones -->
+            <div class="admin-card">
+                <h3>
+                    <span class="status-indicator status-online" id="notification-status"></span>
+                    Sistema de Notificaciones
+                </h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <p class="metric-number" id="notification-count">0</p>
+                        <p class="metric-label">Notificaciones Activas</p>
+                    </div>
+                    <div class="metric-card">
+                        <p class="metric-number" id="notification-types">4</p>
+                        <p class="metric-label">Tipos Disponibles</p>
+                    </div>
+                </div>
+                <div class="service-controls">
+                    <button class="notification-test-btn" onclick="testNotification('info')">ℹ️ Info</button>
+                    <button class="notification-test-btn success" onclick="testNotification('success')">✅ Éxito</button>
+                    <button class="notification-test-btn warning" onclick="testNotification('warning')">⚠️ Advertencia</button>
+                    <button class="notification-test-btn error" onclick="testNotification('error')">❌ Error</button>
+                </div>
+                <div style="margin-top: 15px;">
+                    <textarea id="custom-notification" placeholder="Escribe un mensaje personalizado..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; resize: vertical; min-height: 60px;"></textarea>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button class="btn btn-primary" onclick="sendCustomNotification()">📤 Enviar Local</button>
+                        <button class="btn btn-success" onclick="sendGlobalNotificationFromAdmin()">🌐 Enviar a Todos</button>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-warning" onclick="sendRoleNotificationFromAdmin('registrador')">👤 Registradores</button>
+                        <button class="btn btn-info" onclick="sendRoleNotificationFromAdmin('verificador')">✅ Verificadores</button>
+                        <button class="btn btn-secondary" onclick="sendRoleNotificationFromAdmin('usuario')">👥 Usuarios</button>
+                    </div>
+                </div>
+            </div>
                     <div class="log-entry log-info">Sistema listo para mantenimiento</div>
                 </div>
             </div>
@@ -1053,6 +1243,7 @@
             updateStatusIndicators();
             log('🚀 Sistema iniciado', 'success');
             maintenanceLog('Sistema iniciado manualmente', 'success');
+            showNotification('🚀 Sistema iniciado exitosamente', 'success', true);
         }
         
         function stopSystem() {
@@ -1060,17 +1251,20 @@
             updateStatusIndicators();
             log('🛑 Sistema detenido', 'warning');
             maintenanceLog('Sistema detenido manualmente', 'warning');
+            showNotification('🛑 Sistema detenido', 'warning', true);
         }
         
         function restartSystem() {
             log('🔄 Reiniciando sistema...', 'warning');
             maintenanceLog('Reinicio del sistema iniciado', 'warning');
+            showNotification('🔄 Reiniciando sistema...', 'info', true);
             
             setTimeout(() => {
                 systemStatus = 'online';
                 updateStatusIndicators();
                 log('✅ Sistema reiniciado exitosamente', 'success');
                 maintenanceLog('Sistema reiniciado exitosamente', 'success');
+                showNotification('✅ Sistema reiniciado exitosamente', 'success', true);
             }, 2000);
         }
         
@@ -1085,25 +1279,30 @@
         // Funciones de Firebase
         async function testFirebase() {
             log('🔍 Probando conexión a Firebase...', 'info');
+            showNotification('🔍 Probando conexión a Firebase...', 'info', true);
             
             try {
                 const testDoc = await window.firebaseDB.votesCollection.limit(1).get();
                 log('✅ Conexión a Firebase exitosa', 'success');
                 maintenanceLog('Prueba de Firebase exitosa', 'success');
+                showNotification('✅ Conexión a Firebase exitosa', 'success', true);
             } catch (error) {
                 log(`❌ Error de conexión a Firebase: ${error.message}`, 'error');
                 maintenanceLog(`Error de Firebase: ${error.message}`, 'error');
+                showNotification(`❌ Error de conexión a Firebase: ${error.message}`, 'error', true);
             }
         }
         
         async function clearFirebaseCache() {
             log('🗑️ Limpiando cache de Firebase...', 'info');
             maintenanceLog('Limpieza de cache iniciada', 'info');
+            showNotification('🗑️ Limpiando cache de Firebase...', 'info', true);
             
             // Simular limpieza
             setTimeout(() => {
                 log('✅ Cache de Firebase limpiado', 'success');
                 maintenanceLog('Cache de Firebase limpiado exitosamente', 'success');
+                showNotification('✅ Cache de Firebase limpiado', 'success', true);
             }, 1000);
         }
         
@@ -1130,6 +1329,7 @@
         async function backupData() {
             log('💾 Iniciando respaldo de datos...', 'info');
             maintenanceLog('Respaldo de datos iniciado', 'info');
+            showNotification('💾 Iniciando respaldo de datos...', 'info', true);
             
             try {
                 const snapshot = await window.firebaseDB.votesCollection.get();
@@ -1148,9 +1348,11 @@
                 
                 log(`✅ Respaldo completado: ${data.length} registros`, 'success');
                 maintenanceLog(`Respaldo completado: ${data.length} registros`, 'success');
+                showNotification(`✅ Respaldo completado: ${data.length} registros`, 'success', true);
             } catch (error) {
                 log(`❌ Error en respaldo: ${error.message}`, 'error');
                 maintenanceLog(`Error en respaldo: ${error.message}`, 'error');
+                showNotification(`❌ Error en respaldo: ${error.message}`, 'error', true);
             }
         }
         
@@ -1158,11 +1360,13 @@
             if (confirm('¿Estás seguro de que quieres eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
                 log('🗑️ Eliminación de todos los datos iniciada...', 'warning');
                 maintenanceLog('Eliminación masiva de datos iniciada', 'warning');
+                showNotification('🗑️ Eliminación de todos los datos iniciada...', 'warning', true);
                 
                 // Aquí iría la lógica real de eliminación
                 setTimeout(() => {
                     log('✅ Todos los datos eliminados', 'success');
                     maintenanceLog('Eliminación masiva completada', 'success');
+                    showNotification('✅ Todos los datos eliminados', 'success', true);
                 }, 2000);
             }
         }
@@ -1170,11 +1374,13 @@
         function optimizeSystem() {
             log('⚡ Optimización del sistema iniciada...', 'info');
             maintenanceLog('Optimización del sistema iniciada', 'info');
+            showNotification('⚡ Optimización del sistema iniciada...', 'info', true);
             
             // Simular optimización
             setTimeout(() => {
                 log('✅ Sistema optimizado', 'success');
                 maintenanceLog('Optimización completada exitosamente', 'success');
+                showNotification('✅ Sistema optimizado', 'success', true);
             }, 3000);
         }
         
@@ -1545,6 +1751,49 @@
                 }
             }
         }
+
+        // --- Sistema de Notificaciones ---
+        // El sistema de notificaciones ahora está en notification-system.js
+
+        // Funciones para notificaciones desde el panel de administración
+        function sendGlobalNotificationFromAdmin() {
+            const textarea = document.getElementById('custom-notification');
+            const message = textarea.value.trim();
+            
+            if (!message) {
+                showNotification('Por favor, escribe un mensaje antes de enviar.', 'warning', true);
+                return;
+            }
+            
+            if (window.sendGlobalNotification) {
+                window.sendGlobalNotification(message, 'info', true);
+                showNotification('✅ Notificación enviada a todos los usuarios', 'success', true);
+            } else {
+                showNotification('❌ Sistema de notificaciones globales no disponible', 'error', true);
+            }
+            
+            textarea.value = '';
+        }
+
+        function sendRoleNotificationFromAdmin(role) {
+            const textarea = document.getElementById('custom-notification');
+            const message = textarea.value.trim();
+            
+            if (!message) {
+                showNotification('Por favor, escribe un mensaje antes de enviar.', 'warning', true);
+                return;
+            }
+            
+            if (window.sendRoleNotification) {
+                window.sendRoleNotification(role, message, 'info', true);
+                showNotification(`✅ Notificación enviada a ${role}s`, 'success', true);
+            } else {
+                showNotification('❌ Sistema de notificaciones por rol no disponible', 'error', true);
+            }
+            
+            textarea.value = '';
+        }
+
         // Limpiar placeholder al enfocar
         pasteTableBody.addEventListener('focusin', function(e) {
             if (e.target.classList.contains('placeholder')) {
@@ -1599,6 +1848,8 @@
         // Verificar que no hay errores
         console.log(window.autoInitSystem.getSystemStatus());
     </script>
+    <script src="notification-system.js"></script>
+    <script src="realtime-notifications.js"></script>
     <script src="auto-init.js"></script>
 </body>
 </html> 

@@ -73,6 +73,16 @@ class VotingSystemFirebase extends VotingSystem {
         window.votingSystemInitialized = true;
         window.votingSystem = this;
         
+        // Nuevas propiedades para mejoras del listado
+        this.currentPage = 1;
+        this.pageSize = 20;
+        this.filteredVotes = [];
+        this.selectedVotes = [];
+        this.currentSearchTerm = '';
+        this.currentSortField = null;
+        this.currentSortDirection = 'asc';
+        this.currentDetailVote = null;
+        
         console.log('✅ Instancia de VotingSystemFirebase creada correctamente');
         
         this.init();
@@ -587,6 +597,11 @@ class VotingSystemFirebase extends VotingSystem {
                 // Mostrar mensaje de éxito inmediato
                 this.showMessage('✅ Registro guardado localmente. Se sincronizará automáticamente cuando haya conexión.', 'success', 'registration');
                 
+                // Enviar notificación global
+                if (window.sendGlobalNotification) {
+                    window.sendGlobalNotification(`👤 Nuevo registro: ${name} en ${community}`, 'info', true);
+                }
+                
                 // Generar mensaje de agradecimiento
             await this.generateThankYouMessage(name, ubch, community);
             
@@ -604,6 +619,12 @@ class VotingSystemFirebase extends VotingSystem {
                 // Intentar guardar directamente en Firebase
                 await this.saveVoteToFirebase(registrationData);
                 this.showMessage('✅ Registro guardado exitosamente.', 'success', 'registration');
+                
+                // Enviar notificación global
+                if (window.sendGlobalNotification) {
+                    window.sendGlobalNotification(`👤 Nuevo registro: ${name} en ${community}`, 'success', true);
+                }
+                
                 await this.generateThankYouMessage(name, ubch, community);
                 form.reset();
             }
@@ -677,6 +698,12 @@ class VotingSystemFirebase extends VotingSystem {
             }
             
             this.showMessage('¡Voto confirmado con éxito!', 'success', 'check-in');
+            
+            // Enviar notificación global
+            if (window.sendGlobalNotification) {
+                window.sendGlobalNotification(`🎯 Voto confirmado: ${vote.name} en ${vote.community}`, 'success', true);
+            }
+            
             document.getElementById('cedula-search').value = '';
             document.getElementById('search-results').innerHTML = '';
             
@@ -714,6 +741,12 @@ class VotingSystemFirebase extends VotingSystem {
         }
         try {
             await this.deleteVoteFromFirebase(this.voteToDelete);
+            
+            // Enviar notificación global
+            if (window.sendGlobalNotification) {
+                window.sendGlobalNotification(`❌ Registro eliminado del sistema`, 'warning', true);
+            }
+            
             // Recargar datos desde Firebase para reflejar el cambio
             await this.loadDataFromFirebase();
             this.closeDeleteModal();
@@ -788,7 +821,7 @@ class VotingSystemFirebase extends VotingSystem {
         }
         const csvBtn = document.getElementById('export-csv-btn');
         if (csvBtn) {
-            csvBtn.addEventListener('click', () => this.exportToCSV());
+            csvBtn.addEventListener('click', () => this.exportToCSVSmart());
         }
 
         // Filtros
@@ -841,13 +874,19 @@ class VotingSystemFirebase extends VotingSystem {
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-page="${page}"]`).classList.add('active');
+        const navBtn = document.querySelector(`[data-page="${page}"]`);
+        if (navBtn) {
+            navBtn.classList.add('active');
+        }
 
         document.querySelectorAll('.page').forEach(p => {
             p.classList.remove('active');
         });
 
-        document.getElementById(`${page}-page`).classList.add('active');
+        const pageElement = document.getElementById(`${page}-page`);
+        if (pageElement) {
+            pageElement.classList.add('active');
+        }
         this.currentPage = page;
         this.renderCurrentPage();
     }
@@ -1105,7 +1144,7 @@ class VotingSystemFirebase extends VotingSystem {
                     <p class="vote-status-info">
                         <strong>Estado del voto:</strong> 
                         <span class="vote-status ${yaVoto ? 'voted' : 'not-voted'}">
-                            ${yaVoto ? '✅ Ya confirmado' : '❌ Pendiente de confirmar'}
+                            ${yaVoto ? '🎯 Ya confirmado' : '⏳ Pendiente de confirmar'}
                         </span>
                     </p>
                 </div>
@@ -1121,7 +1160,82 @@ class VotingSystemFirebase extends VotingSystem {
     }
 
     renderListPage() {
+        console.log('🔄 Renderizando página de listado...');
+        console.log(`📊 Total de votos cargados: ${this.votes.length}`);
+        console.log('📋 Primeros 3 votos:', this.votes.slice(0, 3));
+        
         this.renderVotesTable();
+        this.setupListPageEventListeners();
+        
+        // Debug después de renderizar
+        setTimeout(() => {
+            this.debugListPage();
+        }, 100);
+    }
+
+    setupListPageEventListeners() {
+        // Búsqueda
+        const searchInput = document.getElementById('list-search');
+        const clearSearchBtn = document.getElementById('clear-search');
+        const searchFieldSelect = document.getElementById('search-field');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.handleSearch(e.target.value);
+                clearSearchBtn.style.display = e.target.value ? 'block' : 'none';
+            });
+        }
+
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                this.handleSearch('');
+                clearSearchBtn.style.display = 'none';
+            });
+        }
+
+        // Ordenamiento
+        document.querySelectorAll('.sortable-header').forEach(header => {
+            header.addEventListener('click', (e) => {
+                const sortField = e.target.dataset.sort;
+                this.handleSort(sortField);
+            });
+        });
+
+        // Filtros principales (Todos, Votaron, No Votaron)
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const filter = e.target.closest('.filter-btn').dataset.filter;
+                this.handleFilterChange(filter);
+            });
+        });
+
+        // Filtro de edad
+        const ageFilter = document.getElementById('age-filter-select');
+        if (ageFilter) {
+            ageFilter.addEventListener('change', () => {
+                this.applyFilters();
+            });
+        }
+
+        // Selección masiva
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const headerCheckbox = document.getElementById('header-checkbox');
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', (e) => {
+                this.toggleSelectAll(e.target.checked);
+            });
+        }
+
+        if (headerCheckbox) {
+            headerCheckbox.addEventListener('change', (e) => {
+                this.toggleSelectAll(e.target.checked);
+            });
+        }
+
+        // Paginación
+        this.setupPaginationEventListeners();
     }
 
     renderVotesTable() {
@@ -1132,49 +1246,88 @@ class VotingSystemFirebase extends VotingSystem {
         this.populateUBCHFilter();
         this.populateCommunityFilter();
 
-        // Renderizar todos los votos sin filtros
-        this.renderFilteredVotesTable(this.votes);
+        // Inicializar votos filtrados con todos los votos
+        this.filteredVotes = [...this.votes];
+        this.currentPage = 1;
+
+        // Actualizar todos los contadores
+        this.updateAllCounters();
+
+        // Aplicar filtros y renderizar tabla
+        this.applyFilters();
     }
     
-    // Nuevo método para renderizar votos filtrados
+    // Nuevo método para renderizar votos filtrados optimizado
     renderFilteredVotesTable(filteredVotes) {
         const tbody = document.querySelector('#registros-table tbody');
-        tbody.innerHTML = '';
-
+        if (!tbody) {
+            console.error('❌ No se encontró el tbody de la tabla');
+            return;
+        }
+        
+        // Usar DocumentFragment para optimizar el renderizado
+        const fragment = document.createDocumentFragment();
+        
         console.log(`🔄 Renderizando ${filteredVotes.length} votos en la tabla`);
 
-        // Renderizar votos filtrados
-        filteredVotes.forEach(vote => {
+        // Obtener registros de la página actual
+        const pageSize = this.pageSize || 20;
+        const startIndex = (this.currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const pageVotes = filteredVotes.slice(startIndex, endIndex);
+
+        console.log(`📄 Página ${this.currentPage}: mostrando registros ${startIndex + 1} a ${endIndex} de ${filteredVotes.length} total`);
+
+        // Renderizar votos de la página actual usando DocumentFragment
+        pageVotes.forEach(vote => {
             const tr = document.createElement('tr');
             const sexoClass = vote.sexo === 'M' ? 'sexo-masculino' : vote.sexo === 'F' ? 'sexo-femenino' : '';
             tr.innerHTML = `
-                <td>${vote.name}</td>
-                <td>${vote.cedula}</td>
+                <td>
+                    <input type="checkbox" class="row-checkbox" data-vote-id="${vote.id}" ${this.selectedVotes.includes(vote.id) ? 'checked' : ''}>
+                </td>
+                <td>${vote.name || 'N/A'}</td>
+                <td>${vote.cedula || 'N/A'}</td>
                 <td class="${sexoClass}">${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}</td>
                 <td>${vote.edad || 'N/A'}</td>
-                <td>${vote.ubch}</td>
-                <td>${vote.community}</td>
+                <td>${vote.ubch || 'N/A'}</td>
+                <td>${vote.community || 'N/A'}</td>
                 <td>
                     <span class="vote-status ${vote.voted ? 'voted' : 'not-voted'}">
                         ${vote.voted ? 'Sí' : 'No'}
                     </span>
                 </td>
                 <td>
-                    <button class="btn btn-primary btn-small" onclick="votingSystem.editVote('${vote.id}')">
-                        Editar
+                    <button class="btn btn-primary btn-small" onclick="votingSystem.showDetailView('${vote.id}')" title="Ver detalles">
+                        👁️
                     </button>
-                    <button class="btn btn-danger btn-small" onclick="votingSystem.deleteVote('${vote.id}')">
-                        Eliminar
+                    <button class="btn btn-primary btn-small" onclick="votingSystem.editVote('${vote.id}')" title="Editar">
+                        🔄
+                    </button>
+                    <button class="btn btn-danger btn-small" onclick="votingSystem.deleteVote('${vote.id}')" title="Eliminar">
+                        ❌
                     </button>
                 </td>
             `;
-            tbody.appendChild(tr);
+            fragment.appendChild(tr);
         });
 
-        // Actualizar contador de filtros
-        this.updateFilterCounter(filteredVotes.length);
-        
-        console.log(`✅ Tabla renderizada con ${filteredVotes.length} votos`);
+        // Usar requestAnimationFrame para optimizar el renderizado
+        requestAnimationFrame(() => {
+            // Limpiar tbody y agregar fragmento de una vez
+            tbody.innerHTML = '';
+            tbody.appendChild(fragment);
+
+            // Configurar eventos de checkbox usando delegación de eventos
+            tbody.addEventListener('change', (e) => {
+                if (e.target.classList.contains('row-checkbox')) {
+                    const voteId = e.target.dataset.voteId;
+                    this.toggleVoteSelection(voteId, e.target.checked);
+                }
+            });
+
+                                console.log(`✅ Tabla renderizada con ${pageVotes.length} votos de la página ${this.currentPage}`);
+        });
     }
 
     // Poblar el selector de filtro por UBCH
@@ -1252,12 +1405,66 @@ class VotingSystemFirebase extends VotingSystem {
         }
     }
 
-    // Actualizar contador de filtros
-    updateFilterCounter(count) {
-        const counter = document.getElementById('filter-counter');
-        if (counter) {
-            counter.textContent = count;
+    // Actualizar todos los contadores
+    updateAllCounters() {
+        const totalVotes = this.votes.length;
+        const votedVotes = this.votes.filter(v => v.voted).length;
+        const notVotedVotes = this.votes.filter(v => !v.voted).length;
+        
+        // Contadores generales
+        this.updateCounter('total-counter', totalVotes);
+        this.updateCounter('voted-counter', votedVotes);
+        this.updateCounter('not-voted-counter', notVotedVotes);
+        
+        // Contadores en botones de filtro
+        this.updateCounter('all-count', totalVotes);
+        this.updateCounter('voted-count', votedVotes);
+        this.updateCounter('not-voted-count', notVotedVotes);
+        
+        // Contador de registros mostrados (se actualiza en renderFilteredVotesTable)
+    }
+    
+    // Actualizar contador específico
+    updateCounter(elementId, count) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            requestAnimationFrame(() => {
+                element.textContent = count.toLocaleString();
+            });
         }
+    }
+    
+    // Actualizar información de filtros aplicados
+    updateFilterInfo() {
+        const filterInfo = document.getElementById('filter-info');
+        const activeFilterBtn = document.querySelector('.filter-btn.active');
+        const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
+        const selectedCommunity = document.getElementById('community-filter-select')?.value;
+        const selectedAgeRange = document.getElementById('age-filter-select')?.value;
+        
+        if (filterInfo) {
+            const appliedFilters = [];
+            
+            if (activeFilterBtn && activeFilterBtn.dataset.filter !== 'all') {
+                appliedFilters.push(activeFilterBtn.dataset.filter === 'voted' ? 'Votaron' : 'No votaron');
+            }
+            if (selectedUBCH) appliedFilters.push(`CV: ${selectedUBCH}`);
+            if (selectedCommunity) appliedFilters.push(`Comunidad: ${selectedCommunity}`);
+            if (selectedAgeRange) appliedFilters.push(`Edad: ${selectedAgeRange}`);
+            
+            if (appliedFilters.length > 0) {
+                filterInfo.style.display = 'flex';
+                filterInfo.querySelector('.filter-info-text').textContent = `Filtros: ${appliedFilters.join(', ')}`;
+            } else {
+                filterInfo.style.display = 'none';
+            }
+        }
+    }
+    
+    // Actualizar contador de filtros optimizado (mantener para compatibilidad)
+    updateFilterCounter(count) {
+        // Este método ya no se usa, pero se mantiene para compatibilidad
+        console.log(`Contador de filtros: ${count}`);
     }
 
     // Manejar cambio de filtro
@@ -1268,10 +1475,13 @@ class VotingSystemFirebase extends VotingSystem {
         });
         
         // Agregar clase active al botón seleccionado
-        document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+        const targetBtn = document.querySelector(`[data-filter="${filter}"]`);
+        if (targetBtn) {
+            targetBtn.classList.add('active');
+        }
         
-        // Re-renderizar la tabla con los nuevos filtros
-        this.renderVotesTable();
+        // Aplicar filtros y re-renderizar la tabla
+        this.applyFilters();
     }
 
     // Aplicar filtros (para el selector de UBCH y Comunidad)
@@ -1282,10 +1492,12 @@ class VotingSystemFirebase extends VotingSystem {
         const activeFilterBtn = document.querySelector('.filter-btn.active');
         const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
         const selectedCommunity = document.getElementById('community-filter-select')?.value;
+        const selectedAgeRange = document.getElementById('age-filter-select')?.value;
         
         console.log('   - Filtro de estado:', activeFilterBtn?.dataset.filter || 'ninguno');
         console.log('   - Filtro UBCH:', selectedUBCH || 'todas');
         console.log('   - Filtro Comunidad:', selectedCommunity || 'todas');
+        console.log('   - Filtro Edad:', selectedAgeRange || 'todas');
         
         // Aplicar filtros
         let filteredVotes = this.votes;
@@ -1315,11 +1527,431 @@ class VotingSystemFirebase extends VotingSystem {
             filteredVotes = filteredVotes.filter(v => v.community === selectedCommunity);
             console.log(`   - Filtrando por Comunidad "${selectedCommunity}": ${beforeCount} → ${filteredVotes.length} votos`);
         }
+
+        // Filtrar por rango de edad
+        if (selectedAgeRange) {
+            const beforeCount = filteredVotes.length;
+            filteredVotes = filteredVotes.filter(v => {
+                const edad = v.edad || 0;
+                switch (selectedAgeRange) {
+                    case '16-25': return edad >= 16 && edad <= 25;
+                    case '26-35': return edad >= 26 && edad <= 35;
+                    case '36-45': return edad >= 36 && edad <= 45;
+                    case '46-55': return edad >= 46 && edad <= 55;
+                    case '56+': return edad >= 56;
+                    default: return true;
+                }
+            });
+            console.log(`   - Filtrando por edad "${selectedAgeRange}": ${beforeCount} → ${filteredVotes.length} votos`);
+        }
         
         console.log(`✅ Filtros aplicados: ${filteredVotes.length} votos mostrados de ${this.votes.length} total`);
         
+        // Aplicar búsqueda si hay término de búsqueda
+        if (this.currentSearchTerm) {
+            filteredVotes = this.applySearch(filteredVotes, this.currentSearchTerm);
+        }
+        
+        // Aplicar ordenamiento si hay orden activo
+        if (this.currentSortField) {
+            filteredVotes = this.applySort(filteredVotes, this.currentSortField, this.currentSortDirection);
+        }
+        
+        // Guardar votos filtrados para paginación
+        this.filteredVotes = filteredVotes;
+        this.currentPage = 1; // Resetear a la primera página cuando se aplican filtros
+        
+        // Actualizar información de filtros aplicados
+        this.updateFilterInfo();
+        
         // Renderizar tabla con votos filtrados
         this.renderFilteredVotesTable(filteredVotes);
+        
+        // Actualizar paginación
+        this.updatePagination();
+    }
+
+    // Búsqueda
+    handleSearch(searchTerm) {
+        this.currentSearchTerm = searchTerm;
+        this.applyFilters();
+    }
+
+    applySearch(votes, searchTerm) {
+        if (!searchTerm.trim()) return votes;
+        
+        const searchField = document.getElementById('search-field')?.value || 'all';
+        const term = searchTerm.toLowerCase();
+        
+        return votes.filter(vote => {
+            if (searchField === 'all') {
+                return (
+                    (vote.name || '').toLowerCase().includes(term) ||
+                    (vote.cedula || '').toLowerCase().includes(term) ||
+                    (vote.community || '').toLowerCase().includes(term) ||
+                    (vote.ubch || '').toLowerCase().includes(term)
+                );
+            } else {
+                const fieldValue = vote[searchField] || '';
+                return fieldValue.toString().toLowerCase().includes(term);
+            }
+        });
+    }
+
+    // Ordenamiento
+    handleSort(sortField) {
+        const header = document.querySelector(`[data-sort="${sortField}"]`);
+        if (!header) {
+            console.warn(`⚠️ No se encontró el header para ordenar: ${sortField}`);
+            return;
+        }
+        
+        // Limpiar ordenamiento previo
+        document.querySelectorAll('.sortable-header').forEach(h => {
+            h.classList.remove('sort-asc', 'sort-desc');
+        });
+        
+        // Cambiar dirección de ordenamiento
+        if (this.currentSortField === sortField) {
+            this.currentSortDirection = this.currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.currentSortField = sortField;
+            this.currentSortDirection = 'asc';
+        }
+        
+        // Aplicar clase visual
+        header.classList.add(this.currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+        
+        // Aplicar filtros (que incluyen ordenamiento)
+        this.applyFilters();
+    }
+
+    applySort(votes, sortField, direction) {
+        return votes.sort((a, b) => {
+            let aValue = a[sortField];
+            let bValue = b[sortField];
+            
+            // Manejar valores nulos
+            if (aValue === null || aValue === undefined) aValue = '';
+            if (bValue === null || bValue === undefined) bValue = '';
+            
+            // Convertir a string para comparación
+            aValue = aValue.toString().toLowerCase();
+            bValue = bValue.toString().toLowerCase();
+            
+            if (direction === 'asc') {
+                return aValue.localeCompare(bValue);
+            } else {
+                return bValue.localeCompare(aValue);
+            }
+        });
+    }
+
+    // Paginación
+    setupPaginationEventListeners() {
+        document.getElementById('first-page')?.addEventListener('click', () => this.goToPage(1));
+        document.getElementById('prev-page')?.addEventListener('click', () => this.goToPage(this.currentPage - 1));
+        document.getElementById('next-page')?.addEventListener('click', () => this.goToPage(this.currentPage + 1));
+        document.getElementById('last-page')?.addEventListener('click', () => this.goToPage(this.getTotalPages()));
+    }
+
+    goToPage(page) {
+        const totalPages = this.getTotalPages();
+        if (page < 1 || page > totalPages) return;
+        
+        this.currentPage = page;
+        this.renderFilteredVotesTable(this.filteredVotes);
+        this.updatePagination();
+    }
+
+    getTotalPages() {
+        return Math.ceil(this.filteredVotes.length / this.pageSize);
+    }
+
+    updatePagination() {
+        const totalPages = this.getTotalPages();
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const endIndex = Math.min(startIndex + this.pageSize, this.filteredVotes.length);
+        
+        console.log(`📄 Actualizando paginación: página ${this.currentPage} de ${totalPages}, registros ${startIndex + 1}-${endIndex} de ${this.filteredVotes.length}`);
+        
+        // Actualizar información de paginación
+        const startElement = document.getElementById('pagination-start');
+        const endElement = document.getElementById('pagination-end');
+        const totalElement = document.getElementById('pagination-total');
+        
+        if (startElement) startElement.textContent = this.filteredVotes.length > 0 ? startIndex + 1 : 0;
+        if (endElement) endElement.textContent = endIndex;
+        if (totalElement) totalElement.textContent = this.filteredVotes.length;
+        
+        // Actualizar botones de navegación
+        const firstBtn = document.getElementById('first-page');
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        const lastBtn = document.getElementById('last-page');
+        
+        if (firstBtn) firstBtn.disabled = this.currentPage <= 1;
+        if (prevBtn) prevBtn.disabled = this.currentPage <= 1;
+        if (nextBtn) nextBtn.disabled = this.currentPage >= totalPages;
+        if (lastBtn) lastBtn.disabled = this.currentPage >= totalPages;
+        
+        // Generar números de página
+        this.generatePageNumbers(totalPages);
+    }
+
+    generatePageNumbers(totalPages) {
+        const container = document.getElementById('page-numbers');
+        container.innerHTML = '';
+        
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.className = `pagination-btn ${i === this.currentPage ? 'active' : ''}`;
+            btn.textContent = i;
+            btn.addEventListener('click', () => this.goToPage(i));
+            container.appendChild(btn);
+        }
+    }
+
+    // Selección masiva
+    toggleSelectAll(checked) {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+            const voteId = checkbox.dataset.voteId;
+            this.toggleVoteSelection(voteId, checked);
+        });
+        
+        this.updateBulkActionsVisibility();
+    }
+
+    toggleVoteSelection(voteId, selected) {
+        if (selected) {
+            if (!this.selectedVotes.includes(voteId)) {
+                this.selectedVotes.push(voteId);
+            }
+        } else {
+            this.selectedVotes = this.selectedVotes.filter(id => id !== voteId);
+        }
+        
+        this.updateBulkActionsVisibility();
+        this.updateSelectAllCheckbox();
+    }
+
+    updateBulkActionsVisibility() {
+        const bulkActions = document.getElementById('bulk-actions');
+        if (bulkActions) {
+            if (this.selectedVotes.length > 0) {
+                bulkActions.classList.add('show');
+            } else {
+                bulkActions.classList.remove('show');
+            }
+        }
+    }
+
+    updateSelectAllCheckbox() {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        const totalCount = checkboxes.length;
+        
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const headerCheckbox = document.getElementById('header-checkbox');
+        
+        if (checkedCount === 0) {
+            selectAllCheckbox.checked = false;
+            headerCheckbox.checked = false;
+        } else if (checkedCount === totalCount) {
+            selectAllCheckbox.checked = true;
+            headerCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.checked = false;
+            headerCheckbox.checked = false;
+        }
+    }
+
+    // Acciones masivas
+    async bulkConfirmVotes() {
+        if (this.selectedVotes.length === 0) return;
+        
+        const confirmed = confirm(`¿Confirmar votos para ${this.selectedVotes.length} registros seleccionados?`);
+        if (!confirmed) return;
+        
+        this.showLoadingState('list', true);
+        
+        try {
+            for (const voteId of this.selectedVotes) {
+                await this.confirmVote(voteId);
+            }
+            
+            this.selectedVotes = [];
+            this.updateBulkActionsVisibility();
+            this.applyFilters();
+            
+            // Enviar notificación
+            if (window.realtimeNotifications) {
+                window.realtimeNotifications.sendNotification(
+                    `Se confirmaron ${this.selectedVotes.length} votos masivamente`,
+                    'success',
+                    'global'
+                );
+            }
+            
+        } catch (error) {
+            console.error('Error en confirmación masiva:', error);
+            this.showMessage('Error al confirmar votos masivamente', 'error', 'list');
+        } finally {
+            this.showLoadingState('list', false);
+        }
+    }
+
+    async bulkDeleteVotes() {
+        if (this.selectedVotes.length === 0) return;
+        
+        const confirmed = confirm(`¿Eliminar ${this.selectedVotes.length} registros seleccionados? Esta acción no se puede deshacer.`);
+        if (!confirmed) return;
+        
+        this.showLoadingState('list', true);
+        
+        try {
+            for (const voteId of this.selectedVotes) {
+                await this.deleteVoteFromFirebase(voteId);
+            }
+            
+            this.selectedVotes = [];
+            this.updateBulkActionsVisibility();
+            this.applyFilters();
+            
+            // Enviar notificación
+            if (window.realtimeNotifications) {
+                window.realtimeNotifications.sendNotification(
+                    `Se eliminaron ${this.selectedVotes.length} registros masivamente`,
+                    'info',
+                    'global'
+                );
+            }
+            
+        } catch (error) {
+            console.error('Error en eliminación masiva:', error);
+            this.showMessage('Error al eliminar registros masivamente', 'error', 'list');
+        } finally {
+            this.showLoadingState('list', false);
+        }
+    }
+
+    // Método eliminado - funcionalidad integrada en exportToCSVSmart()
+    // bulkExportSelected() {
+    //     if (this.selectedVotes.length === 0) return;
+    //     
+    //     const selectedVotesData = this.votes.filter(vote => this.selectedVotes.includes(vote.id));
+    //     this.exportVotesToCSV(selectedVotesData, 'votos_seleccionados');
+    // }
+
+    // Vista detallada
+    showDetailView(voteId) {
+        const vote = this.votes.find(v => v.id === voteId);
+        if (!vote) return;
+        
+        this.currentDetailVote = vote;
+        
+        // Llenar información detallada de manera segura
+        const detailElements = {
+            'detail-name': vote.name || 'N/A',
+            'detail-cedula': vote.cedula || 'N/A',
+            'detail-telefono': vote.telefono || 'N/A',
+            'detail-sexo': vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A',
+            'detail-edad': vote.edad || 'N/A',
+            'detail-ubch': vote.ubch || 'N/A',
+            'detail-community': vote.community || 'N/A',
+            'detail-vote-status': vote.voted ? 'Sí' : 'No',
+            'detail-registered-at': vote.registeredAt ? new Date(vote.registeredAt).toLocaleString() : 'N/A',
+            'detail-registered-by': vote.registeredBy || 'N/A'
+        };
+        
+        // Actualizar elementos de manera segura
+        Object.entries(detailElements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
+        
+        // Mostrar vista detallada
+        const detailView = document.getElementById('detail-view');
+        if (detailView) {
+            detailView.classList.add('show');
+        }
+    }
+
+    closeDetailView() {
+        const detailView = document.getElementById('detail-view');
+        if (detailView) {
+            detailView.classList.remove('show');
+        }
+        this.currentDetailVote = null;
+    }
+
+    editFromDetail() {
+        if (this.currentDetailVote) {
+            this.editVote(this.currentDetailVote.id);
+            this.closeDetailView();
+        }
+    }
+
+    confirmFromDetail() {
+        if (this.currentDetailVote) {
+            this.confirmVote(this.currentDetailVote.id);
+            this.closeDetailView();
+        }
+    }
+
+    deleteFromDetail() {
+        if (this.currentDetailVote) {
+            this.deleteVote(this.currentDetailVote.id);
+            this.closeDetailView();
+        }
+    }
+
+    // Estados de carga
+    showLoadingState(page, loading) {
+        const loadingOverlay = document.getElementById('table-loading');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = loading ? 'flex' : 'none';
+        }
+    }
+
+    // Método de debug para verificar el estado del sistema
+    debugListPage() {
+        console.log('🔍 === DEBUG LIST PAGE ===');
+        console.log('📊 Votos totales:', this.votes.length);
+        console.log('📋 Votos filtrados:', this.filteredVotes.length);
+        console.log('📄 Página actual:', this.currentPage);
+        console.log('📏 Tamaño de página:', this.pageSize);
+        console.log('✅ Elementos seleccionados:', this.selectedVotes.length);
+        console.log('🔍 Término de búsqueda:', this.currentSearchTerm);
+        console.log('📊 Campo de ordenamiento:', this.currentSortField);
+        console.log('📈 Dirección de ordenamiento:', this.currentSortDirection);
+        
+        // Verificar elementos del DOM
+        const table = document.getElementById('registros-table');
+        const tbody = table?.querySelector('tbody');
+        const paginationContainer = document.getElementById('pagination-container');
+        
+        console.log('📋 Tabla encontrada:', !!table);
+        console.log('📋 Tbody encontrado:', !!tbody);
+        console.log('📋 Contenedor de paginación:', !!paginationContainer);
+        
+        if (tbody) {
+            console.log('📋 Filas en tbody:', tbody.children.length);
+        }
+        
+        console.log('🔍 === FIN DEBUG ===');
     }
 
     deleteVote(voteId) {
@@ -1623,6 +2255,27 @@ class VotingSystemFirebase extends VotingSystem {
             filteredVotes = filteredVotes.filter(v => v.community === selectedCommunity);
         }
         
+        // Filtro por rango de edad
+        const selectedAgeRange = document.getElementById('age-filter-select')?.value;
+        if (selectedAgeRange) {
+            filteredVotes = filteredVotes.filter(v => {
+                const edad = v.edad || 0;
+                switch (selectedAgeRange) {
+                    case '16-25': return edad >= 16 && edad <= 25;
+                    case '26-35': return edad >= 26 && edad <= 35;
+                    case '36-45': return edad >= 36 && edad <= 45;
+                    case '46-55': return edad >= 46 && edad <= 55;
+                    case '56+': return edad >= 56;
+                    default: return true;
+                }
+            });
+        }
+        
+        // Aplicar búsqueda si hay término de búsqueda
+        if (this.currentSearchTerm) {
+            filteredVotes = this.applySearch(filteredVotes, this.currentSearchTerm);
+        }
+        
         return filteredVotes;
     }
     
@@ -1631,12 +2284,15 @@ class VotingSystemFirebase extends VotingSystem {
         const activeFilterBtn = document.querySelector('.filter-btn.active');
         const selectedUBCH = document.getElementById('ubch-filter-select')?.value;
         const selectedCommunity = document.getElementById('community-filter-select')?.value;
+        const selectedAgeRange = document.getElementById('age-filter-select')?.value;
         
         const filterInfo = {
             hasFilters: false,
             statusFilter: null,
             ubchFilter: null,
-            communityFilter: null
+            communityFilter: null,
+            ageFilter: null,
+            searchTerm: this.currentSearchTerm || null
         };
         
         if (activeFilterBtn && activeFilterBtn.dataset.filter !== 'all') {
@@ -1654,6 +2310,15 @@ class VotingSystemFirebase extends VotingSystem {
             filterInfo.hasFilters = true;
         }
         
+        if (selectedAgeRange) {
+            filterInfo.ageFilter = selectedAgeRange;
+            filterInfo.hasFilters = true;
+        }
+        
+        if (this.currentSearchTerm) {
+            filterInfo.hasFilters = true;
+        }
+        
         return filterInfo;
     }
     
@@ -1666,6 +2331,8 @@ class VotingSystemFirebase extends VotingSystem {
             if (filterInfo.statusFilter) filters.push(filterInfo.statusFilter);
             if (filterInfo.ubchFilter) filters.push(filterInfo.ubchFilter.replace(/[^a-zA-Z0-9]/g, '-'));
             if (filterInfo.communityFilter) filters.push(filterInfo.communityFilter.replace(/[^a-zA-Z0-9]/g, '-'));
+            if (filterInfo.ageFilter) filters.push(filterInfo.ageFilter.replace(/[^a-zA-Z0-9]/g, '-'));
+            if (filterInfo.searchTerm) filters.push('busqueda');
             
             fileName += `-filtrado-${filters.join('-')}`;
         }
@@ -1756,6 +2423,74 @@ class VotingSystemFirebase extends VotingSystem {
         // Guardar PDF
         doc.save(fileName);
         this.showMessage(`PDF generado: ${fileName}`, 'success', 'listado');
+    }
+
+    // Método inteligente para exportar CSV
+    exportToCSVSmart() {
+        // Verificar si hay registros seleccionados
+        if (this.selectedVotes.length > 0) {
+            // Exportar solo los registros seleccionados
+            const selectedVotesData = this.votes.filter(vote => this.selectedVotes.includes(vote.id));
+            this.exportVotesToCSV(selectedVotesData, 'votos_seleccionados');
+            this.showMessage(`CSV generado con ${selectedVotesData.length} registros seleccionados`, 'success', 'listado');
+        } else {
+            // Exportar todos los registros filtrados según los filtros activos
+            const filteredVotes = this.getFilteredVotes();
+            const filterInfo = this.getFilterInfo();
+            
+            if (filteredVotes.length === 0) {
+                this.showMessage('No hay registros para exportar con los filtros aplicados', 'warning', 'listado');
+                return;
+            }
+            
+            // Generar nombre de archivo con información de filtros
+            const fileName = this.generateFileName('csv', filterInfo);
+            this.exportVotesToCSV(filteredVotes, fileName.replace('.csv', ''));
+            
+            // Mostrar información detallada sobre los filtros aplicados
+            let filterMessage = `CSV generado: ${fileName} con ${filteredVotes.length} registros`;
+            if (filterInfo.hasFilters) {
+                const appliedFilters = [];
+                if (filterInfo.statusFilter) appliedFilters.push(filterInfo.statusFilter);
+                if (filterInfo.ubchFilter) appliedFilters.push(`CV: ${filterInfo.ubchFilter}`);
+                if (filterInfo.communityFilter) appliedFilters.push(`Comunidad: ${filterInfo.communityFilter}`);
+                if (filterInfo.ageFilter) appliedFilters.push(`Edad: ${filterInfo.ageFilter}`);
+                if (filterInfo.searchTerm) appliedFilters.push(`Búsqueda: "${filterInfo.searchTerm}"`);
+                
+                filterMessage += `\nFiltros aplicados: ${appliedFilters.join(', ')}`;
+            }
+            
+            this.showMessage(filterMessage, 'success', 'listado');
+        }
+    }
+
+    // Método para exportar registros específicos a CSV
+    exportVotesToCSV(votesData, fileName) {
+        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Votó'];
+        const rows = votesData.map(vote => [
+            `"${(vote.name || '').replace(/"/g, '""')}"`,
+            `"${(vote.cedula || '').replace(/"/g, '""')}"`,
+            `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
+            `"${vote.edad || ''}"`,
+            `"${(vote.ubch || '').replace(/"/g, '""')}"`,
+            `"${(vote.community || '').replace(/"/g, '""')}"`,
+            `"${vote.voted ? 'Sí' : 'No'}"`
+        ]);
+        
+        let csvContent = headers.join(';') + '\r\n';
+        rows.forEach(row => {
+            csvContent += row.join(';') + '\r\n';
+        });
+        
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `${fileName}.csv`);
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     exportToCSV() {
@@ -1887,12 +2622,18 @@ class VotingSystemFirebase extends VotingSystem {
         // Mostrar botones según el rol
         if (currentUser.rol === 'verificador') {
             // Solo mostrar botón de confirmación de voto
-            document.getElementById('nav-check-in').style.display = 'block';
-            document.getElementById('nav-check-in').classList.add('active');
+            const navCheckIn = document.getElementById('nav-check-in');
+            if (navCheckIn) {
+                navCheckIn.style.display = 'block';
+                navCheckIn.classList.add('active');
+            }
         } else if (currentUser.rol === 'registrador') {
             // Solo mostrar botón de registro
-            document.getElementById('nav-registration').style.display = 'block';
-            document.getElementById('nav-registration').classList.add('active');
+            const navRegistration = document.getElementById('nav-registration');
+            if (navRegistration) {
+                navRegistration.style.display = 'block';
+                navRegistration.classList.add('active');
+            }
         } else {
             // Superusuarios y admins tienen acceso a todo
             navButtons.forEach(btn => btn.style.display = 'block');
