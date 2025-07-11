@@ -1267,7 +1267,7 @@ class VotingSystemFirebase extends VotingSystem {
         
         // Usar DocumentFragment para optimizar el renderizado
         const fragment = document.createDocumentFragment();
-        
+
         console.log(`🔄 Renderizando ${filteredVotes.length} votos en la tabla`);
 
         // Obtener registros de la página actual
@@ -1325,7 +1325,7 @@ class VotingSystemFirebase extends VotingSystem {
                     this.toggleVoteSelection(voteId, e.target.checked);
                 }
             });
-
+        
                                 console.log(`✅ Tabla renderizada con ${pageVotes.length} votos de la página ${this.currentPage}`);
         });
     }
