@@ -79,43 +79,34 @@ class VotingSystemFirebase extends VotingSystem {
     }
 
     async init() {
-        try {
-            console.log('🔍 Iniciando conexión con Firebase...');
-            
-            // Verificar que Firebase esté disponible
-            if (!window.firebaseDB) {
-                throw new Error('Firebase no está inicializado');
+        console.log('🔄 Inicializando VotingSystemFirebase...');
+        
+        // Verificar usuario actual y establecer página inicial según rol
+        const currentUser = this.getCurrentUser();
+        if (currentUser) {
+            if (currentUser.rol === 'verificador') {
+                this.currentPage = 'check-in';
+            } else if (currentUser.rol === 'registrador') {
+                this.currentPage = 'registration';
             }
-            
-            console.log('✅ Firebase configurado correctamente');
-            console.log('📊 Configuración Firebase:', window.firebaseDB);
+        }
             
             // Cargar datos desde Firebase
             await this.loadDataFromFirebase();
-            console.log('✅ Datos cargados desde Firebase:', this.votes.length, 'registros');
-            
-            this.showMessage('Conectado a Firebase. Los datos están centralizados en la nube.', 'success', 'registration');
-            
-            // Configurar listener en tiempo real
-            this.setupRealtimeListener();
-            console.log('✅ Listener en tiempo real configurado');
-            
-            // Actualizar indicador de sincronización
-            this.updateSyncIndicator(true);
-            
-        } catch (error) {
-            console.error('❌ Error al conectar con Firebase:', error);
-            this.showMessage('Error de conexión. Verificando configuración de Firebase.', 'error', 'registration');
-            this.updateSyncIndicator(false, true);
-        }
+        
+        // Configurar event listeners
+        this.setupEventListeners();
+        
+        // Configurar navegación según rol
+        this.setupNavigationByRole();
+        
+        // Renderizar página inicial
+        this.renderCurrentPage();
         
         // Inicializar sistema offline
         this.inicializarSistemaOffline();
         
-        this.setupEventListeners();
-        console.log('🔍 DEBUG: Llamando a renderCurrentPage después de cargar datos...');
-        this.renderCurrentPage();
-        this.loadPdfLibraries();
+        console.log('✅ VotingSystemFirebase inicializado correctamente');
     }
 
     async loadDataFromFirebase() {
@@ -825,6 +816,28 @@ class VotingSystemFirebase extends VotingSystem {
     }
 
     navigateToPage(page) {
+        // Verificar permisos según el rol del usuario
+        const currentUser = this.getCurrentUser();
+        if (!currentUser) {
+            console.log('Usuario no autenticado');
+            return;
+        }
+
+        // Control de acceso por rol
+        if (currentUser.rol === 'verificador') {
+            // Los verificadores solo pueden acceder a la página de confirmación de votos
+            if (page !== 'check-in') {
+                this.showMessage('No tienes permisos para acceder a esta página.', 'error', 'check-in');
+                return;
+            }
+        } else if (currentUser.rol === 'registrador') {
+            // Los registradores solo pueden acceder a la página de registro
+            if (page !== 'registration') {
+                this.showMessage('No tienes permisos para acceder a esta página.', 'error', 'registration');
+                return;
+            }
+        }
+
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
         });
@@ -1077,6 +1090,10 @@ class VotingSystemFirebase extends VotingSystem {
         results.forEach(person => {
             const div = document.createElement('div');
             div.className = 'search-result-item';
+            
+            // Verificar si la persona ya votó
+            const yaVoto = person.voted === true;
+            
             div.innerHTML = `
                 <div class="search-result-info">
                     <h4>${person.name}</h4>
@@ -1085,10 +1102,19 @@ class VotingSystemFirebase extends VotingSystem {
                     <p>Edad: ${person.edad || 'N/A'} años</p>
                     <p>UBCH: ${person.ubch}</p>
                     <p>Comunidad: ${person.community}</p>
+                    <p class="vote-status-info">
+                        <strong>Estado del voto:</strong> 
+                        <span class="vote-status ${yaVoto ? 'voted' : 'not-voted'}">
+                            ${yaVoto ? '✅ Ya confirmado' : '❌ Pendiente de confirmar'}
+                        </span>
+                    </p>
                 </div>
-                <button class="btn btn-success" onclick="votingSystem.confirmVote('${person.id}')">
-                    Confirmar Voto
-                </button>
+                ${yaVoto ? 
+                    '<div class="already-voted-message">Esta cédula ya fue confirmada anteriormente</div>' :
+                    `<button class="btn btn-success" onclick="votingSystem.confirmVote('${person.id}')">
+                        Confirmar Voto
+                    </button>`
+                }
             `;
             container.appendChild(div);
         });
@@ -1195,16 +1221,19 @@ class VotingSystemFirebase extends VotingSystem {
             return;
         }
 
-        // Obtener todas las comunidades únicas de los registros
-        const uniqueCommunities = [...new Set(this.votes.map(vote => vote.community).filter(community => community))];
-        
-        console.log(`🔄 Poblando filtro Comunidad con ${uniqueCommunities.length} comunidades únicas:`, uniqueCommunities);
+        // Obtener todas las comunidades posibles del mapa UBCH
+        const todasLasComunidades = new Set();
+        Object.values(this.ubchToCommunityMap).forEach(comunidades => {
+            comunidades.forEach(comunidad => todasLasComunidades.add(comunidad));
+        });
+        const comunidadesArray = Array.from(todasLasComunidades).sort();
+        console.log(`🔄 Poblando filtro Comunidad con ${comunidadesArray.length} comunidades posibles:`, comunidadesArray);
         
         // Limpiar opciones existentes
         communitySelect.innerHTML = '<option value="">Todas las Comunidades</option>';
         
         // Agregar opciones para cada comunidad
-        uniqueCommunities.sort().forEach(community => {
+        comunidadesArray.forEach(community => {
             const option = document.createElement('option');
             option.value = community;
             option.textContent = community;
@@ -1844,6 +1873,29 @@ class VotingSystemFirebase extends VotingSystem {
         } catch (error) {
             console.error('❌ Error cargando registros:', error);
             throw error;
+        }
+    }
+
+    setupNavigationByRole() {
+        const currentUser = this.getCurrentUser();
+        if (!currentUser) return;
+
+        // Ocultar todos los botones primero
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(btn => btn.style.display = 'none');
+
+        // Mostrar botones según el rol
+        if (currentUser.rol === 'verificador') {
+            // Solo mostrar botón de confirmación de voto
+            document.getElementById('nav-check-in').style.display = 'block';
+            document.getElementById('nav-check-in').classList.add('active');
+        } else if (currentUser.rol === 'registrador') {
+            // Solo mostrar botón de registro
+            document.getElementById('nav-registration').style.display = 'block';
+            document.getElementById('nav-registration').classList.add('active');
+        } else {
+            // Superusuarios y admins tienen acceso a todo
+            navButtons.forEach(btn => btn.style.display = 'block');
         }
     }
 }

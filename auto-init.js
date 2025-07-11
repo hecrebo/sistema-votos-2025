@@ -504,7 +504,7 @@ class AutoInitSystem {
                 }
             } else if (typeof VotingSystem !== 'undefined') {
                 if (!window.votingSystem) {
-                    window.votingSystem = new VotingSystem();
+            window.votingSystem = new VotingSystem();
                     console.log('✅ Sistema de votos básico inicializado');
                 }
             } else {

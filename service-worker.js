@@ -1,4 +1,4 @@
-const CACHE_NAME = 'votos2025-cache-v2'; // Incremented cache version
+const CACHE_NAME = 'votos2025-cache-v3'; // Incremented cache version
 const urlsToCache = [
   // Core HTML
   './', // Alias for index.html
@@ -45,6 +45,9 @@ const urlsToCache = [
   // './test-exportacion-mejorada.js',
 ];
 
+// Background sync for offline data
+const BACKGROUND_SYNC_TAG = 'votos2025-sync';
+
 self.addEventListener('install', event => {
   console.log('[Service Worker] Install event');
   event.waitUntil(
@@ -57,6 +60,8 @@ self.addEventListener('install', event => {
         console.error('[Service Worker] Failed to cache app shell:', error);
       })
   );
+  // Skip waiting to activate immediately
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -76,6 +81,104 @@ self.addEventListener('activate', event => {
   return self.clients.claim(); // Ensure new SW takes control immediately
 });
 
+// Background sync for offline data
+self.addEventListener('sync', event => {
+  console.log('[Service Worker] Background sync event:', event.tag);
+  
+  if (event.tag === BACKGROUND_SYNC_TAG) {
+    event.waitUntil(
+      syncOfflineData()
+    );
+  }
+});
+
+// Push notifications
+self.addEventListener('push', event => {
+  console.log('[Service Worker] Push event received');
+  
+  let notificationData = {
+    title: 'Sistema de Votos 2025',
+    body: 'Nuevo voto registrado',
+    icon: './favicon.ico/android-icon-192x192.png',
+    badge: './favicon.ico/android-icon-96x96.png',
+    tag: 'voto-notification',
+    requireInteraction: true,
+    actions: [
+      {
+        action: 'view',
+        title: 'Ver',
+        icon: './favicon.ico/android-icon-96x96.png'
+      },
+      {
+        action: 'dismiss',
+        title: 'Cerrar'
+      }
+    ]
+  };
+
+  // Try to parse push data
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      notificationData = { ...notificationData, ...data };
+    } catch (e) {
+      console.log('[Service Worker] Could not parse push data');
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, notificationData)
+  );
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', event => {
+  console.log('[Service Worker] Notification click:', event.action);
+  
+  event.notification.close();
+
+  if (event.action === 'view') {
+    event.waitUntil(
+      clients.openWindow('./index.html?page=statistics')
+    );
+  } else if (event.action === 'dismiss') {
+    // Just close the notification
+    return;
+  } else {
+    // Default action - open the app
+    event.waitUntil(
+      clients.openWindow('./index.html')
+    );
+  }
+});
+
+// Handle notification close
+self.addEventListener('notificationclose', event => {
+  console.log('[Service Worker] Notification closed');
+});
+
+// Background sync function
+async function syncOfflineData() {
+  try {
+    console.log('[Service Worker] Syncing offline data...');
+    
+    // Get all clients
+    const clients = await self.clients.matchAll();
+    
+    // Send sync message to all clients
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'SYNC_OFFLINE_DATA',
+        timestamp: Date.now()
+      });
+    });
+    
+    console.log('[Service Worker] Offline sync completed');
+  } catch (error) {
+    console.error('[Service Worker] Sync error:', error);
+  }
+}
+
 self.addEventListener('fetch', event => {
   // For navigation requests, try network first, then cache, then offline page
   if (event.request.mode === 'navigate') {
@@ -86,6 +189,24 @@ self.addEventListener('fetch', event => {
             .then(response => {
               return response || caches.match('./index.html'); // Fallback to index.html or an offline.html page
             });
+        })
+    );
+    return;
+  }
+
+  // For API requests, use network first with background sync
+  if (event.request.url.includes('/api/') || event.request.url.includes('firebase')) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          // If network fails, register background sync
+          if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+            navigator.serviceWorker.ready.then(registration => {
+              registration.sync.register(BACKGROUND_SYNC_TAG);
+            });
+          }
+          // Return cached response if available
+          return caches.match(event.request);
         })
     );
     return;
@@ -123,4 +244,17 @@ self.addEventListener('fetch', event => {
         // }
       })
   );
+});
+
+// Handle messages from the main thread
+self.addEventListener('message', event => {
+  console.log('[Service Worker] Message received:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0].postMessage({ version: CACHE_NAME });
+  }
 }); 

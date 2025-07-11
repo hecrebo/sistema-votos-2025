@@ -1,5 +1,4 @@
 {
-{
  "name": "Sistema de Registro de Votos 2025",
  "short_name": "Votos2025",
  "description": "App para registro, control y sincronización de votos y UBCH en tiempo real.",
@@ -10,6 +9,57 @@
  "orientation": "portrait-primary",
  "background_color": "#ffffff",
  "theme_color": "#667eea",
+ "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
+ "edge_side_panel": {
+   "preferred_width": 400
+ },
+ "launch_handler": {
+   "client_mode": "navigate-existing"
+ },
+ "protocol_handlers": [
+   {
+     "protocol": "web+votos2025",
+     "url": "./index.html?action=%s"
+   }
+ ],
+ "shortcuts": [
+   {
+     "name": "Registrar Voto",
+     "short_name": "Registrar",
+     "description": "Registrar una nueva persona",
+     "url": "./index.html?page=registration",
+     "icons": [
+       {
+         "src": "android-icon-96x96.png",
+         "sizes": "96x96"
+       }
+     ]
+   },
+   {
+     "name": "Confirmar Voto",
+     "short_name": "Confirmar",
+     "description": "Confirmar que una persona votó",
+     "url": "./index.html?page=check-in",
+     "icons": [
+       {
+         "src": "android-icon-96x96.png",
+         "sizes": "96x96"
+       }
+     ]
+   },
+   {
+     "name": "Estadísticas",
+     "short_name": "Stats",
+     "description": "Ver estadísticas detalladas",
+     "url": "./index.html?page=statistics",
+     "icons": [
+       {
+         "src": "android-icon-96x96.png",
+         "sizes": "96x96"
+       }
+     ]
+   }
+ ],
  "icons": [
   {
    "src": "android-icon-36x36.png",
@@ -83,5 +133,15 @@
  ],
  "prefer_related_applications": false,
  "related_applications": [],
- "categories": ["productivity", "utilities", "government"]
+ "categories": ["productivity", "utilities", "government"],
+ "handle_links": "preferred",
+ "capture_links": "existing-client-navigate",
+ "file_handlers": [
+   {
+     "action": "./index.html?import=csv",
+     "accept": {
+       "text/csv": [".csv"]
+     }
+   }
+ ]
 }

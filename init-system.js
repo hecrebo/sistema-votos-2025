@@ -162,6 +162,11 @@ function setupMobileMenu() {
             menuHTML += '<a href="admin-panel.html" class="menu-item"><span class="icon">⚙️</span>Panel de Administración</a>';
         }
         
+        // Agregar información del rol para verificadores
+        if (currentUser.rol === 'verificador') {
+            menuHTML += '<div class="menu-item info"><span class="icon">🔍</span>Verificador de Votos</div>';
+        }
+        
         menuHTML += '<a href="#" onclick="logout()" class="menu-item danger"><span class="icon">🚪</span>Cerrar Sesión</a>';
         
         menuDropdown.innerHTML = menuHTML;

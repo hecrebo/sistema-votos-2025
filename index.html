@@ -70,11 +70,12 @@
                     <h1 class="header-title">Registro de Votos y Estadísticas</h1>
                 </div>
                 <nav class="nav-menu">
-                    <button class="nav-btn active" data-page="registration">Registro</button>
-                    <button class="nav-btn" data-page="check-in">Confirmar Voto</button>
-                    <button class="nav-btn" data-page="listado">Listado</button>
-                    <button class="nav-btn" data-page="dashboard">Totales</button>
-                    <button class="nav-btn" data-page="statistics">Estadísticas</button>
+                    <button class="nav-btn active" data-page="registration" id="nav-registration">Registro</button>
+                    <button class="nav-btn" data-page="check-in" id="nav-check-in">Confirmar Voto</button>
+                    <button class="nav-btn" data-page="listado" id="nav-listado">Listado</button>
+                    <button class="nav-btn" data-page="dashboard" id="nav-dashboard">Totales</button>
+                    <button class="nav-btn" data-page="statistics" id="nav-statistics">Estadísticas</button>
+                    <button class="nav-btn" onclick="window.location.href='estadisticas-avanzadas.html'" id="nav-advanced-stats">📊 Estadísticas Avanzadas</button>
                 </nav>
                 <div class="user-info">
                     <span class="user-id" id="userId"></span>
@@ -237,9 +238,9 @@
                             <span class="filter-counter" id="filter-counter">0</span>
                         </div>
                         <div class="ubch-filter">
-                            <label for="ubch-filter-select">Filtrar por UBCH:</label>
+                            <label for="ubch-filter-select">Filtrar por CV:</label>
                             <select id="ubch-filter-select" class="ubch-filter-select">
-                                <option value="">Todas las UBCH</option>
+                                <option value="">Todos los CV</option>
                             </select>
                         </div>
                         <div class="community-filter">
@@ -257,7 +258,7 @@
                                     <th>Cédula</th>
                                     <th>Sexo</th>
                                     <th>Edad</th>
-                                    <th>UBCH</th>
+                                    <th>CV</th>
                                     <th>Comunidad</th>
                                     <th>Votó</th>
                                     <th>Acciones</th>
@@ -306,7 +307,7 @@
                     </div>
                     <div class="stats-grid">
                         <div class="stats-card">
-                            <h3>Votos por UBCH</h3>
+                            <h3>Votos por CV</h3>
                             <div class="stats-list" id="ubch-stats"></div>
                         </div>
                         <div class="stats-card">
@@ -343,7 +344,7 @@
                     <p class="projection-text" id="projection-text">0 de 0</p>
                 </div>
                 <div class="projection-stats">
-                    <h2>Votos por UBCH</h2>
+                    <h2>Votos por CV</h2>
                     <div class="projection-list" id="projection-ubch-list"></div>
                 </div>
             </div>
@@ -431,6 +432,8 @@
     <script>
         const USUARIOS_INICIALES = [
             // Superusuarios
+            { username: "diego corrales", password: "alcalde1", rol: "superusuario" },
+            { username: "victor", password: "admin", rol: "superusuario" },
             { username: "superadmin_01", password: "Sup3r_Adm1n#2o24", rol: "superusuario" },
             { username: "superadmin_02", password: "aB5!zP9$qW_sU", rol: "superusuario" },
             { username: "superadmin_03", password: "rT7@eX3&yU_sU", rol: "superusuario" },
@@ -497,7 +500,27 @@
             { username: "registrador_47", password: "UserReg_Pass_47", rol: "registrador" },
             { username: "registrador_48", password: "Reg!strador_48", rol: "registrador" },
             { username: "registrador_49", password: "Acc3s_Reg_49", rol: "registrador" },
-            { username: "registrador_50", password: "RegUsr_Final_50", rol: "registrador" }
+            { username: "registrador_50", password: "RegUsr_Final_50", rol: "registrador" },
+            // Verificadores de votos
+            { username: "maria ordoñez", password: "20161765", rol: "verificador" },
+            { username: "reinaldo aguilar", password: "12478928", rol: "verificador" },
+            { username: "ana alvarez", password: "12341809", rol: "verificador" },
+            { username: "perla valera", password: "7257936", rol: "verificador" },
+            { username: "willy garcia", password: "18639693", rol: "verificador" },
+            { username: "iris marquez", password: "16581399", rol: "verificador" },
+            { username: "justo perez", password: "18867076", rol: "verificador" },
+            { username: "jose rodriguez", password: "26389924", rol: "verificador" },
+            { username: "nereyda guerrero", password: "8823392", rol: "verificador" },
+            { username: "yoiny betancourt", password: "26804061", rol: "verificador" },
+            { username: "erminia pulido", password: "14713807", rol: "verificador" },
+            { username: "jonas cordoba", password: "25981075", rol: "verificador" },
+            { username: "luis barcasnegra", password: "14754397", rol: "verificador" },
+            { username: "jose ledezma", password: "11177021", rol: "verificador" },
+            { username: "herminia leon", password: "11353776", rol: "verificador" },
+            { username: "darlis botello", password: "9535936", rol: "verificador" },
+            { username: "miguel hernandez", password: "9658902", rol: "verificador" },
+            { username: "hipolita molina", password: "7073680", rol: "verificador" },
+            { username: "fidel ernesto aguilar", password: "7091235", rol: "verificador" }
         ];
 
         function showMessage(message, type = 'info') {
@@ -655,10 +678,14 @@
 
         // Configurar el input de archivo para registro masivo
         document.addEventListener('DOMContentLoaded', function() {
+            // Limpiar draft de registro al cargar la página
+            clearRegistrationDraft();
             const bulkFileInput = document.getElementById('bulk-excel-input');
             if (bulkFileInput) {
                 bulkFileInput.addEventListener('change', handleBulkFileSelect);
             }
+            // Forzar modo individual al cargar
+            switchRegistrationMode('individual');
             // Restaurar draft SOLO una vez al cargar la página
             setTimeout(restoreRegistrationDraftOnce, 200);
         });

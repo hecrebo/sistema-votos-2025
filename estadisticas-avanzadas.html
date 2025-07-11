@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas Avanzadas - Sistema de Votos 2025</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="estadisticas-avanzadas.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Encabezado principal -->
+        <header class="header dashboard-header">
+            <div class="header-content">
+                <div class="header-top">
+                    <div class="logo-container">
+                        <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
+                    </div>
+                    <div>
+                        <h1 class="header-title" style="font-size:2.2em; margin-bottom:0;">Panel de Estadísticas</h1>
+                        <p class="header-subtitle" style="font-size:1.1em; color:#667eea; margin-top:8px;">Visualización avanzada y ordenada de los datos del municipio</p>
+                    </div>
+                </div>
+                <div class="user-info">
+                    <span class="user-id" id="userId"></span>
+                    <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Volver al Sistema</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content stats-container">
+            <!-- Tarjetas resumen -->
+            <div class="stats-summary" style="margin-bottom:40px;">
+                <div class="stat-summary">
+                    <div style="font-size:2em;">👥</div>
+                    <div class="stat-number" id="total-registered-general">0</div>
+                    <div class="stat-label">Registrados</div>
+                </div>
+                <div class="stat-summary">
+                    <div style="font-size:2em;">🗳️</div>
+                    <div class="stat-number" id="total-voted-general">0</div>
+                    <div class="stat-label">Votaron</div>
+                </div>
+                <div class="stat-summary">
+                    <div style="font-size:2em;">📈</div>
+                    <div class="stat-number" id="participation-rate-general">0%</div>
+                    <div class="stat-label">Participación</div>
+                </div>
+                <div class="stat-summary">
+                    <div style="font-size:2em;">🏛️</div>
+                    <div class="stat-number" id="total-ubch-general">0</div>
+                    <div class="stat-label">Centros de Votación</div>
+                </div>
+                <div class="stat-summary">
+                    <div style="font-size:2em;">🏘️</div>
+                    <div class="stat-number" id="total-communities-general">0</div>
+                    <div class="stat-label">Comunidades</div>
+                </div>
+            </div>
+
+            <div class="separator"></div>
+
+            <!-- Grid de gráficos -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">Votos por Centro de Votación</h3>
+                    <canvas id="ubch-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3 class="chart-title">Votos por Comunidad</h3>
+                    <canvas id="community-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="separator"></div>
+
+            <!-- Listas interactivas de acceso rápido -->
+            <div class="stats-grid" style="margin-bottom:40px;">
+                <div class="stats-card">
+                    <h3>🔎 Ir a Centro de Votación</h3>
+                    <div class="stats-list" id="cv-link-list"></div>
+                </div>
+                <div class="stats-card">
+                    <h3>🔎 Ir a Comunidad</h3>
+                    <div class="stats-list" id="community-link-list"></div>
+                </div>
+            </div>
+
+            <!-- Modal de estadísticas detalladas -->
+            <div id="detalle-modal" class="modal" style="display:none;">
+                <div class="modal-content" id="detalle-modal-content">
+                    <!-- Aquí se llenarán las estadísticas detalladas dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Listas detalladas -->
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>🏛️ Centros de Votación</h3>
+                    <div class="stats-list" id="all-ubch"></div>
+                </div>
+                <div class="stats-card">
+                    <h3>🏘️ Comunidades</h3>
+                    <div class="stats-list" id="all-communities"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>© 2025 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>
+        </footer>
+
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+        <script src="firebase-config.js"></script>
+        <script src="script-firebase.js"></script>
+        <script src="estadisticas-avanzadas.js"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.estadisticasAvanzadas = new EstadisticasAvanzadas();
+        });
+        </script>
+    </div>
+</body>
+</html> 
