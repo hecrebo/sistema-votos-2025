@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credenciales Sistema de Votos 2025</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        .header h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+        }
+        .header p {
+            color: #666;
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .role-section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+        .role-title {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .role-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .credentials-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .credentials-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        .credentials-table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        .credentials-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .credentials-table tr:hover {
+            background: #f0f0f0;
+        }
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.3);
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-top: 4px solid #667eea;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .permissions-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .permissions-list h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .permissions-list ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .permissions-list li {
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .permissions-list .allowed {
+            color: #28a745;
+        }
+        .permissions-list .denied {
+            color: #dc3545;
+        }
+        @media print {
+            .generate-btn {
+                display: none;
+            }
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Credenciales del Sistema</h1>
+            <p>Sistema de Registro de Votos 2025</p>
+            <p><strong>Fecha de generación:</strong> <span id="current-date"></span></p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="total-users">0</div>
+                <div class="stat-label">Total de Usuarios</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="superusuarios">0</div>
+                <div class="stat-label">Superusuarios</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="admins">0</div>
+                <div class="stat-label">Administradores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="registradores">0</div>
+                <div class="stat-label">Registradores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="verificadores">0</div>
+                <div class="stat-label">Verificadores</div>
+            </div>
+        </div>
+
+        <button class="generate-btn" onclick="generatePDF()">📄 Generar PDF de Credenciales</button>
+
+        <!-- Superusuarios -->
+        <div class="role-section">
+            <div class="role-title">🔴 Superusuarios</div>
+            <div class="role-info">
+                <h4>Descripción:</h4>
+                <p>Usuarios con acceso completo a todas las funciones del sistema. Control total sobre el sistema de votación.</p>
+            </div>
+            <div class="permissions-list">
+                <h4>Permisos:</h4>
+                <ul>
+                    <li class="allowed">✅ Registro de votantes</li>
+                    <li class="allowed">✅ Confirmación de votos</li>
+                    <li class="allowed">✅ Visualización de listados</li>
+                    <li class="allowed">✅ Dashboard y estadísticas</li>
+                    <li class="allowed">✅ Exportación de datos (PDF/CSV)</li>
+                    <li class="allowed">✅ Edición y eliminación de registros</li>
+                    <li class="allowed">✅ Configuración del sistema</li>
+                    <li class="allowed">✅ Panel de administración</li>
+                </ul>
+            </div>
+            <table class="credentials-table" id="superusuarios-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Usuario</th>
+                        <th>Contraseña</th>
+                        <th>Rol</th>
+                    </tr>
+                </thead>
+                <tbody id="superusuarios-body">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Administradores -->
+        <div class="role-section">
+            <div class="role-title">🟠 Administradores</div>
+            <div class="role-info">
+                <h4>Descripción:</h4>
+                <p>Usuarios con acceso completo a todas las funciones del sistema. Control total sobre el sistema de votación.</p>
+            </div>
+            <div class="permissions-list">
+                <h4>Permisos:</h4>
+                <ul>
+                    <li class="allowed">✅ Registro de votantes</li>
+                    <li class="allowed">✅ Confirmación de votos</li>
+                    <li class="allowed">✅ Visualización de listados</li>
+                    <li class="allowed">✅ Dashboard y estadísticas</li>
+                    <li class="allowed">✅ Exportación de datos (PDF/CSV)</li>
+                    <li class="allowed">✅ Edición y eliminación de registros</li>
+                    <li class="allowed">✅ Configuración del sistema</li>
+                    <li class="allowed">✅ Panel de administración</li>
+                </ul>
+            </div>
+            <table class="credentials-table" id="admins-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Usuario</th>
+                        <th>Contraseña</th>
+                        <th>Rol</th>
+                    </tr>
+                </thead>
+                <tbody id="admins-body">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Registradores -->
+        <div class="role-section">
+            <div class="role-title">🟡 Registradores</div>
+            <div class="role-info">
+                <h4>Descripción:</h4>
+                <p>Usuarios especializados en el registro de nuevos votantes. Solo pueden registrar votantes, no pueden confirmar votos ni acceder a otras funciones.</p>
+            </div>
+            <div class="permissions-list">
+                <h4>Permisos:</h4>
+                <ul>
+                    <li class="allowed">✅ Registro de votantes</li>
+                    <li class="denied">❌ Confirmación de votos</li>
+                    <li class="denied">❌ Visualización de listados</li>
+                    <li class="denied">❌ Dashboard y estadísticas</li>
+                    <li class="denied">❌ Exportación de datos</li>
+                    <li class="denied">❌ Edición y eliminación de registros</li>
+                </ul>
+            </div>
+            <table class="credentials-table" id="registradores-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Usuario</th>
+                        <th>Contraseña</th>
+                        <th>Rol</th>
+                    </tr>
+                </thead>
+                <tbody id="registradores-body">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Verificadores -->
+        <div class="role-section">
+            <div class="role-title">🟢 Verificadores</div>
+            <div class="role-info">
+                <h4>Descripción:</h4>
+                <p>Usuarios especializados en la confirmación de votos. Solo pueden buscar votantes y confirmar que votaron, no pueden registrar nuevos votantes.</p>
+            </div>
+            <div class="permissions-list">
+                <h4>Permisos:</h4>
+                <ul>
+                    <li class="denied">❌ Registro de votantes</li>
+                    <li class="allowed">✅ Confirmación de votos</li>
+                    <li class="denied">❌ Visualización de listados</li>
+                    <li class="denied">❌ Dashboard y estadísticas</li>
+                    <li class="denied">❌ Exportación de datos</li>
+                    <li class="denied">❌ Edición y eliminación de registros</li>
+                </ul>
+            </div>
+            <table class="credentials-table" id="verificadores-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Usuario</th>
+                        <th>Contraseña</th>
+                        <th>Rol</th>
+                    </tr>
+                </thead>
+                <tbody id="verificadores-body">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Información del Sistema -->
+        <div class="role-section">
+            <div class="role-title">ℹ️ Información del Sistema</div>
+            <div class="role-info">
+                <h4>URL de Acceso:</h4>
+                <p><strong>Principal:</strong> https://sistema-votos-2025.vercel.app</p>
+                <p><strong>Login:</strong> https://sistema-votos-2025.vercel.app/login.html</p>
+                
+                <h4>Características del Sistema:</h4>
+                <ul>
+                    <li>🔐 Autenticación por roles</li>
+                    <li>📱 Interfaz responsive</li>
+                    <li>🔄 Sincronización en tiempo real</li>
+                    <li>📊 Dashboard con estadísticas</li>
+                    <li>📤 Exportación de datos (PDF/CSV)</li>
+                    <li>🌐 Funciona offline</li>
+                    <li>🔒 Control de acceso granular</li>
+                </ul>
+
+                <h4>Notas Importantes:</h4>
+                <ul>
+                    <li>⚠️ Las contraseñas son sensibles y deben mantenerse seguras</li>
+                    <li>📅 Las sesiones expiran después de 24 horas</li>
+                    <li>🔄 El sistema se sincroniza automáticamente</li>
+                    <li>📱 Compatible con dispositivos móviles</li>
+                    <li>🌐 Funciona sin conexión a internet</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de usuarios del sistema
+        const USUARIOS_SISTEMA = [
+            // Superusuarios
+            { username: "diego corrales", password: "alcalde1", rol: "superusuario" },
+            { username: "victor", password: "admin", rol: "superusuario" },
+            { username: "superadmin_01", password: "Sup3r_Adm1n#2o24", rol: "superusuario" },
+            { username: "superadmin_02", password: "aB5!zP9$qW_sU", rol: "superusuario" },
+            { username: "superadmin_03", password: "rT7@eX3&yU_sU", rol: "superusuario" },
+            { username: "superadmin_04", password: "kL9#mN1!bV_sU", rol: "superusuario" },
+            { username: "superadmin_05", password: "zX8$cV6@fG_sU", rol: "superusuario" },
+            
+            // Administradores
+            { username: "admin_01", password: "P@ssw0rd_Adm_01", rol: "admin" },
+            { username: "admin_02", password: "Adm_Secure_02!", rol: "admin" },
+            { username: "admin_03", password: "Gestion_2024_03", rol: "admin" },
+            { username: "admin_04", password: "4dminUser_p4ss", rol: "admin" },
+            { username: "admin_05", password: "Adm!n_Syst3m_05", rol: "admin" },
+            { username: "admin_06", password: "UserAdmin_06#", rol: "admin" },
+            { username: "admin_07", password: "Control_Panel_07", rol: "admin" },
+            { username: "admin_08", password: "Adm_Access_08$", rol: "admin" },
+            { username: "admin_09", password: "My_Admin_P@ss09", rol: "admin" },
+            { username: "admin_10", password: "P@ss_Adm_Global", rol: "admin" },
+            
+            // Registradores
+            { username: "registrador_01", password: "RegUsr_2o24_01", rol: "registrador" },
+            { username: "registrador_02", password: "UserReg_Pass_02", rol: "registrador" },
+            { username: "registrador_03", password: "Reg!strador_03", rol: "registrador" },
+            { username: "registrador_04", password: "Acc3s_Reg_04", rol: "registrador" },
+            { username: "registrador_05", password: "DataEntry_05$", rol: "registrador" },
+            { username: "registrador_06", password: "RegUsr_2o24_06", rol: "registrador" },
+            { username: "registrador_07", password: "UserReg_Pass_07", rol: "registrador" },
+            { username: "registrador_08", password: "Reg!strador_08", rol: "registrador" },
+            { username: "registrador_09", password: "Acc3s_Reg_09", rol: "registrador" },
+            { username: "registrador_10", password: "DataEntry_10$", rol: "registrador" },
+            { username: "registrador_11", password: "RegUsr_2o24_11", rol: "registrador" },
+            { username: "registrador_12", password: "UserReg_Pass_12", rol: "registrador" },
+            { username: "registrador_13", password: "Reg!strador_13", rol: "registrador" },
+            { username: "registrador_14", password: "Acc3s_Reg_14", rol: "registrador" },
+            { username: "registrador_15", password: "DataEntry_15$", rol: "registrador" },
+            { username: "registrador_16", password: "RegUsr_2o24_16", rol: "registrador" },
+            { username: "registrador_17", password: "UserReg_Pass_17", rol: "registrador" },
+            { username: "registrador_18", password: "Reg!strador_18", rol: "registrador" },
+            { username: "registrador_19", password: "Acc3s_Reg_19", rol: "registrador" },
+            { username: "registrador_20", password: "DataEntry_20$", rol: "registrador" },
+            { username: "registrador_21", password: "RegUsr_2o24_21", rol: "registrador" },
+            { username: "registrador_22", password: "UserReg_Pass_22", rol: "registrador" },
+            { username: "registrador_23", password: "Reg!strador_23", rol: "registrador" },
+            { username: "registrador_24", password: "Acc3s_Reg_24", rol: "registrador" },
+            { username: "registrador_25", password: "DataEntry_25$", rol: "registrador" },
+            { username: "registrador_26", password: "RegUsr_2o24_26", rol: "registrador" },
+            { username: "registrador_27", password: "UserReg_Pass_27", rol: "registrador" },
+            { username: "registrador_28", password: "Reg!strador_28", rol: "registrador" },
+            { username: "registrador_29", password: "Acc3s_Reg_29", rol: "registrador" },
+            { username: "registrador_30", password: "DataEntry_30$", rol: "registrador" },
+            { username: "registrador_31", password: "RegUsr_2o24_31", rol: "registrador" },
+            { username: "registrador_32", password: "UserReg_Pass_32", rol: "registrador" },
+            { username: "registrador_33", password: "Reg!strador_33", rol: "registrador" },
+            { username: "registrador_34", password: "Acc3s_Reg_34", rol: "registrador" },
+            { username: "registrador_35", password: "DataEntry_35$", rol: "registrador" },
+            { username: "registrador_36", password: "RegUsr_2o24_36", rol: "registrador" },
+            { username: "registrador_37", password: "UserReg_Pass_37", rol: "registrador" },
+            { username: "registrador_38", password: "Reg!strador_38", rol: "registrador" },
+            { username: "registrador_39", password: "Acc3s_Reg_39", rol: "registrador" },
+            { username: "registrador_40", password: "DataEntry_40$", rol: "registrador" },
+            { username: "registrador_41", password: "RegUsr_2o24_41", rol: "registrador" },
+            { username: "registrador_42", password: "UserReg_Pass_42", rol: "registrador" },
+            { username: "registrador_43", password: "Reg!strador_43", rol: "registrador" },
+            { username: "registrador_44", password: "Acc3s_Reg_44", rol: "registrador" },
+            { username: "registrador_45", password: "DataEntry_45$", rol: "registrador" },
+            { username: "registrador_46", password: "RegUsr_2o24_46", rol: "registrador" },
+            { username: "registrador_47", password: "UserReg_Pass_47", rol: "registrador" },
+            { username: "registrador_48", password: "Reg!strador_48", rol: "registrador" },
+            { username: "registrador_49", password: "Acc3s_Reg_49", rol: "registrador" },
+            { username: "registrador_50", password: "RegUsr_Final_50", rol: "registrador" },
+            // Nuevos registradores con nombres reales
+            { username: "YRAIMA PINTO", password: "13518010", rol: "registrador" },
+            { username: "DARRY OVIEDO", password: "13202937", rol: "registrador" },
+            { username: "IBIRMA GONZALEZ", password: "6846374", rol: "registrador" },
+            { username: "HEIDY AVENDAÑO", password: "13087047", rol: "registrador" },
+            { username: "LILIANGEL RODRIGUEZ", password: "23432113", rol: "registrador" },
+            { username: "LEOWALDO SEGOVIA", password: "16243232", rol: "registrador" },
+            { username: "LIDA SANCHEZ", password: "7933221", rol: "registrador" },
+            { username: "NINA MORENO", password: "15055595", rol: "registrador" },
+            { username: "CARLOS AVENDAÑO", password: "4885476", rol: "registrador" },
+            { username: "KATIUSKA VERGARA", password: "13455771", rol: "registrador" },
+            { username: "GLADYS MARTINEZ", password: "6372937", rol: "registrador" },
+            { username: "DENNYS LOPEZ", password: "15654130", rol: "registrador" },
+            { username: "YNGRID FERNANDEZ", password: "11345082", rol: "registrador" },
+            { username: "MAYRA CONTRERAS", password: "14899707", rol: "registrador" },
+            { username: "NAHIMA DALYS", password: "13954994", rol: "registrador" },
+            { username: "JAVIER PEREZ", password: "10730988", rol: "registrador" },
+            { username: "YELIDA LARA", password: "7380194", rol: "registrador" },
+            { username: "SUGIR MUÑOZ", password: "17530417", rol: "registrador" },
+            { username: "AMILCAR JASPE", password: "18532546", rol: "registrador" },
+            { username: "MILAGROS VILLEGAS", password: "11098987", rol: "registrador" },
+            { username: "REINA RODRIGUEZ", password: "14717754", rol: "registrador" },
+            { username: "IRIS CABELLO", password: "5268555", rol: "registrador" },
+            { username: "FERNANDA QUINTERO", password: "13236761", rol: "registrador" },
+            { username: "YSABEL RIVAS", password: "18532837", rol: "registrador" },
+            { username: "YETSURY SANCHEZ", password: "20759670", rol: "registrador" },
+            { username: "JANETH FLORES", password: "8830118", rol: "registrador" },
+            { username: "CANDIDA FERNANDEZ", password: "13646202", rol: "registrador" },
+            { username: "FRANYELIS SEQUERA", password: "15609598", rol: "registrador" },
+            { username: "MAIKEL ANDRADE", password: "16542701", rol: "registrador" },
+            { username: "ZAYDA HERNANDEZ", password: "5698961", rol: "registrador" },
+            { username: "FRANCIS CONTRERAS", password: "15581776", rol: "registrador" },
+            { username: "ANAHIS ACEVEDO", password: "5338471", rol: "registrador" },
+            { username: "JESUS GUZMAN", password: "11943006", rol: "registrador" },
+            { username: "CANDELARIA RAMOS", password: "9848204", rol: "registrador" },
+            { username: "JESUS CALDERON", password: "11987291", rol: "registrador" },
+            { username: "LILIA JUAREZ", password: "5362888", rol: "registrador" },
+            { username: "YUNEIDY PINTO", password: "20699632", rol: "registrador" },
+            { username: "ELIZABETH AGUIAR", password: "15333071", rol: "registrador" },
+            { username: "JHOAN ANGEL", password: "19772158", rol: "registrador" },
+            { username: "ALBANI HERRERA", password: "23430503", rol: "registrador" },
+            { username: "YOSAINI ESCOBAR", password: "18167185", rol: "registrador" },
+            { username: "LUIS GUTIERREZ", password: "19667240", rol: "registrador" },
+            { username: "MARIA HERIBERTA TOVAR", password: "5370901", rol: "registrador" },
+            { username: "LISANDRA CORONA", password: "24518796", rol: "registrador" },
+            { username: "ANDREINA FERNANDEZ", password: "20941865", rol: "registrador" },
+            { username: "MILAGROS DIAZ", password: "9692529", rol: "registrador" },
+            { username: "JESUS HERRERA", password: "12118763", rol: "registrador" },
+            { username: "LEIDY BARRIOS", password: "18166116", rol: "registrador" },
+            { username: "ROBERSY VASQUEZ", password: "16864029", rol: "registrador" },
+            { username: "SANTIAGO LOYO", password: "22005127", rol: "registrador" },
+            { username: "SIKIU GARCIA", password: "11165709", rol: "registrador" },
+            { username: "EFRAIN CHIRINOS", password: "12604184", rol: "registrador" },
+            { username: "ENEIDA MARQUEZ", password: "11150347", rol: "registrador" },
+            { username: "NEIDA FLORES", password: "15161126", rol: "registrador" },
+            { username: "MARYURI BENAVENTA", password: "13454809", rol: "registrador" },
+            { username: "ADRIANA LA CRUZ", password: "13900179", rol: "registrador" },
+            { username: "LINYU SALCEDO", password: "15259454", rol: "registrador" },
+            { username: "YENIFER CORZO", password: "16205348", rol: "registrador" },
+            { username: "JANET GUZMAN", password: "9679125", rol: "registrador" },
+            { username: "INGRID CESAR", password: "12856450", rol: "registrador" },
+            { username: "YOSYMAR MONSALVE", password: "19364063", rol: "registrador" },
+            { username: "JANETH FUENTES", password: "15258472", rol: "registrador" },
+            { username: "LUIS OLIVEROS", password: "3920033", rol: "registrador" },
+            { username: "CARLOS GUTIERREZ", password: "14355085", rol: "registrador" },
+            { username: "MIRIAM ESTRADA", password: "15259811", rol: "registrador" },
+            { username: "IVAN ANTEQUERA", password: "15407161", rol: "registrador" },
+            { username: "LUISA DE CHACON", password: "8520238", rol: "registrador" },
+            { username: "GENESIS MEDINAS", password: "21584875", rol: "registrador" },
+            { username: "AIRAM SAMBRANO", password: "20243594", rol: "registrador" },
+            { username: "EUGERY RIVAS", password: "14051835", rol: "registrador" },
+            { username: "LEONEL SEQUERA", password: "12343202", rol: "registrador" },
+            
+            // Verificadores
+            { username: "maria ordoñez", password: "20161765", rol: "verificador" },
+            { username: "reinaldo aguilar", password: "12478928", rol: "verificador" },
+            { username: "ana alvarez", password: "12341809", rol: "verificador" },
+            { username: "perla valera", password: "7257936", rol: "verificador" },
+            { username: "willy garcia", password: "18639693", rol: "verificador" },
+            { username: "iris marquez", password: "16581399", rol: "verificador" },
+            { username: "justo perez", password: "18867076", rol: "verificador" },
+            { username: "jose rodriguez", password: "26389924", rol: "verificador" },
+            { username: "nereyda guerrero", password: "8823392", rol: "verificador" },
+            { username: "yoiny betancourt", password: "26804061", rol: "verificador" },
+            { username: "erminia pulido", password: "14713807", rol: "verificador" },
+            { username: "jonas cordoba", password: "25981075", rol: "verificador" },
+            { username: "luis barcasnegra", password: "14754397", rol: "verificador" },
+            { username: "jose ledezma", password: "11177021", rol: "verificador" },
+            { username: "herminia leon", password: "11353776", rol: "verificador" },
+            { username: "darlis botello", password: "9535936", rol: "verificador" },
+            { username: "miguel hernandez", password: "9658902", rol: "verificador" },
+            { username: "hipolita molina", password: "7073680", rol: "verificador" },
+            { username: "fidel ernesto aguilar", password: "7091235", rol: "verificador" }
+        ];
+
+        // Función para renderizar las tablas
+        function renderTables() {
+            const superusuarios = USUARIOS_SISTEMA.filter(u => u.rol === 'superusuario');
+            const admins = USUARIOS_SISTEMA.filter(u => u.rol === 'admin');
+            const registradores = USUARIOS_SISTEMA.filter(u => u.rol === 'registrador');
+            const verificadores = USUARIOS_SISTEMA.filter(u => u.rol === 'verificador');
+
+            // Actualizar estadísticas
+            document.getElementById('total-users').textContent = USUARIOS_SISTEMA.length;
+            document.getElementById('superusuarios').textContent = superusuarios.length;
+            document.getElementById('admins').textContent = admins.length;
+            document.getElementById('registradores').textContent = registradores.length;
+            document.getElementById('verificadores').textContent = verificadores.length;
+
+            // Renderizar superusuarios
+            const superusuariosBody = document.getElementById('superusuarios-body');
+            superusuariosBody.innerHTML = '';
+            superusuarios.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${user.username}</td>
+                    <td>${user.password}</td>
+                    <td>${user.rol}</td>
+                `;
+                superusuariosBody.appendChild(row);
+            });
+
+            // Renderizar administradores
+            const adminsBody = document.getElementById('admins-body');
+            adminsBody.innerHTML = '';
+            admins.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${user.username}</td>
+                    <td>${user.password}</td>
+                    <td>${user.rol}</td>
+                `;
+                adminsBody.appendChild(row);
+            });
+
+            // Renderizar registradores
+            const registradoresBody = document.getElementById('registradores-body');
+            registradoresBody.innerHTML = '';
+            registradores.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${user.username}</td>
+                    <td>${user.password}</td>
+                    <td>${user.rol}</td>
+                `;
+                registradoresBody.appendChild(row);
+            });
+
+            // Renderizar verificadores
+            const verificadoresBody = document.getElementById('verificadores-body');
+            verificadoresBody.innerHTML = '';
+            verificadores.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${user.username}</td>
+                    <td>${user.password}</td>
+                    <td>${user.rol}</td>
+                `;
+                verificadoresBody.appendChild(row);
+            });
+        }
+
+        // Función para generar PDF
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Configurar fuente
+            doc.setFont('helvetica');
+
+            // Título principal
+            doc.setFontSize(20);
+            doc.setTextColor(41, 128, 185);
+            doc.text('🔐 Credenciales del Sistema de Votos 2025', 20, 30);
+
+            // Fecha
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Fecha de generación: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 20, 45);
+
+            // Estadísticas
+            doc.setFontSize(14);
+            doc.setTextColor(41, 128, 185);
+            doc.text('📊 Estadísticas del Sistema:', 20, 65);
+
+            const superusuarios = USUARIOS_SISTEMA.filter(u => u.rol === 'superusuario');
+            const admins = USUARIOS_SISTEMA.filter(u => u.rol === 'admin');
+            const registradores = USUARIOS_SISTEMA.filter(u => u.rol === 'registrador');
+            const verificadores = USUARIOS_SISTEMA.filter(u => u.rol === 'verificador');
+
+            doc.setFontSize(10);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`• Total de usuarios: ${USUARIOS_SISTEMA.length}`, 25, 80);
+            doc.text(`• Superusuarios: ${superusuarios.length}`, 25, 90);
+            doc.text(`• Administradores: ${admins.length}`, 25, 100);
+            doc.text(`• Registradores: ${registradores.length}`, 25, 110);
+            doc.text(`• Verificadores: ${verificadores.length}`, 25, 120);
+
+            // Superusuarios
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text('🔴 Superusuarios', 20, 30);
+
+            const superusuariosData = superusuarios.map((user, index) => [
+                index + 1,
+                user.username,
+                user.password,
+                user.rol
+            ]);
+
+            doc.autoTable({
+                head: [['#', 'Usuario', 'Contraseña', 'Rol']],
+                body: superusuariosData,
+                startY: 40,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 3
+                },
+                headStyles: {
+                    fillColor: [220, 53, 69],
+                    textColor: 255
+                }
+            });
+
+            // Administradores
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setTextColor(255, 193, 7);
+            doc.text('🟠 Administradores', 20, 30);
+
+            const adminsData = admins.map((user, index) => [
+                index + 1,
+                user.username,
+                user.password,
+                user.rol
+            ]);
+
+            doc.autoTable({
+                head: [['#', 'Usuario', 'Contraseña', 'Rol']],
+                body: adminsData,
+                startY: 40,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 3
+                },
+                headStyles: {
+                    fillColor: [255, 193, 7],
+                    textColor: 0
+                }
+            });
+
+            // Registradores
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setTextColor(255, 193, 7);
+            doc.text('🟡 Registradores', 20, 30);
+
+            const registradoresData = registradores.map((user, index) => [
+                index + 1,
+                user.username,
+                user.password,
+                user.rol
+            ]);
+
+            doc.autoTable({
+                head: [['#', 'Usuario', 'Contraseña', 'Rol']],
+                body: registradoresData,
+                startY: 40,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 3
+                },
+                headStyles: {
+                    fillColor: [255, 193, 7],
+                    textColor: 0
+                }
+            });
+
+            // Verificadores
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setTextColor(40, 167, 69);
+            doc.text('🟢 Verificadores', 20, 30);
+
+            const verificadoresData = verificadores.map((user, index) => [
+                index + 1,
+                user.username,
+                user.password,
+                user.rol
+            ]);
+
+            doc.autoTable({
+                head: [['#', 'Usuario', 'Contraseña', 'Rol']],
+                body: verificadoresData,
+                startY: 40,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 3
+                },
+                headStyles: {
+                    fillColor: [40, 167, 69],
+                    textColor: 255
+                }
+            });
+
+            // Información del sistema
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.setTextColor(41, 128, 185);
+            doc.text('ℹ️ Información del Sistema', 20, 30);
+
+            doc.setFontSize(10);
+            doc.setTextColor(60, 60, 60);
+            doc.text('URL de Acceso:', 20, 50);
+            doc.text('• Principal: https://sistema-votos-2025.vercel.app', 25, 60);
+            doc.text('• Login: https://sistema-votos-2025.vercel.app/login.html', 25, 70);
+
+            doc.text('Características:', 20, 90);
+            doc.text('• Autenticación por roles', 25, 100);
+            doc.text('• Interfaz responsive', 25, 110);
+            doc.text('• Sincronización en tiempo real', 25, 120);
+            doc.text('• Dashboard con estadísticas', 25, 130);
+            doc.text('• Exportación de datos (PDF/CSV)', 25, 140);
+            doc.text('• Funciona offline', 25, 150);
+            doc.text('• Control de acceso granular', 25, 160);
+
+            doc.text('Notas Importantes:', 20, 180);
+            doc.text('• Las contraseñas son sensibles y deben mantenerse seguras', 25, 190);
+            doc.text('• Las sesiones expiran después de 24 horas', 25, 200);
+            doc.text('• El sistema se sincroniza automáticamente', 25, 210);
+            doc.text('• Compatible con dispositivos móviles', 25, 220);
+            doc.text('• Funciona sin conexión a internet', 25, 230);
+
+            // Guardar PDF
+            const fileName = `Credenciales_Sistema_Votos_2025_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
+            renderTables();
+        });
+    </script>
+</body>
+</html> 

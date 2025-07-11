@@ -198,25 +198,11 @@
         </form>
         
         <div class="system-status">
-            <div id="firebase-status">
-                <span class="status-indicator status-warning"></span>
-                Verificando Firebase...
-            </div>
-            <div id="system-status">
-                <span class="status-indicator status-warning"></span>
-                Verificando sistema...
-            </div>
+            <div class="status-indicator status-ok"></div>
+            <span>Sistema operativo</span>
         </div>
     </div>
 
-    <!-- Firebase Libraries -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    
-    <script src="firebase-config.js"></script>
-    <script src="system-config.js"></script>
-    
     <script>
         // Usuarios del sistema
         const USUARIOS_INICIALES = [
@@ -240,265 +226,78 @@
             { username: "registrador_03", password: "Reg!strador_03", rol: "registrador" },
             { username: "registrador_04", password: "Acc3s_Reg_04", rol: "registrador" },
             { username: "registrador_05", password: "DataEntry_05$", rol: "registrador" },
-            // Verificadores de votos
-            { username: "maria ordoñez", password: "20161765", rol: "verificador" },
-            { username: "reinaldo aguilar", password: "12478928", rol: "verificador" },
-            { username: "ana alvarez", password: "12341809", rol: "verificador" },
-            { username: "perla valera", password: "7257936", rol: "verificador" },
-            { username: "willy garcia", password: "18639693", rol: "verificador" },
-            { username: "iris marquez", password: "16581399", rol: "verificador" },
-            { username: "justo perez", password: "18867076", rol: "verificador" },
-            { username: "jose rodriguez", password: "26389924", rol: "verificador" },
-            { username: "nereyda guerrero", password: "8823392", rol: "verificador" },
-            { username: "yoiny betancourt", password: "26804061", rol: "verificador" },
-            { username: "erminia pulido", password: "14713807", rol: "verificador" },
-            { username: "jonas cordoba", password: "25981075", rol: "verificador" },
-            { username: "luis barcasnegra", password: "14754397", rol: "verificador" },
-            { username: "jose ledezma", password: "11177021", rol: "verificador" },
-            { username: "herminia leon", password: "11353776", rol: "verificador" },
-            { username: "darlis botello", password: "9535936", rol: "verificador" },
-            { username: "miguel hernandez", password: "9658902", rol: "verificador" },
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema de Votos 2025</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        
-        .login-header {
-            margin-bottom: 30px;
-        }
-        
-        .login-header img {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin-bottom: 20px;
-        }
-        
-        .login-header h1 {
-            color: #333;
-            margin: 0 0 10px 0;
-            font-size: 2em;
-            font-weight: 600;
-        }
-        
-        .login-header p {
-            color: #666;
-            margin: 0;
-            font-size: 1.1em;
-        }
-        
-        .login-form {
-            text-align: left;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-        }
-        
-        .login-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-        }
-        
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102,126,234,0.3);
-        }
-        
-        .login-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .login-message {
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-weight: 500;
-        }
-        
-        .login-message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .login-message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .login-message.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .system-status {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            font-size: 0.9em;
-            color: #666;
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .status-ok { background: #28a745; }
-        .status-error { background: #dc3545; }
-        .status-warning { background: #ffc107; }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="login-header">
-            <img src="logo.jpg" alt="Logo Sistema de Votos">
-            <h1>Bienvenido</h1>
-            <p>Sistema de Registro de Votos 2025</p>
-        </div>
-        
-        <div id="login-message" class="login-message" style="display:none;"></div>
-        
-        <form id="login-form" class="login-form">
-            <div class="form-group">
-                <label for="username">Usuario</label>
-                <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Contraseña</label>
-                <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required>
-            </div>
-            <button type="submit" class="login-btn" id="login-btn">
-                <span class="btn-text">Iniciar Sesión</span>
-                <span class="btn-loading" style="display:none;">
-                    <div class="spinner"></div>
-                    Iniciando sesión...
-                </span>
-            </button>
-        </form>
-        
-        <div class="system-status">
-            <div id="firebase-status">
-                <span class="status-indicator status-warning"></span>
-                Verificando Firebase...
-            </div>
-            <div id="system-status">
-                <span class="status-indicator status-warning"></span>
-                Verificando sistema...
-            </div>
-        </div>
-    </div>
-
-    <!-- Firebase Libraries -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    
-    <script src="firebase-config.js"></script>
-    <script src="system-config.js"></script>
-    
-    <script>
-        // Usuarios del sistema
-        const USUARIOS_INICIALES = [
-            // Superusuarios
-            { username: "diego corrales", password: "alcalde1", rol: "superusuario" },
-            { username: "superadmin_01", password: "Sup3r_Adm1n#2o24", rol: "superusuario" },
-            { username: "superadmin_02", password: "aB5!zP9$qW_sU", rol: "superusuario" },
-            { username: "superadmin_03", password: "rT7@eX3&yU_sU", rol: "superusuario" },
-            { username: "superadmin_04", password: "kL9#mN1!bV_sU", rol: "superusuario" },
-            { username: "superadmin_05", password: "zX8$cV6@fG_sU", rol: "superusuario" },
-            // Administradores
-            { username: "admin_01", password: "P@ssw0rd_Adm_01", rol: "admin" },
-            { username: "admin_02", password: "Adm_Secure_02!", rol: "admin" },
-            { username: "admin_03", password: "Gestion_2024_03", rol: "admin" },
-            { username: "admin_04", password: "4dminUser_p4ss", rol: "admin" },
-            { username: "admin_05", password: "Adm!n_Syst3m_05", rol: "admin" },
-            // Registradores
-            { username: "registrador_01", password: "RegUsr_2o24_01", rol: "registrador" },
-            { username: "registrador_02", password: "UserReg_Pass_02", rol: "registrador" },
-            { username: "registrador_03", password: "Reg!strador_03", rol: "registrador" },
-            { username: "registrador_04", password: "Acc3s_Reg_04", rol: "registrador" },
-            { username: "registrador_05", password: "DataEntry_05$", rol: "registrador" },
+            // Nuevos registradores con nombres reales
+            { username: "YRAIMA PINTO", password: "13518010", rol: "registrador" },
+            { username: "DARRY OVIEDO", password: "13202937", rol: "registrador" },
+            { username: "IBIRMA GONZALEZ", password: "6846374", rol: "registrador" },
+            { username: "HEIDY AVENDAÑO", password: "13087047", rol: "registrador" },
+            { username: "LILIANGEL RODRIGUEZ", password: "23432113", rol: "registrador" },
+            { username: "LEOWALDO SEGOVIA", password: "16243232", rol: "registrador" },
+            { username: "LIDA SANCHEZ", password: "7933221", rol: "registrador" },
+            { username: "NINA MORENO", password: "15055595", rol: "registrador" },
+            { username: "CARLOS AVENDAÑO", password: "4885476", rol: "registrador" },
+            { username: "KATIUSKA VERGARA", password: "13455771", rol: "registrador" },
+            { username: "GLADYS MARTINEZ", password: "6372937", rol: "registrador" },
+            { username: "DENNYS LOPEZ", password: "15654130", rol: "registrador" },
+            { username: "YNGRID FERNANDEZ", password: "11345082", rol: "registrador" },
+            { username: "MAYRA CONTRERAS", password: "14899707", rol: "registrador" },
+            { username: "NAHIMA DALYS", password: "13954994", rol: "registrador" },
+            { username: "JAVIER PEREZ", password: "10730988", rol: "registrador" },
+            { username: "YELIDA LARA", password: "7380194", rol: "registrador" },
+            { username: "SUGIR MUÑOZ", password: "17530417", rol: "registrador" },
+            { username: "AMILCAR JASPE", password: "18532546", rol: "registrador" },
+            { username: "MILAGROS VILLEGAS", password: "11098987", rol: "registrador" },
+            { username: "REINA RODRIGUEZ", password: "14717754", rol: "registrador" },
+            { username: "IRIS CABELLO", password: "5268555", rol: "registrador" },
+            { username: "FERNANDA QUINTERO", password: "13236761", rol: "registrador" },
+            { username: "YSABEL RIVAS", password: "18532837", rol: "registrador" },
+            { username: "YETSURY SANCHEZ", password: "20759670", rol: "registrador" },
+            { username: "JANETH FLORES", password: "8830118", rol: "registrador" },
+            { username: "CANDIDA FERNANDEZ", password: "13646202", rol: "registrador" },
+            { username: "FRANYELIS SEQUERA", password: "15609598", rol: "registrador" },
+            { username: "MAIKEL ANDRADE", password: "16542701", rol: "registrador" },
+            { username: "ZAYDA HERNANDEZ", password: "5698961", rol: "registrador" },
+            { username: "FRANCIS CONTRERAS", password: "15581776", rol: "registrador" },
+            { username: "ANAHIS ACEVEDO", password: "5338471", rol: "registrador" },
+            { username: "JESUS GUZMAN", password: "11943006", rol: "registrador" },
+            { username: "CANDELARIA RAMOS", password: "9848204", rol: "registrador" },
+            { username: "JESUS CALDERON", password: "11987291", rol: "registrador" },
+            { username: "LILIA JUAREZ", password: "5362888", rol: "registrador" },
+            { username: "YUNEIDY PINTO", password: "20699632", rol: "registrador" },
+            { username: "ELIZABETH AGUIAR", password: "15333071", rol: "registrador" },
+            { username: "JHOAN ANGEL", password: "19772158", rol: "registrador" },
+            { username: "ALBANI HERRERA", password: "23430503", rol: "registrador" },
+            { username: "YOSAINI ESCOBAR", password: "18167185", rol: "registrador" },
+            { username: "LUIS GUTIERREZ", password: "19667240", rol: "registrador" },
+            { username: "MARIA HERIBERTA TOVAR", password: "5370901", rol: "registrador" },
+            { username: "LISANDRA CORONA", password: "24518796", rol: "registrador" },
+            { username: "ANDREINA FERNANDEZ", password: "20941865", rol: "registrador" },
+            { username: "MILAGROS DIAZ", password: "9692529", rol: "registrador" },
+            { username: "JESUS HERRERA", password: "12118763", rol: "registrador" },
+            { username: "LEIDY BARRIOS", password: "18166116", rol: "registrador" },
+            { username: "ROBERSY VASQUEZ", password: "16864029", rol: "registrador" },
+            { username: "SANTIAGO LOYO", password: "22005127", rol: "registrador" },
+            { username: "SIKIU GARCIA", password: "11165709", rol: "registrador" },
+            { username: "EFRAIN CHIRINOS", password: "12604184", rol: "registrador" },
+            { username: "ENEIDA MARQUEZ", password: "11150347", rol: "registrador" },
+            { username: "NEIDA FLORES", password: "15161126", rol: "registrador" },
+            { username: "MARYURI BENAVENTA", password: "13454809", rol: "registrador" },
+            { username: "ADRIANA LA CRUZ", password: "13900179", rol: "registrador" },
+            { username: "LINYU SALCEDO", password: "15259454", rol: "registrador" },
+            { username: "YENIFER CORZO", password: "16205348", rol: "registrador" },
+            { username: "JANET GUZMAN", password: "9679125", rol: "registrador" },
+            { username: "INGRID CESAR", password: "12856450", rol: "registrador" },
+            { username: "YOSYMAR MONSALVE", password: "19364063", rol: "registrador" },
+            { username: "JANETH FUENTES", password: "15258472", rol: "registrador" },
+            { username: "LUIS OLIVEROS", password: "3920033", rol: "registrador" },
+            { username: "CARLOS GUTIERREZ", password: "14355085", rol: "registrador" },
+            { username: "MIRIAM ESTRADA", password: "15259811", rol: "registrador" },
+            { username: "IVAN ANTEQUERA", password: "15407161", rol: "registrador" },
+            { username: "LUISA DE CHACON", password: "8520238", rol: "registrador" },
+            { username: "GENESIS MEDINAS", password: "21584875", rol: "registrador" },
+            { username: "AIRAM SAMBRANO", password: "20243594", rol: "registrador" },
+            { username: "EUGERY RIVAS", password: "14051835", rol: "registrador" },
+            { username: "LEONEL SEQUERA", password: "12343202", rol: "registrador" },
             // Verificadores de votos
             { username: "maria ordoñez", password: "20161765", rol: "verificador" },
             { username: "reinaldo aguilar", password: "12478928", rol: "verificador" },
@@ -521,6 +320,7 @@
             { username: "fidel ernesto aguilar", password: "7091235", rol: "verificador" }
         ];
 
+        // Función para mostrar mensajes
         function showMessage(message, type = 'info') {
             const loginMessage = document.getElementById('login-message');
             loginMessage.textContent = message;
@@ -531,92 +331,50 @@
             }
         }
 
-        function updateStatus(elementId, status, message) {
-            const element = document.getElementById(elementId);
-            if (element) {
-                const indicator = element.querySelector('.status-indicator');
-                indicator.className = `status-indicator status-${status}`;
-                element.textContent = message;
-                element.appendChild(indicator);
-            }
-        }
-
-        // Verificar estado del sistema
-        function checkSystemStatus() {
-            // Verificar Firebase
-            if (window.firebaseDB && window.firebaseDB.db) {
-                updateStatus('firebase-status', 'ok', 'Firebase conectado');
-            } else {
-                updateStatus('firebase-status', 'error', 'Firebase no disponible');
-            }
-
-            // Verificar sistema general
-            if (window.isSystemReady && window.isSystemReady()) {
-                updateStatus('system-status', 'ok', 'Sistema listo');
-            } else {
-                updateStatus('system-status', 'warning', 'Sistema cargando...');
-            }
-        }
-
-        // Manejar login
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            e.preventDefault();
+        // Función para manejar el login
+        function handleLogin(event) {
+            event.preventDefault();
             
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             
             if (!username || !password) {
-                showMessage('Por favor, completa todos los campos', 'error');
+                showMessage('Por favor, completa todos los campos.', 'error');
                 return;
             }
-
-            // Mostrar loading
-            const btn = document.getElementById('login-btn');
-            const btnText = btn.querySelector('.btn-text');
-            const btnLoading = btn.querySelector('.btn-loading');
             
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'block';
-            btn.disabled = true;
-
-            showMessage('Verificando credenciales...', 'info');
-
-            // Simular verificación (en producción esto sería con Firebase Auth)
-            setTimeout(() => {
-                const user = USUARIOS_INICIALES.find(u => 
-                    u.username.toLowerCase() === username.toLowerCase() && 
-                    u.password === password
-                );
-
-                if (!user) {
-                    showMessage('Usuario o contraseña incorrectos', 'error');
-                    btnText.style.display = 'block';
-                    btnLoading.style.display = 'none';
-                    btn.disabled = false;
-                    return;
-                }
-
-                // Guardar sesión
-                const sessionData = { 
-                    username: user.username, 
-                    rol: user.rol,
-                    loginTime: new Date().toISOString()
-                };
-                localStorage.setItem('currentUser', JSON.stringify(sessionData));
+            // Buscar usuario
+            const usuario = USUARIOS_INICIALES.find(u => 
+                u.username.toLowerCase() === username.toLowerCase() && 
+                u.password === password
+            );
+            
+            if (usuario) {
+                // Guardar información del usuario
+                localStorage.setItem('currentUser', JSON.stringify(usuario));
                 localStorage.setItem('sessionTime', Date.now().toString());
                 
-                showMessage('¡Inicio de sesión exitoso!', 'success');
+                showMessage('Inicio de sesión exitoso. Redirigiendo...', 'success');
                 
+                // Redirigir al sistema principal
                 setTimeout(() => {
                     window.location.href = 'index.html';
-                }, 1000);
-            }, 1000);
-        });
+                }, 1500);
+            } else {
+                showMessage('Usuario o contraseña incorrectos.', 'error');
+            }
+        }
 
-        // Verificar estado al cargar
+        // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(checkSystemStatus, 1000);
-            setInterval(checkSystemStatus, 5000);
+            const loginForm = document.getElementById('login-form');
+            loginForm.addEventListener('submit', handleLogin);
+            
+            // Verificar si ya hay una sesión activa
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                window.location.href = 'index.html';
+            }
         });
     </script>
 </body>
