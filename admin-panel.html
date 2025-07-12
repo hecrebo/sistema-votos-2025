@@ -1001,12 +1001,12 @@
             </div>
 
             <!-- Sistema de Notificaciones -->
-            <div class="admin-card">
+            <div class="admin-card notification-panel">
                 <h3>
                     <span class="status-indicator status-online" id="notification-status"></span>
                     Sistema de Notificaciones
                 </h3>
-                <div class="metrics-grid">
+                <div class="notification-metrics">
                     <div class="metric-card">
                         <p class="metric-number" id="notification-count">0</p>
                         <p class="metric-label">Notificaciones Activas</p>
@@ -1016,26 +1016,26 @@
                         <p class="metric-label">Tipos Disponibles</p>
                     </div>
                 </div>
-                <div class="service-controls">
-                    <button class="notification-test-btn" onclick="testNotification('info')">ℹ️ Info</button>
-                    <button class="notification-test-btn success" onclick="testNotification('success')">✅ Éxito</button>
-                    <button class="notification-test-btn warning" onclick="testNotification('warning')">⚠️ Advertencia</button>
-                    <button class="notification-test-btn error" onclick="testNotification('error')">❌ Error</button>
-                </div>
-                <div style="margin-top: 15px;">
-                    <textarea id="custom-notification" placeholder="Escribe un mensaje personalizado..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; resize: vertical; min-height: 60px;"></textarea>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <div class="notification-section">
+                    <div class="notification-test-group">
+                        <button class="notification-test-btn" onclick="testNotification('info')">ℹ️ Info</button>
+                        <button class="notification-test-btn success" onclick="testNotification('success')">✅ Éxito</button>
+                        <button class="notification-test-btn warning" onclick="testNotification('warning')">⚠️ Advertencia</button>
+                        <button class="notification-test-btn error" onclick="testNotification('error')">❌ Error</button>
+                    </div>
+                    <small class="notification-hint">Prueba los diferentes tipos de notificación visual</small>
+                    <textarea id="custom-notification" class="notification-textarea" placeholder="Escribe un mensaje personalizado..."></textarea>
+                    <div class="notification-actions">
                         <button class="btn btn-primary" onclick="sendCustomNotification()">📤 Enviar Local</button>
                         <button class="btn btn-success" onclick="sendGlobalNotificationFromAdmin()">🌐 Enviar a Todos</button>
                     </div>
-                    <div style="display: flex; gap: 10px;">
+                    <div class="notification-roles">
                         <button class="btn btn-warning" onclick="sendRoleNotificationFromAdmin('registrador')">👤 Registradores</button>
                         <button class="btn btn-info" onclick="sendRoleNotificationFromAdmin('verificador')">✅ Verificadores</button>
                         <button class="btn btn-secondary" onclick="sendRoleNotificationFromAdmin('usuario')">👥 Usuarios</button>
                     </div>
                 </div>
             </div>
-                    <div class="log-entry log-info">Sistema listo para mantenimiento</div>
                 </div>
             </div>
         </div>

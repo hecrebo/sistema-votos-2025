@@ -4621,3 +4621,66 @@ select:focus {
         gap: 10px;
     }
 }
+
+.notification-panel {
+    box-shadow: 0 8px 32px rgba(102,126,234,0.10);
+    padding: 32px 24px 28px 24px;
+    border-radius: 20px;
+    background: #fff;
+    margin-bottom: 0;
+}
+.notification-metrics {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 18px;
+}
+.notification-section {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.notification-test-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 2px;
+}
+.notification-hint {
+    color: #888;
+    font-size: 0.95em;
+    margin-bottom: 2px;
+    margin-left: 2px;
+}
+.notification-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    min-height: 60px;
+    font-size: 1em;
+    resize: vertical;
+    margin-bottom: 0;
+    font-family: inherit;
+}
+.notification-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 0;
+}
+.notification-roles {
+    display: flex;
+    gap: 10px;
+    margin-top: 2px;
+}
+@media (max-width: 768px) {
+    .notification-metrics {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .notification-section {
+        gap: 12px;
+    }
+    .notification-test-group, .notification-actions, .notification-roles {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
