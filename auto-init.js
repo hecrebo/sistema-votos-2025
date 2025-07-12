@@ -236,13 +236,17 @@ class AutoInitSystem {
     handleGlobalError(error) {
         this.errorCount++;
         console.error('❌ Error global detectado:', error);
-        
-        // Mostrar notificación de error
-        this.showSystemNotification('Error detectado. Recuperando automáticamente...', 'error');
-        
+        // Solo mostrar notificación si es crítico o si hay varios errores
+        const errorMsg = (error && error.message) ? error.message : String(error);
+        const isCritical = /firebase|service worker|no se pudo inicializar|no se pudo cargar|critical|fatal|database|sync/i.test(errorMsg);
+        if (this.errorCount >= 2 || isCritical) {
+            this.showSystemNotification('Error detectado. Recuperando automáticamente...', 'error');
+        } else {
+            // Solo loguear en consola, no mostrar notificación visual
+            console.warn('Error menor detectado, no se muestra notificación visual:', errorMsg);
+        }
         // Intentar recuperación automática
         this.autoRecover();
-        
         // Si hay demasiados errores, reiniciar el sistema
         if (this.errorCount >= this.maxErrors) {
             this.restartSystem();
