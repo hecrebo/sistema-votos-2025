@@ -92,6 +92,10 @@ class NotificationSystem {
 
         const avatarHtml = `<img src="${this.avatarUrl}" alt="Logo" class="notification-avatar" onerror="this.onerror=null;this.src='https://placehold.co/40x40/cccccc/ffffff?text=Logo';">`;
 
+        // Formatear hora en 12 horas con AM/PM
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
         notification.innerHTML = `
             <div class="notification-left">
                 ${avatarHtml}
@@ -99,7 +103,7 @@ class NotificationSystem {
             </div>
             <div class="notification-content">
                 <span class="notification-message">${message}</span>
-                <div class="notification-time">${new Date().toLocaleTimeString()}</div>
+                <div class="notification-time">${timeString}</div>
             </div>
             <button class="notification-close" title="Cerrar notificación">&times;</button>
         `;
