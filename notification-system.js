@@ -81,10 +81,22 @@ class NotificationSystem {
         const notification = document.createElement('div');
         notification.classList.add('notification', type);
 
-        const avatarHtml = `<img src="${this.avatarUrl}" alt="Avatar de notificación" class="notification-avatar" onerror="this.onerror=null;this.src='https://placehold.co/40x40/cccccc/ffffff?text=Avatar';">`;
+        // Iconos SVG para cada tipo
+        const icons = {
+            success: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="12" fill="#10b981"/><path d="M7 13.5L10.5 17L17 10.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+            info: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="12" fill="#3b82f6"/><circle cx="12" cy="8" r="1.5" fill="#fff"/><rect x="11" y="11" width="2" height="6" rx="1" fill="#fff"/></svg>`,
+            warning: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="12" fill="#f59e0b"/><path d="M12 7V13" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="#fff"/></svg>`,
+            error: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="12" fill="#ef4444"/><path d="M8 8L16 16M16 8L8 16" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>`
+        };
+        const iconHtml = `<span class="notification-status-icon">${icons[type] || icons.info}</span>`;
+
+        const avatarHtml = `<img src="${this.avatarUrl}" alt="Logo" class="notification-avatar" onerror="this.onerror=null;this.src='https://placehold.co/40x40/cccccc/ffffff?text=Logo';">`;
 
         notification.innerHTML = `
-            ${avatarHtml}
+            <div class="notification-left">
+                ${avatarHtml}
+                ${iconHtml}
+            </div>
             <div class="notification-content">
                 <span class="notification-message">${message}</span>
                 <div class="notification-time">${new Date().toLocaleTimeString()}</div>

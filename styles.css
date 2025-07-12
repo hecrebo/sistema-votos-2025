@@ -4078,6 +4078,32 @@ select:focus {
     border: 1px solid #e5e7eb;
 }
 
+.notification-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 0.7rem;
+}
+
+.notification-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid #e5e7eb;
+}
+
+.notification-status-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
 @keyframes slideIn {
     from {
         opacity: 0;
@@ -4107,29 +4133,6 @@ select:focus {
 .notification.error {
     border-left: 5px solid #ef4444;
     background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
-}
-
-.notification-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-    animation: pulse-border 2s infinite alternate;
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-    border: 2px solid #e5e7eb;
-}
-
-@keyframes pulse-border {
-    0% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-    }
-    50% {
-        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-    }
 }
 
 .notification-message {
