@@ -85,14 +85,20 @@ class RealtimeNotificationSystem {
 
         console.log(`📨 Notificación recibida: ${message} (${type}) de ${sender}`);
 
-        // Mostrar notificación usando el sistema existente
+        // Mostrar notificación usando el sistema visual flotante
         if (window.notificationSystem) {
             window.notificationSystem.show(message, type, true, 5000);
         } else if (window.showNotification) {
             window.showNotification(message, type, true);
         } else {
-            // Fallback: mostrar como alerta simple
-            alert(`Notificación: ${message}`);
+            // Intentar inicializar notificationSystem si no existe
+            if (typeof NotificationSystem !== 'undefined') {
+                window.notificationSystem = new NotificationSystem();
+                window.notificationSystem.show(message, type, true, 5000);
+            } else {
+                // No mostrar nada si no está disponible
+                console.warn('No se pudo mostrar la notificación visual. notificationSystem no está disponible.');
+            }
         }
     }
 
