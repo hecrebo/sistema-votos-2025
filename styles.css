@@ -4738,3 +4738,39 @@ select:focus {
         font-size: 0.93em;
     }
 }
+
+.fallback-notification {
+    background-color: #ffffff;
+    padding: 1.2rem 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideIn 0.5s ease-out forwards;
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid #e5e7eb;
+    font-size: 1.05rem;
+    color: #374151;
+    font-weight: 500;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+.fallback-notification.info {
+    border-left: 5px solid #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+}
+.fallback-notification.success {
+    border-left: 5px solid #10b981;
+    background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+}
+.fallback-notification.warning {
+    border-left: 5px solid #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+}
+.fallback-notification.error {
+    border-left: 5px solid #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+}

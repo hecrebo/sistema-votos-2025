@@ -74,7 +74,7 @@ class VotingSystemFirebase extends VotingSystem {
         window.votingSystem = this;
         
         // Nuevas propiedades para mejoras del listado
-        this.currentPage = 1;
+        this.currentPage = 'registration';
         this.pageSize = 20;
         this.filteredVotes = [];
         this.selectedVotes = [];
@@ -581,7 +581,7 @@ class VotingSystemFirebase extends VotingSystem {
             edad: parseInt(edad),
             ubch,
             community,
-            registeredBy: this.getCurrentUser()?.username || this.userId,
+            registeredBy: normalizarUsuario(this.getCurrentUser()?.username || this.userId),
             voted: false,
             registeredAt: new Date().toISOString(),
             createdAt: new Date().toISOString()
@@ -593,38 +593,20 @@ class VotingSystemFirebase extends VotingSystem {
             // Usar el sistema de cola offline
             if (window.offlineQueueManager) {
                 const registroId = window.offlineQueueManager.guardarEnColaLocal(registrationData);
-                
-                // Mostrar mensaje de éxito inmediato
                 this.showMessage('✅ Registro guardado localmente. Se sincronizará automáticamente cuando haya conexión.', 'success', 'registration');
-                
-                // Enviar notificación global
-                showNotification(`�� Nuevo registro: ${name} en ${community}`, 'info', true);
-                
-                // Generar mensaje de agradecimiento
-            await this.generateThankYouMessage(name, ubch, community);
-            
-            // Limpiar formulario
-            form.reset();
-                
-                // Actualizar indicador de cola
+                this.showMessage('👤 Nuevo registro: ' + name + ' en ' + community, 'success', 'registration');
+                await this.generateThankYouMessage(name, ubch, community);
+                form.reset();
                 const stats = window.offlineQueueManager.obtenerEstadisticasCola();
                 window.offlineQueueManager.actualizarIndicadorCola(stats.total);
-                
             } else {
-                // Fallback al sistema anterior si no está disponible el gestor offline
                 console.warn('⚠️ Gestor offline no disponible, usando sistema anterior');
-                
-                // Intentar guardar directamente en Firebase
                 await this.saveVoteToFirebase(registrationData);
                 this.showMessage('✅ Registro guardado exitosamente.', 'success', 'registration');
-                
-                // Enviar notificación global
-                showNotification(`👤 Nuevo registro: ${name} en ${community}`, 'success', true);
-                
+                this.showMessage('👤 Nuevo registro: ' + name + ' en ' + community, 'success', 'registration');
                 await this.generateThankYouMessage(name, ubch, community);
                 form.reset();
             }
-            
         } catch (error) {
             console.error('❌ Error al registrar:', error);
             this.showMessage('Error al registrar persona. Inténtalo de nuevo.', 'error', 'registration');
@@ -696,7 +678,7 @@ class VotingSystemFirebase extends VotingSystem {
             this.showMessage('¡Voto confirmado con éxito!', 'success', 'check-in');
             
             // Enviar notificación global
-            showNotification(`🎯 Voto confirmado: ${vote.name} en ${vote.community}`, 'success', true);
+            this.showMessage(`🎯 Voto confirmado: ${vote.name} en ${vote.community}`, 'success', true);
             
             document.getElementById('cedula-search').value = '';
             document.getElementById('search-results').innerHTML = '';
@@ -737,7 +719,7 @@ class VotingSystemFirebase extends VotingSystem {
             await this.deleteVoteFromFirebase(this.voteToDelete);
             
             // Enviar notificación global
-            showNotification(`❌ Registro eliminado del sistema`, 'warning', true);
+            this.showMessage(`❌ Registro eliminado del sistema`, 'warning', true);
             
             // Recargar datos desde Firebase para reflejar el cambio
             await this.loadDataFromFirebase();
@@ -2648,7 +2630,7 @@ window.renderMyRecordsTable = async function() {
     try {
         // Obtener usuario actual
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        const username = currentUser.username || '';
+        const username = normalizarUsuario(currentUser.username || '');
         if (!username) {
             tableBody.innerHTML = '<tr><td colspan="8">No hay usuario activo</td></tr>';
             return;
@@ -2683,7 +2665,7 @@ window.renderMyRecordsTable = async function() {
 window.downloadMyRecordsAsCSV = async function() {
     // Obtener usuario actual
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    const username = currentUser.username || '';
+    const username = normalizarUsuario(currentUser.username || '');
     if (!username) return alert('No hay usuario activo');
     const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).orderBy('createdAt', 'desc').limit(1000).get();
     if (snapshot.empty) return alert('No tienes registros propios aún.');
@@ -2712,4 +2694,9 @@ if (typeof switchRegistrationMode === 'function') {
             window.renderMyRecordsTable();
         }
     };
+}
+
+// Función para normalizar el nombre de usuario (minúsculas y sin espacios extra)
+function normalizarUsuario(username) {
+    return (username || '').trim().toLowerCase();
 }

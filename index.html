@@ -208,6 +208,9 @@
                             <h3>📋 Mis Registros</h3>
                             <div class="myrecords-actions">
                                 <button class="btn btn-secondary" onclick="downloadMyRecordsAsCSV()">Descargar como Excel</button>
+                                <button class="btn btn-primary" onclick="mostrarMisRegistrosFacil()">Ver Mis Registros</button>
+                                <button class="btn btn-warning" onclick="insertarRegistrosDePrueba()">Cargar Registros de Prueba</button>
+                                <button class="btn btn-danger" onclick="limpiarMisRegistrosLocales()">Limpiar Mis Registros Locales</button>
                             </div>
                             <div class="myrecords-table-container">
                                 <table id="myrecords-table" class="data-table">
@@ -836,6 +839,113 @@
             }
         }
 
+        // === MIS REGISTROS - USANDO DATOS DEL PANEL DE ADMINISTRACIÓN ===
+        window.renderMyRecordsTable = async function() {
+            const tableBody = document.querySelector('#myrecords-table tbody');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
+            
+            try {
+                // Obtener usuario actual
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const username = (currentUser.username || '').trim().toLowerCase();
+                
+                if (!username) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No hay usuario activo</td></tr>';
+                    return;
+                }
+                
+                // Cargar datos desde Firebase (igual que en admin-panel)
+                const snapshot = await window.firebaseDB.votesCollection.get();
+                const allUsers = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Filtrar por el usuario actual
+                const misRegistros = allUsers.filter(user => 
+                    (user.registeredBy || '').trim().toLowerCase() === username
+                );
+                
+                if (misRegistros.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
+                    return;
+                }
+                
+                // Renderizar tabla
+                let rows = '';
+                misRegistros.forEach(d => {
+                    rows += `<tr>
+                        <td>${d.name || ''}</td>
+                        <td>${d.cedula || ''}</td>
+                        <td>${d.telefono || ''}</td>
+                        <td>${d.sexo || ''}</td>
+                        <td>${d.edad || ''}</td>
+                        <td>${d.ubch || ''}</td>
+                        <td>${d.community || ''}</td>
+                        <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
+                    </tr>`;
+                });
+                tableBody.innerHTML = rows;
+                
+                console.log(`✅ Mis Registros: ${misRegistros.length} registros encontrados para ${username}`);
+                
+            } catch (error) {
+                console.error('❌ Error cargando Mis Registros:', error);
+                tableBody.innerHTML = '<tr><td colspan="8">Error cargando registros</td></tr>';
+            }
+        };
+
+        // Descargar los registros del usuario actual como CSV
+        window.downloadMyRecordsAsCSV = async function() {
+            // Consultar solo la cola local
+            let registrosLocales = [];
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
+                try {
+                    registrosLocales = window.offlineQueueManager.obtenerColaLocal();
+                } catch (e) {
+                    console.error('Error consultando cola local:', e);
+                }
+            }
+            if (!registrosLocales || registrosLocales.length === 0) {
+                alert('No tienes registros propios aún.');
+                return;
+            }
+            // Generar CSV con punto y coma y BOM UTF-8
+            let csv = 'Nombre;Cédula;Teléfono;Sexo;Edad;UBCH;Comunidad;Fecha\n';
+            registrosLocales.forEach(d => {
+                csv += `"${d.name||''}";"${d.cedula||''}";"${d.telefono||''}";"${d.sexo||''}";"${d.edad||''}";"${d.ubch||''}";"${d.community||''}";"${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}"\n`;
+            });
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csv], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mis_registros.csv';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        }
+
+        // Mostrar la tabla cada vez que se entra en la sección
+        if (typeof switchRegistrationMode === 'function') {
+            const oldSwitch = switchRegistrationMode;
+            window.switchRegistrationMode = function(mode) {
+                oldSwitch(mode);
+                if (mode === 'myrecords') {
+                    setTimeout(() => {
+                        window.renderMyRecordsTable();
+                    }, 100);
+                }
+            };
+        }
+
+        // Función para normalizar el nombre de usuario (minúsculas y sin espacios extra)
+        function normalizarUsuario(username) {
+            return (username || '').trim().toLowerCase();
+        }
+
         // Sistema de inicialización manejado por init-system.js
 
         // Variables para registro masivo
@@ -1102,7 +1212,7 @@
                     telefono: telefono.replace(/\D/g, ''),
                     sexo: sexo.toUpperCase(),
                     edad: parseInt(edad),
-                    registeredBy: JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin',
+                    registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
                     voted: false,
                     registeredAt: new Date().toISOString(),
                     createdAt: new Date().toISOString()
@@ -1201,6 +1311,192 @@
         } else {
             console.log('❌ Service Worker no soportado en este navegador');
         }
+
+        // Función fácil para mostrar 'Mis Registros' consultando solo los registros del usuario actual desde Firebase
+        async function mostrarMisRegistrosFacil() {
+            const tableBody = document.querySelector('#myrecords-table tbody');
+            if (!tableBody) return;
+            tableBody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
+
+            // Consultar solo la cola local
+            let registrosLocales = [];
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
+                try {
+                    registrosLocales = window.offlineQueueManager.obtenerColaLocal();
+                } catch (e) {
+                    console.error('Error consultando cola local:', e);
+                }
+            }
+
+            if (!registrosLocales || registrosLocales.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
+                return;
+            }
+
+            // Renderizar tabla
+            let rows = '';
+            registrosLocales.forEach(d => {
+                rows += `<tr>
+                    <td>${d.name || ''}</td>
+                    <td>${d.cedula || ''}</td>
+                    <td>${d.telefono || ''}</td>
+                    <td>${d.sexo || ''}</td>
+                    <td>${d.edad || ''}</td>
+                    <td>${d.ubch || ''}</td>
+                    <td>${d.community || ''}</td>
+                    <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
+                </tr>`;
+            });
+            tableBody.innerHTML = rows;
+        }
+
+        // === FUNCIÓN DE PRUEBA: Insertar registros de prueba para el usuario actual ===
+        function insertarRegistrosDePrueba() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const username = (currentUser.username || '').trim().toLowerCase();
+            if (!username) {
+                alert('No hay usuario activo');
+                return;
+            }
+            // Crear 2 registros de prueba para Firebase
+            if (window.firebaseDB && window.firebaseDB.votesCollection) {
+                for (let i = 1; i <= 2; i++) {
+                    const data = {
+                        name: `Prueba Firebase ${i}`,
+                        cedula: `9000000${i}`,
+                        telefono: `0412000000${i}`,
+                        sexo: i % 2 === 0 ? 'F' : 'M',
+                        edad: 20 + i,
+                        ubch: 'UBCH PRUEBA',
+                        community: 'Comunidad Prueba',
+                        registeredBy: username,
+                        voted: false,
+                        registeredAt: new Date().toISOString(),
+                        createdAt: new Date().toISOString()
+                    };
+                    window.firebaseDB.votesCollection.add(data);
+                }
+            }
+            // Crear 2 registros de prueba en la cola local
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.guardarEnColaLocal === 'function') {
+                for (let i = 1; i <= 2; i++) {
+                    const data = {
+                        name: `Prueba Local ${i}`,
+                        cedula: `8000000${i}`,
+                        telefono: `0412000000${i}`,
+                        sexo: i % 2 === 0 ? 'F' : 'M',
+                        edad: 30 + i,
+                        ubch: 'UBCH LOCAL',
+                        community: 'Comunidad Local',
+                        registeredBy: username,
+                        voted: false,
+                        registeredAt: new Date().toISOString(),
+                        createdAt: new Date().toISOString()
+                    };
+                    window.offlineQueueManager.guardarEnColaLocal(data);
+                }
+            }
+            setTimeout(mostrarMisRegistrosFacil, 1200);
+        }
+
+        // Eliminar la creación de los botones de prueba y migración en la sección 'Mis Registros'
+        // Solo dejar los botones principales
+        document.addEventListener('DOMContentLoaded', function() {
+            const myRecordsActions = document.querySelector('.myrecords-actions');
+            if (myRecordsActions) {
+                // Eliminar todos los botones excepto los dos principales
+                const allowed = ['Descargar como Excel', 'Ver Mis Registros'];
+                Array.from(myRecordsActions.querySelectorAll('button')).forEach(btn => {
+                    if (!allowed.includes(btn.textContent.trim())) {
+                        btn.remove();
+                    }
+                });
+            }
+        });
+
+        // === FUNCIÓN DE MIGRACIÓN: Normalizar todos los 'registeredBy' en Firebase ===
+        // (Eliminada por limpieza de interfaz)
+        // ... existing code ...
+        // Agregar botón de migración en la sección 'Mis Registros' (solo pruebas)
+        // (Eliminado por limpieza de interfaz)
+        // ... existing code ...
+
+        // === FUNCIÓN PARA LIMPIAR LA COLA LOCAL ===
+        function limpiarMisRegistrosLocales() {
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.limpiarColaLocal === 'function') {
+                if (confirm('¿Seguro que quieres borrar todos tus registros locales?')) {
+                    window.offlineQueueManager.limpiarColaLocal();
+                    mostrarMisRegistrosFacil();
+                }
+            } else {
+                alert('No se puede limpiar la cola local.');
+            }
+        }
+
+        // Agregar botón de limpiar cola local en la sección 'Mis Registros'
+        document.addEventListener('DOMContentLoaded', function() {
+            const myRecordsActions = document.querySelector('.myrecords-actions');
+            if (myRecordsActions) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-danger';
+                btn.textContent = 'Limpiar Mis Registros Locales';
+                btn.onclick = limpiarMisRegistrosLocales;
+                myRecordsActions.appendChild(btn);
+            }
+        });
+
+        // Definir switchRegistrationMode globalmente para evitar errores de referencia
+        window.switchRegistrationMode = function(mode) {
+            const individualDiv = document.getElementById('individual-registration');
+            const bulkDiv = document.getElementById('bulk-registration');
+            const myRecordsDiv = document.getElementById('myrecords-registration');
+            const modeButtons = document.querySelectorAll('.mode-btn');
+            // Actualizar botones
+            modeButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('active');
+                }
+            });
+            // Mostrar/ocultar secciones
+            if (mode === 'individual') {
+                individualDiv.style.display = 'block';
+                bulkDiv.style.display = 'none';
+                myRecordsDiv.style.display = 'none';
+            } else if (mode === 'bulk') {
+                individualDiv.style.display = 'none';
+                bulkDiv.style.display = 'block';
+                myRecordsDiv.style.display = 'none';
+            } else if (mode === 'myrecords') {
+                individualDiv.style.display = 'none';
+                bulkDiv.style.display = 'none';
+                myRecordsDiv.style.display = 'block';
+            }
+            console.log(`✅ Modo de registro cambiado a: ${mode}`);
+        };
+
+        // Asegurar que el contenedor de notificaciones esté presente antes de </body>
+        if (!document.getElementById('notification-container')) {
+            const notifDiv = document.createElement('div');
+            notifDiv.id = 'notification-container';
+            document.body.appendChild(notifDiv);
+        }
+
+        // === FUNCIÓN PARA LIMPIAR TODO (local y Firebase) ===
+        // (Eliminada por seguridad y limpieza de interfaz)
+        // ... existing code ...
+        // Eliminar el botón de limpieza total si existe
+        document.addEventListener('DOMContentLoaded', function() {
+            const myRecordsActions = document.querySelector('.myrecords-actions');
+            if (myRecordsActions) {
+                Array.from(myRecordsActions.querySelectorAll('button')).forEach(btn => {
+                    if (btn.textContent.trim() === 'Limpiar TODO (local y Firebase)') {
+                        btn.remove();
+                    }
+                });
+            }
+        });
     </script>
+    <div id="notification-container"></div>
 </body>
 </html>

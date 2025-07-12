@@ -120,8 +120,22 @@ class RealtimeNotificationSystem {
                 window.notificationSystem = new NotificationSystem();
                 window.notificationSystem.show(message, type, true, 5000);
             } else {
-                // No mostrar nada si no está disponible
-                console.warn('No se pudo mostrar la notificación visual. notificationSystem no está disponible.');
+                // Fallback visual si no está disponible
+                const fallbackDiv = document.createElement('div');
+                fallbackDiv.className = 'notification fallback-notification ' + type;
+                fallbackDiv.textContent = `Notificación (${type}): ${message}`;
+                fallbackDiv.style.position = 'fixed';
+                fallbackDiv.style.top = '30px';
+                fallbackDiv.style.right = '30px';
+                fallbackDiv.style.background = '#fff';
+                fallbackDiv.style.border = '2px solid #e5e7eb';
+                fallbackDiv.style.borderLeft = `5px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'}`;
+                fallbackDiv.style.padding = '1rem 1.5rem';
+                fallbackDiv.style.borderRadius = '0.75rem';
+                fallbackDiv.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+                fallbackDiv.style.zIndex = 10001;
+                document.body.appendChild(fallbackDiv);
+                setTimeout(() => { fallbackDiv.remove(); }, 4000);
             }
         }
     }

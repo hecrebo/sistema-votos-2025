@@ -859,6 +859,131 @@
                 padding: 10px 2px 8px 2px;
             }
         }
+
+        /* Tarjeta de notificaciones: ancho completo de la página */
+        .notification-panel {
+            width: 100%;
+            max-width: none;
+            margin-top: 40px !important;
+            margin-bottom: 40px !important;
+            box-shadow: 0 4px 24px rgba(102,126,234,0.10);
+            border-radius: 18px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 22px;
+        }
+        .notification-panel h3 {
+            width: 100%;
+            text-align: center;
+            font-size: 1.35em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        .notification-metrics {
+            display: flex;
+            flex-direction: row;
+            gap: 24px;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .metric-card {
+            background: #f6f8fa;
+            border-radius: 12px;
+            padding: 18px 24px;
+            min-width: 120px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+        }
+        .metric-number {
+            font-size: 2.1em;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 2px;
+        }
+        .metric-label {
+            font-size: 1em;
+            color: #666;
+        }
+        .notification-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+        }
+        .notification-test-group, .notification-actions, .notification-roles {
+            display: flex;
+            flex-direction: row;
+            gap: 14px;
+            justify-content: center;
+            width: 100%;
+        }
+        .notification-textarea {
+            width: 100%;
+            min-width: 220px;
+            min-height: 60px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+            padding: 10px;
+            box-sizing: border-box;
+            margin-bottom: 0;
+        }
+        .notification-hint {
+            color: #888;
+            font-size: 0.98em;
+            margin-bottom: 2px;
+            margin-left: 2px;
+            text-align: center;
+            width: 100%;
+        }
+        @media (max-width: 700px) {
+            .notification-panel {
+                width: 100vw;
+                max-width: 100vw;
+                padding: 12px 2vw 10px 2vw;
+            }
+            .notification-metrics {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .notification-section {
+                gap: 10px;
+            }
+            .notification-test-group, .notification-actions, .notification-roles {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+
+        /* Separación profesional entre tarjetas */
+        .admin-card {
+            margin-bottom: 40px !important;
+            box-shadow: 0 4px 24px rgba(102,126,234,0.10);
+            border-radius: 18px;
+            background: #fff;
+        }
+        .notification-panel {
+            margin-top: 40px !important;
+            margin-bottom: 40px !important;
+            box-shadow: 0 4px 24px rgba(102,126,234,0.10);
+            border-radius: 18px;
+            background: #fff;
+        }
+        /* Tarjeta de mantenimiento: al final y expandida al 100% */
+        .admin-card.mantenimiento {
+            width: 100%;
+            max-width: none;
+            margin-top: 40px !important;
+            margin-bottom: 40px !important;
+            box-shadow: 0 4px 24px rgba(102,126,234,0.10);
+            border-radius: 18px;
+            background: #fff;
+        }
     </style>
 </head>
 <body>
@@ -987,7 +1112,7 @@
             </div>
             
             <!-- Mantenimiento -->
-            <div class="admin-card">
+            <div class="admin-card mantenimiento">
                 <h3>
                     <span class="status-indicator status-warning" id="maintenance-status"></span>
                     Mantenimiento
@@ -997,7 +1122,7 @@
                     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpiar Todo</button>
                     <button class="btn btn-primary" onclick="optimizeSystem()">⚡ Optimizar</button>
                 </div>
-                <div class="log-container" id="maintenance-logs">
+                <div class="log-container" id="maintenance-logs"></div>
             </div>
 
             <!-- Sistema de Notificaciones -->
@@ -1034,8 +1159,6 @@
                         <button class="btn btn-info" onclick="sendRoleNotificationFromAdmin('verificador')">✅ Verificadores</button>
                         <button class="btn btn-secondary" onclick="sendRoleNotificationFromAdmin('usuario')">👥 Usuarios</button>
                     </div>
-                </div>
-            </div>
                 </div>
             </div>
         </div>
@@ -1691,7 +1814,7 @@
                     telefono: telefono.replace(/\D/g, ''),
                     sexo: sexo.toUpperCase(),
                     edad: parseInt(edad),
-                    registeredBy: JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin',
+                    registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
                     voted: false,
                     registeredAt: new Date().toISOString(),
                     createdAt: new Date().toISOString()
@@ -1884,18 +2007,16 @@
         });
 
         // Al final de script.js
-        window.votingSystem = new VotingSystemFirebase();
+        // window.votingSystem = new VotingSystemFirebase(); // Eliminado según el error
         
         // Inicializar sistema automático
         if (typeof AutoInitSystem !== 'undefined') {
             window.autoInitSystem = new AutoInitSystem();
         }
-
-        // Verificar que no hay errores
-        console.log(window.autoInitSystem.getSystemStatus());
     </script>
     <script src="notification-system.js"></script>
     <script src="realtime-notifications.js"></script>
     <script src="auto-init.js"></script>
+    <div id="notification-container"></div>
 </body>
 </html> 

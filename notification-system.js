@@ -23,6 +23,8 @@ class NotificationSystem {
         // Limpiar notificaciones existentes al inicializar
         this.container.innerHTML = '';
         this.notifications = [];
+
+        // Eliminar el bloque de estilos flexbox horizontal para el contenedor de notificaciones
     }
 
     /**
@@ -227,7 +229,22 @@ window.showNotification = (message, type = 'info', autoDismiss = false) => {
     } else {
         // Fallback simple si el sistema no está disponible
         console.warn('Sistema de notificaciones no disponible, usando fallback');
-        alert(`Notificación (${type}): ${message}`);
+        // En vez de alert, crear un div flotante temporal
+        const fallbackDiv = document.createElement('div');
+        fallbackDiv.className = 'notification fallback-notification ' + type;
+        fallbackDiv.textContent = `Notificación (${type}): ${message}`;
+        fallbackDiv.style.position = 'fixed';
+        fallbackDiv.style.top = '30px';
+        fallbackDiv.style.right = '30px';
+        fallbackDiv.style.background = '#fff';
+        fallbackDiv.style.border = '2px solid #e5e7eb';
+        fallbackDiv.style.borderLeft = `5px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'}`;
+        fallbackDiv.style.padding = '1rem 1.5rem';
+        fallbackDiv.style.borderRadius = '0.75rem';
+        fallbackDiv.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+        fallbackDiv.style.zIndex = 10001;
+        document.body.appendChild(fallbackDiv);
+        setTimeout(() => { fallbackDiv.remove(); }, 4000);
     }
 };
 
