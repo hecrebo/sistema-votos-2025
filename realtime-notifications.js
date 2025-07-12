@@ -6,7 +6,18 @@ class RealtimeNotificationSystem {
         this.notificationsRef = null;
         this.currentUser = null;
         this.isInitialized = false;
+        this.lastSeenTimestamp = this.getLastSeenTimestamp();
         this.init();
+    }
+
+    getLastSeenTimestamp() {
+        return localStorage.getItem('lastSeenNotificationTimestamp') || null;
+    }
+
+    setLastSeenTimestamp(ts) {
+        if (ts) {
+            localStorage.setItem('lastSeenNotificationTimestamp', ts);
+        }
     }
 
     async init() {
@@ -38,12 +49,25 @@ class RealtimeNotificationSystem {
             .orderBy('timestamp', 'desc')
             .limit(10) // Solo las últimas 10 notificaciones
             .onSnapshot((snapshot) => {
+                let maxTimestamp = this.lastSeenTimestamp;
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === 'added') {
                         const notification = change.doc.data();
+                        // Mostrar solo si es nueva
+                        if (!notification.timestamp || (this.lastSeenTimestamp && notification.timestamp <= this.lastSeenTimestamp)) {
+                            return;
+                        }
                         this.showRealtimeNotification(notification);
+                        // Actualizar el último timestamp visto
+                        if (!maxTimestamp || notification.timestamp > maxTimestamp) {
+                            maxTimestamp = notification.timestamp;
+                        }
                     }
                 });
+                if (maxTimestamp) {
+                    this.lastSeenTimestamp = maxTimestamp;
+                    this.setLastSeenTimestamp(maxTimestamp);
+                }
             }, (error) => {
                 console.error('❌ Error en listener de notificaciones:', error);
             });
