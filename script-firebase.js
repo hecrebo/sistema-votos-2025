@@ -598,9 +598,7 @@ class VotingSystemFirebase extends VotingSystem {
                 this.showMessage('✅ Registro guardado localmente. Se sincronizará automáticamente cuando haya conexión.', 'success', 'registration');
                 
                 // Enviar notificación global
-                if (window.sendGlobalNotification) {
-                    window.sendGlobalNotification(`👤 Nuevo registro: ${name} en ${community}`, 'info', true);
-                }
+                showNotification(`�� Nuevo registro: ${name} en ${community}`, 'info', true);
                 
                 // Generar mensaje de agradecimiento
             await this.generateThankYouMessage(name, ubch, community);
@@ -621,9 +619,7 @@ class VotingSystemFirebase extends VotingSystem {
                 this.showMessage('✅ Registro guardado exitosamente.', 'success', 'registration');
                 
                 // Enviar notificación global
-                if (window.sendGlobalNotification) {
-                    window.sendGlobalNotification(`👤 Nuevo registro: ${name} en ${community}`, 'success', true);
-                }
+                showNotification(`👤 Nuevo registro: ${name} en ${community}`, 'success', true);
                 
                 await this.generateThankYouMessage(name, ubch, community);
                 form.reset();
@@ -700,9 +696,7 @@ class VotingSystemFirebase extends VotingSystem {
             this.showMessage('¡Voto confirmado con éxito!', 'success', 'check-in');
             
             // Enviar notificación global
-            if (window.sendGlobalNotification) {
-                window.sendGlobalNotification(`🎯 Voto confirmado: ${vote.name} en ${vote.community}`, 'success', true);
-            }
+            showNotification(`🎯 Voto confirmado: ${vote.name} en ${vote.community}`, 'success', true);
             
             document.getElementById('cedula-search').value = '';
             document.getElementById('search-results').innerHTML = '';
@@ -743,9 +737,7 @@ class VotingSystemFirebase extends VotingSystem {
             await this.deleteVoteFromFirebase(this.voteToDelete);
             
             // Enviar notificación global
-            if (window.sendGlobalNotification) {
-                window.sendGlobalNotification(`❌ Registro eliminado del sistema`, 'warning', true);
-            }
+            showNotification(`❌ Registro eliminado del sistema`, 'warning', true);
             
             // Recargar datos desde Firebase para reflejar el cambio
             await this.loadDataFromFirebase();
