@@ -270,4 +270,93 @@ body, html {
 /* Mejoras para leyendas y tooltips de Chart.js */
 .chartjs-render-monitor {
     font-family: 'Inter', Arial, sans-serif !important;
+}
+
+/* Dashboard avanzado */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  margin: 30px 0;
+}
+.dashboard-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(102,126,234,0.10);
+  padding: 24px 18px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.dashboard-number {
+  font-size: 2.2em;
+  font-weight: bold;
+  color: #667eea;
+  margin: 0;
+}
+.dashboard-card h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 1.1em;
+}
+.dashboard-chart {
+  min-height: 260px;
+}
+.dashboard-filtros {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.dashboard-select {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 1em;
+  background: #fff;
+  color: #333;
+  min-width: 160px;
+  box-shadow: 0 2px 8px rgba(102,126,234,0.04);
+  transition: border 0.2s;
+}
+.dashboard-select:focus {
+  border: 1.5px solid #667eea;
+  outline: none;
+}
+@media (max-width: 700px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .dashboard-card {
+    padding: 14px 6px;
+  }
+  .dashboard-number {
+    font-size: 1.5em;
+  }
+} 
+
+.projection-fixed-btn {
+  position: fixed;
+  top: 3px;
+  right: 20px;
+  z-index: 2000;
+  box-shadow: 0 4px 16px rgba(102,126,234,0.18);
+  padding: 8px 18px;
+  font-size: 1em;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-weight: 600;
+  transition: background 0.2s, transform 0.2s;
+}
+.projection-fixed-btn:hover {
+  background: #667eea;
+  transform: scale(1.05);
+}
+/* Ocultar el botón cuando el overlay de proyección está activo */
+#projection-overlay[style*="display: flex"] ~ .projection-fixed-btn,
+#projection-overlay[style*="display: block"] ~ .projection-fixed-btn {
+  display: none !important;
 } 

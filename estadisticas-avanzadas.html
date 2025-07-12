@@ -31,6 +31,64 @@
         </header>
 
         <main class="main-content stats-container">
+            <!-- DASHBOARD AVANZADO -->
+            <div class="dashboard-filtros" style="display:flex; gap:18px; align-items:center; margin-bottom:18px;">
+                <label for="filtro-comunidad">Comunidad:</label>
+                <select id="filtro-comunidad" class="dashboard-select">
+                    <option value="">Todas</option>
+                </select>
+                <label for="filtro-ubch">Centro de Votación:</label>
+                <select id="filtro-ubch" class="dashboard-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <section class="dashboard-grid" style="margin-bottom:40px;">
+                <div class="dashboard-card">
+                    <h3>👥 Registrados</h3>
+                    <p id="dashboard-total-registrados" class="dashboard-number">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3>✅ Votos Confirmados</h3>
+                    <p id="dashboard-total-votos" class="dashboard-number">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3>📈 % Participación</h3>
+                    <p id="dashboard-porcentaje-participacion" class="dashboard-number">0%</p>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Registros por Mes</h3>
+                    <canvas id="dashboard-registros-mes-chart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Votos por Comunidad</h3>
+                    <canvas id="dashboard-votos-comunidad-chart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Crecimiento de Registros</h3>
+                    <canvas id="dashboard-crecimiento-chart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Flujo de Confirmación de Votos por Hora (6am - 10pm)</h3>
+                    <canvas id="dashboard-flujo-horas-chart"></canvas>
+                </div>
+                <div class="dashboard-card">
+                    <h3>🏆 Top Comunidades</h3>
+                    <ul id="dashboard-ranking-comunidades"></ul>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Distribución por Sexo</h3>
+                    <canvas id="dashboard-sexo-chart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Distribución por Edad</h3>
+                    <canvas id="dashboard-edad-chart"></canvas>
+                </div>
+                <div class="dashboard-card">
+                    <h3>🕒 Actividad Reciente</h3>
+                    <ul id="dashboard-actividad-reciente"></ul>
+                </div>
+            </section>
+
             <!-- Tarjetas resumen -->
             <div class="stats-summary" style="margin-bottom:40px;">
                 <div class="stat-summary">
@@ -111,6 +169,30 @@
         <footer class="footer">
             <p>© 2025 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>
         </footer>
+
+        <button id="projection-mode-btn" class="btn btn-primary projection-fixed-btn">Modo Proyección</button>
+        <div id="projection-overlay" class="projection-view" style="display:none;">
+            <div class="projection-header">
+                <h1>Proyección en Tiempo Real</h1>
+                <button id="exit-projection-btn" class="btn btn-danger">Salir</button>
+            </div>
+            <div class="projection-content">
+                <div class="projection-main">
+                    <h2>Participación General</h2>
+                    <div class="projection-number" id="projection-total-votos">0</div>
+                    <div class="projection-label">Votos Confirmados</div>
+                    <div class="projection-progress">
+                        <div class="projection-progress-fill" id="projection-progress-fill"></div>
+                    </div>
+                    <p class="projection-text" id="projection-text">0 de 0 personas</p>
+                    <div class="projection-label" id="projection-porcentaje">0%</div>
+                </div>
+                <div class="projection-stats">
+                    <h2>Top 5 Comunidades</h2>
+                    <div class="projection-list" id="projection-ranking-list"></div>
+                </div>
+            </div>
+        </div>
 
         <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
         <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>

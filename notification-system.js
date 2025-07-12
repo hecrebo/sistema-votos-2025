@@ -11,20 +11,25 @@ class NotificationSystem {
     }
 
     init() {
-        // Crear contenedor de notificaciones si no existe
-        if (!document.getElementById('notification-container')) {
-            this.container = document.createElement('div');
-            this.container.id = 'notification-container';
-            document.body.appendChild(this.container);
-        } else {
-            this.container = document.getElementById('notification-container');
+        try {
+            // Crear contenedor de notificaciones si no existe
+            if (!document.getElementById('notification-container')) {
+                this.container = document.createElement('div');
+                this.container.id = 'notification-container';
+                document.body.appendChild(this.container);
+            } else {
+                this.container = document.getElementById('notification-container');
+            }
+            
+            // Limpiar notificaciones existentes al inicializar
+            if (this.container) {
+                this.container.innerHTML = '';
+                this.notifications = [];
+            }
+        } catch (error) {
+            // Error silencioso si no se puede crear el contenedor
+            console.warn('No se pudo inicializar el contenedor de notificaciones');
         }
-        
-        // Limpiar notificaciones existentes al inicializar
-        this.container.innerHTML = '';
-        this.notifications = [];
-
-        // Eliminar el bloque de estilos flexbox horizontal para el contenedor de notificaciones
     }
 
     /**
@@ -36,8 +41,15 @@ class NotificationSystem {
      */
     show(message, type = 'info', autoDismiss = false, duration = 5000) {
         if (!message || !message.trim()) {
-            console.warn('No se puede mostrar una notificación vacía.');
             return;
+        }
+
+        // Verificar que el contenedor existe
+        if (!this.container) {
+            this.init();
+            if (!this.container) {
+                return; // No mostrar si no hay contenedor
+            }
         }
 
         // Crear la notificación
@@ -69,9 +81,6 @@ class NotificationSystem {
 
         // Actualizar contador si existe
         this.updateCount();
-        
-        // Log para debugging
-        console.log(`📨 Notificación mostrada: ${message} (${type})`);
         
         return notification;
     }
@@ -114,60 +123,68 @@ class NotificationSystem {
     }
 
     /**
+     * Cierra una notificación específica
+     */
+    dismiss(notification) {
+        if (notification && notification.parentNode) {
+            notification.classList.add('notification-dismissing');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+                // Remover de la lista de notificaciones activas
+                const index = this.notifications.indexOf(notification);
+                if (index > -1) {
+                    this.notifications.splice(index, 1);
+                }
+                this.updateCount();
+            }, 300);
+        }
+    }
+
+    /**
      * Limita el número de notificaciones visibles
      */
     limitNotifications() {
         while (this.notifications.length > this.maxNotifications) {
             const oldestNotification = this.notifications.shift();
             if (oldestNotification && oldestNotification.parentNode) {
-                this.dismiss(oldestNotification);
+                oldestNotification.remove();
             }
         }
     }
 
     /**
-     * Desvanece y elimina una notificación
-     * @param {HTMLElement} notificationElement - Elemento de notificación a eliminar
-     */
-    dismiss(notificationElement) {
-        if (!notificationElement) return;
-        
-        notificationElement.classList.add('fade-out');
-        notificationElement.addEventListener('transitionend', () => {
-            if (notificationElement.parentNode) {
-                notificationElement.remove();
-            }
-            // Remover de la lista de notificaciones activas
-            const index = this.notifications.indexOf(notificationElement);
-            if (index > -1) {
-                this.notifications.splice(index, 1);
-            }
-            this.updateCount();
-        }, { once: true });
-    }
-
-    /**
-     * Actualiza el contador de notificaciones activas
+     * Actualiza el contador de notificaciones
      */
     updateCount() {
         const countElement = document.getElementById('notification-count');
         if (countElement) {
-            const count = this.notifications.length;
-            countElement.textContent = count;
-            countElement.style.display = count > 0 ? 'block' : 'none';
+            countElement.textContent = this.notifications.length;
+            countElement.style.display = this.notifications.length > 0 ? 'block' : 'none';
         }
     }
 
     /**
-     * Limpia todas las notificaciones activas
+     * Limpia todas las notificaciones
      */
     clearAll() {
-        const notificationsToRemove = [...this.notifications];
-        notificationsToRemove.forEach(notification => {
-            this.dismiss(notification);
-        });
+        if (this.container) {
+            this.container.innerHTML = '';
+        }
         this.notifications = [];
         this.updateCount();
+    }
+
+    /**
+     * Obtiene el estado del sistema de notificaciones
+     */
+    getStatus() {
+        return {
+            containerExists: !!this.container,
+            activeNotifications: this.notifications.length,
+            maxNotifications: this.maxNotifications
+        };
     }
 
     /**
@@ -186,36 +203,9 @@ class NotificationSystem {
 
     /**
      * Envía una notificación personalizada
-     * @param {string} message - Mensaje personalizado
-     * @param {string} type - Tipo de notificación
-     * @param {boolean} autoDismiss - Si debe desaparecer automáticamente
      */
     sendCustom(message, type = 'info', autoDismiss = false) {
-        if (!message || !message.trim()) {
-            this.show('Por favor, escribe un mensaje antes de enviar.', 'warning', true);
-            return;
-        }
-        
         this.show(message, type, autoDismiss);
-    }
-
-    /**
-     * Verifica si el sistema está funcionando correctamente
-     */
-    isWorking() {
-        return this.container !== null && this.container.parentNode !== null;
-    }
-
-    /**
-     * Obtiene el estado del sistema
-     */
-    getStatus() {
-        return {
-            working: this.isWorking(),
-            activeNotifications: this.notifications.length,
-            maxNotifications: this.maxNotifications,
-            containerExists: !!this.container
-        };
     }
 }
 
@@ -228,7 +218,6 @@ window.showNotification = (message, type = 'info', autoDismiss = false) => {
         return window.notificationSystem.show(message, type, autoDismiss);
     } else {
         // Fallback simple si el sistema no está disponible
-        console.warn('Sistema de notificaciones no disponible, usando fallback');
         // En vez de alert, crear un div flotante temporal
         const fallbackDiv = document.createElement('div');
         fallbackDiv.className = 'notification fallback-notification ' + type;
@@ -273,7 +262,7 @@ window.sendCustomNotification = () => {
 // Verificar que el sistema esté funcionando al cargar
 document.addEventListener('DOMContentLoaded', () => {
     if (window.notificationSystem) {
-        console.log('✅ Sistema de notificaciones inicializado:', window.notificationSystem.getStatus());
+        // Log silencioso para verificar inicialización
     }
 });
 

@@ -16,12 +16,6 @@
  "launch_handler": {
    "client_mode": "navigate-existing"
  },
- "protocol_handlers": [
-   {
-     "protocol": "web+votos2025",
-     "url": "/index.html?action=%s"
-   }
- ],
  "shortcuts": [
    {
      "name": "Registrar Voto",

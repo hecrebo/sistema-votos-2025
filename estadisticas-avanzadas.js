@@ -6,6 +6,7 @@ class EstadisticasAvanzadas {
         this.communityData = {};
         this.charts = {};
         this.currentUser = this.getCurrentUser();
+        this.projectionInterval = null;
         this.init();
     }
 
@@ -14,6 +15,7 @@ class EstadisticasAvanzadas {
         this.setupEventListeners();
         this.renderAllStatistics(); // Solo una vez aquí
         this.updateUserInfo();
+        this.setupDashboardFilters();
         // Actualización automática cada 30 segundos, pero solo si no está ya en proceso
         if (!this.updateInterval) {
             this.updateInterval = setInterval(async () => {
@@ -24,6 +26,14 @@ class EstadisticasAvanzadas {
                 this.isRendering = false;
             }, 30000);
         }
+        // Botón modo proyección
+        document.getElementById('projection-mode-btn').onclick = () => this.enterProjectionMode();
+        document.getElementById('exit-projection-btn').onclick = () => this.exitProjectionMode();
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('projection-overlay').style.display !== 'none' && (e.key === 'Escape' || e.key === 'Esc')) {
+                this.exitProjectionMode();
+            }
+        });
     }
 
     getCurrentUser() {
@@ -126,9 +136,7 @@ class EstadisticasAvanzadas {
 
     renderAllStatistics() {
         this.renderGeneralStatistics();
-        // Eliminar llamadas a funciones de secciones antiguas
-        // this.renderUBCHStatistics();
-        // this.renderCommunityStatistics();
+        this.renderDashboardAdvanced();
     }
 
     renderGeneralStatistics() {
@@ -153,6 +161,127 @@ class EstadisticasAvanzadas {
         this.renderAllCommunities();
         this.renderUBCHChart();
         this.renderCommunityChart();
+    }
+
+    renderDashboardAdvanced() {
+        const filteredVotes = this.getFilteredVotes();
+        // 1. KPIs principales
+        const totalRegistrados = filteredVotes.length;
+        const totalVotos = filteredVotes.filter(v => v.voted).length;
+        const porcentaje = totalRegistrados ? ((totalVotos / totalRegistrados) * 100).toFixed(1) : 0;
+        document.getElementById('dashboard-total-registrados').textContent = totalRegistrados.toLocaleString();
+        document.getElementById('dashboard-total-votos').textContent = totalVotos.toLocaleString();
+        document.getElementById('dashboard-porcentaje-participacion').textContent = porcentaje + '%';
+
+        // 2. Registros por mes (igual que antes, pero solo con filteredVotes)
+        const registrosPorMes = Array(12).fill(0);
+        filteredVotes.forEach(r => {
+            if (r.registeredAt) {
+                const mes = new Date(r.registeredAt).getMonth();
+                registrosPorMes[mes]++;
+            }
+        });
+        this.renderBarChart('dashboard-registros-mes-chart', {
+            labels: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+            data: registrosPorMes,
+            label: 'Registros',
+            color: '#667eea'
+        });
+
+        // 3. Votos por comunidad
+        const votosPorComunidad = {};
+        filteredVotes.forEach(r => {
+            if (!votosPorComunidad[r.community]) votosPorComunidad[r.community] = 0;
+            if (r.voted) votosPorComunidad[r.community]++;
+        });
+        const comunidades = Object.keys(votosPorComunidad);
+        const votosCom = comunidades.map(c => votosPorComunidad[c]);
+        this.renderBarChart('dashboard-votos-comunidad-chart', {
+            labels: comunidades,
+            data: votosCom,
+            label: 'Votos',
+            color: '#43e97b'
+        });
+
+        // 4. Crecimiento de registros (acumulado del mes en curso)
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const registrosPorDia = Array(daysInMonth).fill(0);
+        filteredVotes.forEach(r => {
+            if (r.registeredAt) {
+                const fecha = new Date(r.registeredAt);
+                if (fecha.getFullYear() === year && fecha.getMonth() === month) {
+                    const dia = fecha.getDate() - 1;
+                    registrosPorDia[dia]++;
+                }
+            }
+        });
+        let acumuladoMes = 0;
+        const crecimientoMes = registrosPorDia.map(v => (acumuladoMes += v));
+        this.renderLineChart('dashboard-crecimiento-chart', {
+            labels: Array.from({length: daysInMonth}, (_,i) => (i+1).toString()),
+            data: crecimientoMes,
+            label: 'Acumulado mes',
+            color: '#764ba2'
+        });
+
+        // 5. Ranking de comunidades
+        const ranking = comunidades.map(c => [c, votosPorComunidad[c]])
+            .sort((a,b) => b[1]-a[1]).slice(0,5);
+        const rankingList = document.getElementById('dashboard-ranking-comunidades');
+        rankingList.innerHTML = ranking.map(([com, count]) => `<li>${com}: ${count} votos</li>`).join('');
+
+        // 6. Distribución por sexo
+        const sexo = { M: 0, F: 0 };
+        filteredVotes.forEach(r => { if (r.sexo) sexo[r.sexo] = (sexo[r.sexo]||0)+1; });
+        this.renderPieChart('dashboard-sexo-chart', {
+            labels: ['Masculino','Femenino'],
+            data: [sexo.M, sexo.F],
+            colors: ['#36a2eb','#ff6384']
+        });
+
+        // 7. Distribución por edad
+        const edades = [0,0,0,0,0];
+        filteredVotes.forEach(r => {
+            if (!r.edad) return;
+            if (r.edad < 26) edades[0]++;
+            else if (r.edad < 36) edades[1]++;
+            else if (r.edad < 46) edades[2]++;
+            else if (r.edad < 56) edades[3]++;
+            else edades[4]++;
+        });
+        this.renderBarChart('dashboard-edad-chart', {
+            labels: ['16-25','26-35','36-45','46-55','56+'],
+            data: edades,
+            label: 'Personas',
+            color: '#ffc107'
+        });
+
+        // 8. Actividad reciente
+        const recientes = filteredVotes
+            .sort((a,b) => new Date(b.registeredAt)-new Date(a.registeredAt))
+            .slice(0,5);
+        document.getElementById('dashboard-actividad-reciente').innerHTML = recientes
+            .map(r => `<li>${r.name} (${r.cedula}) - ${r.registeredAt ? new Date(r.registeredAt).toLocaleString('es-VE') : ''}</li>`)
+            .join('');
+
+        // 9. Flujo de confirmación de votos por hora (6am-10pm)
+        const horas = Array(17).fill(0); // 6am (0) a 22pm (16)
+        filteredVotes.forEach(r => {
+            if (r.voted && r.registeredAt) {
+                const fecha = new Date(r.registeredAt);
+                const h = fecha.getHours();
+                if (h >= 6 && h <= 22) horas[h-6]++;
+            }
+        });
+        this.renderLineChart('dashboard-flujo-horas-chart', {
+            labels: Array.from({length:17}, (_,i) => `${i+6}:00`),
+            data: horas,
+            label: 'Votos confirmados',
+            color: '#28a745'
+        });
     }
 
     renderAgeDistribution() {
@@ -1119,6 +1248,162 @@ class EstadisticasAvanzadas {
             });
             doc.save(`${type === 'cv' ? 'CV' : 'Comunidad'}_${name}_detalle.pdf`);
         };
+    }
+
+    renderBarChart(canvasId, {labels, data, label, color}) {
+        if (this.charts[canvasId]) this.charts[canvasId].destroy();
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label,
+                    data,
+                    backgroundColor: color,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
+            }
+        });
+    }
+
+    renderLineChart(canvasId, {labels, data, label, color}) {
+        if (this.charts[canvasId]) this.charts[canvasId].destroy();
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label,
+                    data,
+                    fill: false,
+                    borderColor: color,
+                    backgroundColor: color,
+                    tension: 0.3,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
+            }
+        });
+    }
+
+    renderPieChart(canvasId, {labels, data, colors}) {
+        if (this.charts[canvasId]) this.charts[canvasId].destroy();
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels,
+                datasets: [{
+                    data,
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom', labels: { color: '#333' } } }
+            }
+        });
+    }
+
+    enterProjectionMode() {
+        const overlay = document.getElementById('projection-overlay');
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        this.renderProjection();
+        this.projectionInterval = setInterval(() => this.renderProjection(), 30000);
+    }
+
+    exitProjectionMode() {
+        const overlay = document.getElementById('projection-overlay');
+        overlay.style.display = 'none';
+        document.body.style.overflow = '';
+        if (this.projectionInterval) clearInterval(this.projectionInterval);
+    }
+
+    setupDashboardFilters() {
+        // Esperar hasta que los selects existan en el DOM
+        const selCom = document.getElementById('filtro-comunidad');
+        const selUbch = document.getElementById('filtro-ubch');
+        if (!selCom || !selUbch) {
+            setTimeout(() => this.setupDashboardFilters(), 100);
+            return;
+        }
+        // Usar mapping de UBCH igual que en index
+        let mapping = (this.ubchData && this.ubchData.mapping) ? this.ubchData.mapping : (window.firebaseDB && window.firebaseDB.defaultUBCHConfig ? window.firebaseDB.defaultUBCHConfig : {});
+        // Llenar filtro de CV/UBCH
+        const ubchList = Object.keys(mapping).sort();
+        selUbch.innerHTML = '<option value="">Todos</option>' + ubchList.map(u => `<option value="${u}">${u}</option>`).join('');
+        // Llenar filtro de comunidad
+        const comunidadesSet = new Set();
+        Object.values(mapping).forEach(arr => arr.forEach(com => comunidadesSet.add(com)));
+        const comunidades = Array.from(comunidadesSet).sort();
+        selCom.innerHTML = '<option value="">Todas</option>' + comunidades.map(c => `<option value="${c}">${c}</option>`).join('');
+        // Lógica: solo uno activo a la vez
+        selCom.onchange = () => {
+            if (selCom.value) {
+                selUbch.value = '';
+                selUbch.disabled = true;
+            } else {
+                selUbch.disabled = false;
+            }
+            this.renderAllStatistics();
+        };
+        selUbch.onchange = () => {
+            if (selUbch.value) {
+                selCom.value = '';
+                selCom.disabled = true;
+            } else {
+                selCom.disabled = false;
+            }
+            this.renderAllStatistics();
+        };
+    }
+
+    getFilteredVotes() {
+        const selCom = document.getElementById('filtro-comunidad');
+        const selUbch = document.getElementById('filtro-ubch');
+        if (selCom && selCom.value) {
+            return this.votes.filter(v => v.community === selCom.value);
+        } else if (selUbch && selUbch.value) {
+            return this.votes.filter(v => v.ubch === selUbch.value);
+        }
+        return this.votes;
+    }
+
+    renderProjection() {
+        const filteredVotes = this.getFilteredVotes();
+        // Totales
+        const totalRegistrados = filteredVotes.length;
+        const totalVotos = filteredVotes.filter(v => v.voted).length;
+        const porcentaje = totalRegistrados ? ((totalVotos / totalRegistrados) * 100).toFixed(1) : 0;
+        document.getElementById('projection-total-votos').textContent = totalVotos.toLocaleString();
+        document.getElementById('projection-text').textContent = `${totalVotos.toLocaleString()} de ${totalRegistrados.toLocaleString()} personas`;
+        document.getElementById('projection-porcentaje').textContent = porcentaje + '%';
+        // Barra de progreso
+        const fill = document.getElementById('projection-progress-fill');
+        fill.style.width = porcentaje + '%';
+        fill.textContent = porcentaje + '%';
+        // Ranking top 5 comunidades
+        const votosPorComunidad = {};
+        filteredVotes.forEach(r => {
+            if (!votosPorComunidad[r.community]) votosPorComunidad[r.community] = 0;
+            if (r.voted) votosPorComunidad[r.community]++;
+        });
+        const ranking = Object.entries(votosPorComunidad)
+            .sort((a,b) => b[1]-a[1]).slice(0,5);
+        const rankingList = document.getElementById('projection-ranking-list');
+        rankingList.innerHTML = ranking.map(([com, count],i) => `<div class='projection-item'><span class='projection-item-name'>${i+1}. ${com}</span> <span class='projection-item-count'>${count}</span></div>`).join('');
     }
 }
 

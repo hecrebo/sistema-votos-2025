@@ -3,74 +3,49 @@
 
 class RealtimeNotificationSystem {
     constructor() {
-        this.notificationsRef = null;
-        this.currentUser = null;
         this.isInitialized = false;
-        this.lastSeenTimestamp = this.getLastSeenTimestamp();
+        this.currentUser = null;
+        this.notificationsRef = null;
+        this.unsubscribe = null;
         this.init();
-    }
-
-    getLastSeenTimestamp() {
-        return localStorage.getItem('lastSeenNotificationTimestamp') || null;
-    }
-
-    setLastSeenTimestamp(ts) {
-        if (ts) {
-            localStorage.setItem('lastSeenNotificationTimestamp', ts);
-        }
     }
 
     async init() {
         try {
-            // Esperar a que Firebase esté disponible
-            if (typeof window.firebaseDB !== 'undefined') {
-                this.notificationsRef = window.firebaseDB.db.collection('notifications');
-                this.currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            // Obtener usuario actual
+            this.currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            if (!this.currentUser.username) {
+                return; // No inicializar si no hay usuario
+            }
+
+            // Inicializar Firebase si está disponible
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                this.notificationsRef = firebase.firestore().collection('notifications');
                 this.isInitialized = true;
-                this.setupRealtimeListener();
-                console.log('✅ Sistema de notificaciones en tiempo real inicializado');
-            } else {
-                // Reintentar después de un tiempo
-                setTimeout(() => this.init(), 1000);
+                
+                // Suscribirse a notificaciones en tiempo real
+                this.unsubscribe = this.notificationsRef
+                    .orderBy('timestamp', 'desc')
+                    .limit(50)
+                    .onSnapshot(this.handleNotifications.bind(this), this.handleError.bind(this));
             }
         } catch (error) {
-            console.error('❌ Error inicializando sistema de notificaciones:', error);
+            // Error silencioso en inicialización
         }
     }
 
-    /**
-     * Configura el listener en tiempo real para notificaciones
-     */
-    setupRealtimeListener() {
-        if (!this.notificationsRef) return;
+    handleNotifications(snapshot) {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+                const notificationData = change.doc.data();
+                this.showRealtimeNotification(notificationData);
+            }
+        });
+    }
 
-        // Escuchar nuevas notificaciones
-        this.notificationsRef
-            .orderBy('timestamp', 'desc')
-            .limit(10) // Solo las últimas 10 notificaciones
-            .onSnapshot((snapshot) => {
-                let maxTimestamp = this.lastSeenTimestamp;
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        const notification = change.doc.data();
-                        // Mostrar solo si es nueva
-                        if (!notification.timestamp || (this.lastSeenTimestamp && notification.timestamp <= this.lastSeenTimestamp)) {
-                            return;
-                        }
-                        this.showRealtimeNotification(notification);
-                        // Actualizar el último timestamp visto
-                        if (!maxTimestamp || notification.timestamp > maxTimestamp) {
-                            maxTimestamp = notification.timestamp;
-                        }
-                    }
-                });
-                if (maxTimestamp) {
-                    this.lastSeenTimestamp = maxTimestamp;
-                    this.setLastSeenTimestamp(maxTimestamp);
-                }
-            }, (error) => {
-                console.error('❌ Error en listener de notificaciones:', error);
-            });
+    handleError(error) {
+        // Error silencioso en suscripción
     }
 
     /**
@@ -81,7 +56,6 @@ class RealtimeNotificationSystem {
         
         // Evitar mostrar notificaciones propias
         if (sender === this.currentUser.username) {
-            console.log('🔇 Notificación propia ignorada:', message);
             return;
         }
 
@@ -103,11 +77,8 @@ class RealtimeNotificationSystem {
         }
 
         if (!shouldShow) {
-            console.log(`🔇 Notificación filtrada - Target: ${target}, Role: ${role}, User: ${userId}, Current: ${currentUserRole}`);
             return;
         }
-
-        console.log(`📨 Notificación recibida: ${message} (${type}) de ${sender}`);
 
         // Mostrar notificación usando el sistema visual flotante
         if (window.notificationSystem) {
@@ -145,7 +116,6 @@ class RealtimeNotificationSystem {
      */
     async sendGlobalNotification(message, type = 'info', autoDismiss = true) {
         if (!this.isInitialized || !this.notificationsRef) {
-            console.warn('⚠️ Sistema de notificaciones no inicializado');
             return;
         }
 
@@ -160,9 +130,8 @@ class RealtimeNotificationSystem {
             };
 
             await this.notificationsRef.add(notificationData);
-            console.log('📤 Notificación global enviada:', message);
         } catch (error) {
-            console.error('❌ Error enviando notificación global:', error);
+            // Error silencioso al enviar notificación
         }
     }
 
@@ -171,7 +140,6 @@ class RealtimeNotificationSystem {
      */
     async sendUserNotification(userId, message, type = 'info', autoDismiss = true) {
         if (!this.isInitialized || !this.notificationsRef) {
-            console.warn('⚠️ Sistema de notificaciones no inicializado');
             return;
         }
 
@@ -187,9 +155,8 @@ class RealtimeNotificationSystem {
             };
 
             await this.notificationsRef.add(notificationData);
-            console.log('📤 Notificación enviada a usuario:', userId);
         } catch (error) {
-            console.error('❌ Error enviando notificación a usuario:', error);
+            // Error silencioso al enviar notificación
         }
     }
 
@@ -198,7 +165,6 @@ class RealtimeNotificationSystem {
      */
     async sendRoleNotification(role, message, type = 'info', autoDismiss = true) {
         if (!this.isInitialized || !this.notificationsRef) {
-            console.warn('⚠️ Sistema de notificaciones no inicializado');
             return;
         }
 
@@ -214,36 +180,47 @@ class RealtimeNotificationSystem {
             };
 
             await this.notificationsRef.add(notificationData);
-            console.log('📤 Notificación enviada a rol:', role);
         } catch (error) {
-            console.error('❌ Error enviando notificación a rol:', error);
+            // Error silencioso al enviar notificación
         }
     }
 
     /**
-     * Limpia notificaciones antiguas (más de 24 horas)
+     * Limpia las notificaciones antiguas
      */
     async cleanupOldNotifications() {
-        if (!this.isInitialized || !this.notificationsRef) return;
+        if (!this.isInitialized || !this.notificationsRef) {
+            return;
+        }
 
         try {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
+            const oneDayAgo = new Date();
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-            const oldNotifications = await this.notificationsRef
-                .where('timestamp', '<', yesterday.toISOString())
+            const snapshot = await this.notificationsRef
+                .where('timestamp', '<', oneDayAgo.toISOString())
                 .get();
 
-            const batch = window.firebaseDB.db.batch();
-            oldNotifications.docs.forEach(doc => {
+            const batch = firebase.firestore().batch();
+            snapshot.docs.forEach(doc => {
                 batch.delete(doc.ref);
             });
 
             await batch.commit();
-            console.log('🗑️ Notificaciones antiguas limpiadas');
         } catch (error) {
-            console.error('❌ Error limpiando notificaciones antiguas:', error);
+            // Error silencioso en limpieza
         }
+    }
+
+    /**
+     * Desconecta el sistema de notificaciones
+     */
+    disconnect() {
+        if (this.unsubscribe) {
+            this.unsubscribe();
+            this.unsubscribe = null;
+        }
+        this.isInitialized = false;
     }
 
     /**
@@ -251,28 +228,16 @@ class RealtimeNotificationSystem {
      */
     getStatus() {
         return {
-            initialized: this.isInitialized,
-            currentUser: this.currentUser.username,
-            firebaseConnected: !!this.notificationsRef
+            isInitialized: this.isInitialized,
+            currentUser: this.currentUser ? this.currentUser.username : null,
+            hasNotificationsRef: !!this.notificationsRef,
+            isSubscribed: !!this.unsubscribe
         };
     }
 }
 
 // Crear instancia global
 window.realtimeNotificationSystem = new RealtimeNotificationSystem();
-
-// Funciones globales para compatibilidad
-window.sendGlobalNotification = (message, type, autoDismiss) => {
-    return window.realtimeNotificationSystem.sendGlobalNotification(message, type, autoDismiss);
-};
-
-window.sendUserNotification = (userId, message, type, autoDismiss) => {
-    return window.realtimeNotificationSystem.sendUserNotification(userId, message, type, autoDismiss);
-};
-
-window.sendRoleNotification = (role, message, type, autoDismiss) => {
-    return window.realtimeNotificationSystem.sendRoleNotification(role, message, type, autoDismiss);
-};
 
 // Limpiar notificaciones antiguas cada hora
 setInterval(() => {

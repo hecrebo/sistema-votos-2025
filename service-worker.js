@@ -50,15 +50,14 @@ const urlsToCache = [
 const BACKGROUND_SYNC_TAG = 'votos2025-sync';
 
 self.addEventListener('install', event => {
-  console.log('[Service Worker] Install event');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('[Service Worker] Caching app shell');
         return cache.addAll(urlsToCache);
       })
       .catch(error => {
-        console.error('[Service Worker] Failed to cache app shell:', error);
+        // Solo log crítico en caso de error real
+        console.error('[Service Worker] Error crítico al cachear:', error);
       })
   );
   // Skip waiting to activate immediately
@@ -66,7 +65,6 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  console.log('[Service Worker] Activate event');
   event.waitUntil(
     Promise.all([
       // Clean up old caches
@@ -74,7 +72,6 @@ self.addEventListener('activate', event => {
         return Promise.all(
           cacheNames.map(cacheName => {
             if (cacheName !== CACHE_NAME) {
-              console.log('[Service Worker] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
@@ -88,8 +85,6 @@ self.addEventListener('activate', event => {
 
 // Background sync for offline data
 self.addEventListener('sync', event => {
-  console.log('[Service Worker] Background sync event:', event.tag);
-  
   if (event.tag === BACKGROUND_SYNC_TAG) {
     event.waitUntil(
       syncOfflineData()
@@ -99,8 +94,6 @@ self.addEventListener('sync', event => {
 
 // Push notifications
 self.addEventListener('push', event => {
-  console.log('[Service Worker] Push event received');
-  
   let notificationData = {
     title: 'Sistema de Votos 2025',
     body: 'Nuevo voto registrado',
@@ -127,7 +120,7 @@ self.addEventListener('push', event => {
       const data = event.data.json();
       notificationData = { ...notificationData, ...data };
     } catch (e) {
-      console.log('[Service Worker] Could not parse push data');
+      // Error silencioso para datos push inválidos
     }
   }
 
@@ -138,8 +131,6 @@ self.addEventListener('push', event => {
 
 // Handle notification clicks
 self.addEventListener('notificationclick', event => {
-  console.log('[Service Worker] Notification click:', event.action);
-  
   event.notification.close();
 
   if (event.action === 'view') {
@@ -159,14 +150,12 @@ self.addEventListener('notificationclick', event => {
 
 // Handle notification close
 self.addEventListener('notificationclose', event => {
-  console.log('[Service Worker] Notification closed');
+  // Evento silencioso
 });
 
 // Background sync function
 async function syncOfflineData() {
   try {
-    console.log('[Service Worker] Syncing offline data...');
-    
     // Get all clients
     const clients = await self.clients.matchAll();
     
@@ -177,10 +166,9 @@ async function syncOfflineData() {
         timestamp: Date.now()
       });
     });
-    
-    console.log('[Service Worker] Offline sync completed');
   } catch (error) {
-    console.error('[Service Worker] Sync error:', error);
+    // Solo log crítico en caso de error real
+    console.error('[Service Worker] Error crítico en sincronización:', error);
   }
 }
 
@@ -222,10 +210,8 @@ self.addEventListener('fetch', event => {
     caches.match(event.request)
       .then(response => {
         if (response) {
-          // console.log('[Service Worker] Serving from cache:', event.request.url);
           return response;
         }
-        // console.log('[Service Worker] Fetching from network:', event.request.url);
         return fetch(event.request).then(
           networkResponse => {
             // Optionally, cache new requests dynamically if needed (e.g., for images not in urlsToCache)
@@ -242,7 +228,8 @@ self.addEventListener('fetch', event => {
         );
       })
       .catch(error => {
-        console.error('[Service Worker] Fetch error:', error, event.request.url);
+        // Solo log crítico en caso de error real
+        console.error('[Service Worker] Error crítico en fetch:', error, event.request.url);
         // Optionally, provide a fallback for specific asset types, e.g., a placeholder image
         // if (event.request.destination === 'image') {
         //   return caches.match('./placeholder-image.png');
@@ -253,8 +240,6 @@ self.addEventListener('fetch', event => {
 
 // Handle messages from the main thread
 self.addEventListener('message', event => {
-  console.log('[Service Worker] Message received:', event.data);
-  
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
