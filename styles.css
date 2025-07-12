@@ -4684,3 +4684,57 @@ select:focus {
         gap: 8px;
     }
 }
+
+.myrecords-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(102,126,234,0.07);
+    padding: 24px 18px 18px 18px;
+    margin-bottom: 0;
+}
+.myrecords-card h3 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 1.2em;
+    color: #333;
+    font-weight: 600;
+}
+.myrecords-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.myrecords-table-container {
+    overflow-x: auto;
+}
+#myrecords-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.98em;
+    background: #fafbfc;
+}
+#myrecords-table th, #myrecords-table td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 10px;
+    text-align: left;
+}
+#myrecords-table th {
+    background: #f3f4f6;
+    color: #374151;
+    font-weight: 600;
+}
+#myrecords-table tr:nth-child(even) {
+    background: #f8f9fa;
+}
+#myrecords-table tr:hover {
+    background: #e8f0fe;
+}
+@media (max-width: 768px) {
+    .myrecords-card {
+        padding: 12px 4px 10px 4px;
+    }
+    #myrecords-table th, #myrecords-table td {
+        padding: 6px 4px;
+        font-size: 0.93em;
+    }
+}

@@ -2638,3 +2638,78 @@ class VotingSystemFirebase extends VotingSystem {
 // document.addEventListener('DOMContentLoaded', () => {
 //     window.votingSystem = new VotingSystemFirebase();
 // }); 
+
+// === MIS REGISTROS ===
+// Mostrar los registros del usuario actual en la tabla de 'Mis Registros'
+window.renderMyRecordsTable = async function() {
+    const tableBody = document.querySelector('#myrecords-table tbody');
+    if (!tableBody) return;
+    tableBody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
+    try {
+        // Obtener usuario actual
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const username = currentUser.username || '';
+        if (!username) {
+            tableBody.innerHTML = '<tr><td colspan="8">No hay usuario activo</td></tr>';
+            return;
+        }
+        // Consultar registros de este usuario
+        const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).orderBy('createdAt', 'desc').limit(500).get();
+        if (snapshot.empty) {
+            tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
+            return;
+        }
+        let rows = '';
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            rows += `<tr>
+                <td>${d.name || ''}</td>
+                <td>${d.cedula || ''}</td>
+                <td>${d.telefono || ''}</td>
+                <td>${d.sexo || ''}</td>
+                <td>${d.edad || ''}</td>
+                <td>${d.ubch || ''}</td>
+                <td>${d.community || ''}</td>
+                <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
+            </tr>`;
+        });
+        tableBody.innerHTML = rows;
+    } catch (e) {
+        tableBody.innerHTML = '<tr><td colspan="8">Error cargando registros</td></tr>';
+    }
+};
+
+// Descargar los registros del usuario actual como CSV
+window.downloadMyRecordsAsCSV = async function() {
+    // Obtener usuario actual
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const username = currentUser.username || '';
+    if (!username) return alert('No hay usuario activo');
+    const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).orderBy('createdAt', 'desc').limit(1000).get();
+    if (snapshot.empty) return alert('No tienes registros propios aún.');
+    let csv = 'Nombre,Cédula,Teléfono,Sexo,Edad,UBCH,Comunidad,Fecha\n';
+    snapshot.forEach(doc => {
+        const d = doc.data();
+        csv += `"${d.name||''}","${d.cedula||''}","${d.telefono||''}","${d.sexo||''}","${d.edad||''}","${d.ubch||''}","${d.community||''}","${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}"
+`;
+    });
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mis_registros.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+};
+
+// Mostrar la tabla cada vez que se entra en la sección
+if (typeof switchRegistrationMode === 'function') {
+    const oldSwitch = switchRegistrationMode;
+    window.switchRegistrationMode = function(mode) {
+        oldSwitch(mode);
+        if (mode === 'myrecords') {
+            window.renderMyRecordsTable();
+        }
+    };
+}

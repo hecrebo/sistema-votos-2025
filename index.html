@@ -120,6 +120,9 @@
                         <button type="button" class="mode-btn" data-mode="bulk" onclick="switchRegistrationMode('bulk')">
                             📊 Registro Masivo (Excel)
                         </button>
+                        <button type="button" class="mode-btn" data-mode="myrecords" onclick="switchRegistrationMode('myrecords')">
+                            📋 Mis Registros
+                        </button>
                     </div>
                     
                     <!-- Formulario de registro único con listas independientes -->
@@ -199,6 +202,33 @@
                         </div>
                     </div>
                     
+                    <!-- Nueva sección: Mis Registros -->
+                    <div id="myrecords-registration" class="registration-mode" style="display: none;">
+                        <div class="myrecords-card">
+                            <h3>📋 Mis Registros</h3>
+                            <div class="myrecords-actions">
+                                <button class="btn btn-secondary" onclick="downloadMyRecordsAsCSV()">Descargar como Excel</button>
+                            </div>
+                            <div class="myrecords-table-container">
+                                <table id="myrecords-table" class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Cédula</th>
+                                            <th>Teléfono</th>
+                                            <th>Sexo</th>
+                                            <th>Edad</th>
+                                            <th>UBCH</th>
+                                            <th>Comunidad</th>
+                                            <th>Fecha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="registration-message" class="message" style="display: none;"></div>
                     <div id="queue-status" class="queue-status" style="display: none;"></div>
                     <div id="thank-you-message" class="thank-you-message" style="display: none;"></div>
@@ -907,6 +937,7 @@
         function switchRegistrationMode(mode) {
             const individualDiv = document.getElementById('individual-registration');
             const bulkDiv = document.getElementById('bulk-registration');
+            const myRecordsDiv = document.getElementById('myrecords-registration');
             const modeButtons = document.querySelectorAll('.mode-btn');
             
             // Actualizar botones
@@ -921,9 +952,15 @@
             if (mode === 'individual') {
                 individualDiv.style.display = 'block';
                 bulkDiv.style.display = 'none';
+                myRecordsDiv.style.display = 'none';
             } else if (mode === 'bulk') {
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'block';
+                myRecordsDiv.style.display = 'none';
+            } else if (mode === 'myrecords') {
+                individualDiv.style.display = 'none';
+                bulkDiv.style.display = 'none';
+                myRecordsDiv.style.display = 'block';
             }
             
             console.log(`✅ Modo de registro cambiado a: ${mode}`);
