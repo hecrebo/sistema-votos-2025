@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Bloquear rutas sensibles si existen
+Disallow: /admin-panel.html
+Disallow: /credenciales-sistema.html
+Disallow: /admin-panel-backup.html
+Disallow: /migrar-a-firebase.html
+
+Sitemap: /sitemap.xml 

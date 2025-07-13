@@ -988,12 +988,8 @@ class VotingSystemFirebase extends VotingSystem {
         console.log(`📊 Resumen: ${todasLasComunidades.size} comunidades, ${Object.keys(this.ubchToCommunityMap).length} centros de votación`);
         this.showMessage(`Formulario listo con ${todasLasComunidades.size} comunidades disponibles`, 'success', 'registration');
 
-        // Inicializar Choices.js para el autocompletado de comunidades
-        if (window.initializeChoicesForCommunity) {
-            setTimeout(() => {
-                window.initializeChoicesForCommunity();
-            }, 100);
-        }
+        // Inicializar Choices.js para el autocompletado de comunidades (carga dinámica)
+        this.initializeChoicesIfNeeded();
 
         // Iniciar sincronización automática si está disponible
         if (window.offlineQueueManager) {
@@ -1004,6 +1000,103 @@ class VotingSystemFirebase extends VotingSystem {
         this.actualizarIndicadorOffline();
         this.actualizarFormularioOffline();
     }
+
+    // === CARGA DINÁMICA DE CHOICES.JS ===
+    
+    async initializeChoicesIfNeeded() {
+        // Solo cargar Choices.js si no está disponible y estamos en la página de registro
+        if (typeof Choices === 'undefined' && this.currentPage === 'registration') {
+            try {
+                console.log('🔄 Cargando Choices.js dinámicamente...');
+                
+                // Cargar CSS primero
+                await this.loadChoicesCSS();
+                
+                // Cargar JS
+                await this.loadChoicesJS();
+                
+                // Inicializar Choices.js en los selects
+                this.initializeChoicesForSelects();
+                
+                console.log('✅ Choices.js cargado dinámicamente');
+            } catch (error) {
+                console.warn('⚠️ No se pudo cargar Choices.js:', error);
+            }
+        } else if (typeof Choices !== 'undefined') {
+            // Si ya está disponible, inicializar directamente
+            this.initializeChoicesForSelects();
+        }
+    }
+
+    async loadChoicesCSS() {
+        return new Promise((resolve, reject) => {
+            // Verificar si ya está cargado
+            if (document.querySelector('link[href*="choices"]')) {
+                resolve();
+                return;
+            }
+
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'choices.min.css';
+            link.onload = resolve;
+            link.onerror = reject;
+            document.head.appendChild(link);
+        });
+    }
+
+    async loadChoicesJS() {
+        return new Promise((resolve, reject) => {
+            // Verificar si ya está cargado
+            if (typeof Choices !== 'undefined') {
+                resolve();
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'choices.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    initializeChoicesForSelects() {
+        if (typeof Choices === 'undefined') {
+            console.warn('⚠️ Choices.js no está disponible');
+            return;
+        }
+
+        try {
+            // Inicializar Choices.js en los selects de comunidad y UBCH
+            const communitySelect = document.getElementById('community');
+            const ubchSelect = document.getElementById('ubch');
+
+            if (communitySelect && !communitySelect.choices) {
+                new Choices(communitySelect, {
+                    searchEnabled: true,
+                    searchPlaceholderValue: 'Buscar comunidad...',
+                    noResultsText: 'No se encontraron comunidades',
+                    itemSelectText: 'Presiona para seleccionar'
+                });
+            }
+
+            if (ubchSelect && !ubchSelect.choices) {
+                new Choices(ubchSelect, {
+                    searchEnabled: true,
+                    searchPlaceholderValue: 'Buscar centro de votación...',
+                    noResultsText: 'No se encontraron centros de votación',
+                    itemSelectText: 'Presiona para seleccionar'
+                });
+            }
+
+            console.log('✅ Choices.js inicializado en los selects');
+        } catch (error) {
+            console.warn('⚠️ Error al inicializar Choices.js:', error);
+        }
+    }
+
+    // === FIN CARGA DINÁMICA DE CHOICES.JS ===
 
     // Los selects de comunidad y CV son independientes, no necesitan funciones de vinculación
 
