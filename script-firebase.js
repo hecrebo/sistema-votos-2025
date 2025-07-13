@@ -1016,7 +1016,7 @@ class VotingSystemFirebase extends VotingSystem {
                 await this.loadChoicesJS();
                 
                 // Inicializar Choices.js en los selects
-                this.initializeChoicesForSelects();
+                await this.initializeChoicesForSelects();
                 
                 console.log('✅ Choices.js cargado dinámicamente');
             } catch (error) {
@@ -1024,7 +1024,7 @@ class VotingSystemFirebase extends VotingSystem {
             }
         } else if (typeof Choices !== 'undefined') {
             // Si ya está disponible, inicializar directamente
-            this.initializeChoicesForSelects();
+            await this.initializeChoicesForSelects();
         }
     }
 
@@ -1061,13 +1061,14 @@ class VotingSystemFirebase extends VotingSystem {
         });
     }
 
-    initializeChoicesForSelects() {
-        if (typeof Choices === 'undefined') {
-            console.warn('⚠️ Choices.js no está disponible');
-            return;
-        }
-
+    async initializeChoicesForSelects() {
         try {
+            // Cargar Choices.js dinámicamente si no está disponible
+            if (typeof Choices === 'undefined') {
+                console.log('🔄 Cargando Choices.js dinámicamente...');
+                await this.loadChoicesJS();
+            }
+
             // Inicializar Choices.js en los selects de comunidad y UBCH
             const communitySelect = document.getElementById('community');
             const ubchSelect = document.getElementById('ubch');

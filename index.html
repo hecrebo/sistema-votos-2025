@@ -47,11 +47,6 @@
     <!-- PDF Libraries (cargar antes que otros scripts) -->
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script> -->
     <!-- <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js"></script> -->
-    <!-- Chart.js solo en estadísticas/avanzadas -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script> -->
-    <!-- Choices.js solo en formularios con autocompletado -->
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" /> -->
-    <!-- <link rel="stylesheet" href="choices.min.css"> -->
     
     <script src="config.js"></script>
     <script src="script-firebase.js"></script>
@@ -62,6 +57,537 @@
     <script src="notification-system.js"></script>
     <script src="realtime-notifications.js"></script>
     
+    <!-- Choices.js solo en formularios con autocompletado -->
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" /> -->
+    <!-- <link rel="stylesheet" href="choices.min.css"> -->
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-top">
+                    <div class="logo-container">
+                        <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
+                    </div>
+                    <h1 class="header-title">Registro de Votos y Estadísticas</h1>
+                </div>
+                <nav class="nav-menu">
+                    <button class="nav-btn active" data-page="registration" id="nav-registration">Registro</button>
+                    <button class="nav-btn" data-page="check-in" id="nav-check-in">Confirmar Voto</button>
+                    <button class="nav-btn" data-page="listado" id="nav-listado">Listado</button>
+                    <button class="nav-btn" data-page="dashboard" id="nav-dashboard">Totales</button>
+                    <button class="nav-btn" data-page="statistics" id="nav-statistics">Estadísticas</button>
+                    <button class="nav-btn" onclick="window.location.href='estadisticas-avanzadas.html'" id="nav-advanced-stats">📊 Estadísticas Avanzadas</button>
+                </nav>
+                <div class="user-info">
+                    <span class="user-id" id="userId"></span>
+                    <div class="sync-status">
+                        <span class="sync-spinner" id="sync-spinner"></span>
+                        <span class="sync-check" id="sync-check"></span>
+                        <span class="sync-indicator" id="sync-indicator">🔄</span>
+                        <span class="sync-text" id="sync-text">Sincronizando</span>
+                    </div>
+                    <!-- Indicador de estado offline -->
+                    <div class="offline-indicator" id="offline-indicator">
+                        <span class="offline-icon">📴</span>
+                        <span class="offline-text">Sin conexión</span>
+                                    </div>
+                    <!-- Eliminar panel y botones de migración -->
+                </div>
+                <!-- Menú desplegable móvil -->
+                <div class="mobile-menu">
+                    <button class="menu-toggle" onclick="toggleMenu()">⋮</button>
+                    <div class="menu-dropdown" id="menu-dropdown">
+                        <!-- El contenido del menú se generará dinámicamente por JS según el rol -->
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Registration Page -->
+            <div class="page active" id="registration-page">
+                <div class="page-container">
+                    <h2 class="page-title">Registro de Persona</h2>
+                    
+                    <!-- Selector de modo de registro -->
+                    <div class="registration-mode-selector">
+                        <button type="button" class="mode-btn active" data-mode="individual" onclick="switchRegistrationMode('individual')">
+                            👤 Registro Individual
+                        </button>
+                        <button type="button" class="mode-btn" data-mode="bulk" onclick="switchRegistrationMode('bulk')">
+                            📊 Registro Masivo (Excel)
+                        </button>
+                        <button type="button" class="mode-btn" data-mode="myrecords" onclick="switchRegistrationMode('myrecords')">
+                            📋 Mis Registros
+                        </button>
+                    </div>
+                    
+                    <!-- Formulario de registro único con listas independientes -->
+                    <div id="individual-registration" class="registration-mode">
+                        <form id="registration-form" class="registration-form" autocomplete="off">
+                            <div class="form-group">
+                                <label for="community">Comunidad</label>
+                                <select id="community" name="community" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="name">Nombre de la Persona</label>
+                                <input type="text" id="name" name="name" placeholder="Ej: Juan Pérez" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="cedula">Cédula</label>
+                                <input type="text" id="cedula" name="cedula" placeholder="Ej: 12345678" required title="Introduce una cédula válida (solo números, 6 a 10 dígitos)" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="telefono">Teléfono (opcional)</label>
+                                <input type="text" id="telefono" name="telefono" placeholder="Ej: 04121234567" title="Introduce un teléfono válido (ej: 04121234567)" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="sexo">Sexo</label>
+                                <select id="sexo" name="sexo" required>
+                                    <option value="">Selecciona el sexo</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edad">Edad</label>
+                                <input type="number" id="edad" name="edad" placeholder="Ej: 25" min="16" max="120" required title="Introduce una edad válida (entre 16 y 120 años)" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="ubch">Centro de Votación (CV)</label>
+                                <select id="ubch" name="ubch" required></select>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-large" id="register-btn">
+                                <span class="btn-text">Registrar Persona</span>
+                                <span class="btn-loading" style="display: none;">Registrando...</span>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Registro masivo desde Excel -->
+                    <div id="bulk-registration" class="registration-mode" style="display: none;">
+                        <div class="admin-card import-section">
+                            <h3>📋 Registro Masivo (Pega los datos de Excel aquí)</h3>
+                            <div class="import-info">
+                                <p>Pega los datos copiados de Excel directamente en la tabla. Puedes editar los valores antes de cargar.</p>
+                                <p>Columnas esperadas: <b>UBCH, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</b></p>
+                            </div>
+                            <div style="overflow-x:auto;">
+                                <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false" style="min-width:800px;">
+                                    <thead>
+                                        <tr>
+                                            <th>UBCH</th>
+                                            <th>Comunidad</th>
+                                            <th>Nombre</th>
+                                            <th>Cédula</th>
+                                            <th>Teléfono</th>
+                                            <th>Sexo</th>
+                                            <th>Edad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="paste-table-body">
+                                        <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="import-controls">
+                                <button class="btn btn-success" onclick="importPasteTable()">Cargar a Firebase</button>
+                                <button class="btn btn-warning" onclick="clearPasteTable()">Limpiar Tabla</button>
+                                <button class="btn btn-info" onclick="limpiarColaYForzarSync()">🔄 Limpiar Cola & Sincronizar</button>
+                            </div>
+                            <div id="import-massive-status" class="import-status info" style="display:none;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Nueva sección: Mis Registros -->
+                    <div id="myrecords-registration" class="registration-mode" style="display: none;">
+                        <div class="myrecords-card">
+                            <h3>📋 Mis Registros</h3>
+                            <div class="myrecords-actions">
+                                <button class="btn btn-secondary" onclick="downloadMyRecordsAsCSV()">Descargar como Excel</button>
+                                <button class="btn btn-primary" onclick="mostrarMisRegistrosFacil()">Ver Mis Registros</button>
+                                <button class="btn btn-warning" onclick="insertarRegistrosDePrueba()">Cargar Registros de Prueba</button>
+                                <button class="btn btn-danger" onclick="limpiarMisRegistrosLocales()">Limpiar Mis Registros Locales</button>
+                            </div>
+                            <div class="myrecords-table-container">
+                                <table id="myrecords-table" class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Cédula</th>
+                                            <th>Teléfono</th>
+                                            <th>Sexo</th>
+                                            <th>Edad</th>
+                                            <th>UBCH</th>
+                                            <th>Comunidad</th>
+                                            <th>Fecha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="registration-message" class="message" style="display: none;"></div>
+                    <div id="queue-status" class="queue-status" style="display: none;"></div>
+                    <div id="thank-you-message" class="thank-you-message" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Check-in Page -->
+            <div class="page" id="check-in-page">
+                <div class="page-container">
+                    <h2 class="page-title">Confirmar Voto</h2>
+                    <form id="check-in-form" class="check-in-form">
+                        <div class="search-container">
+                            <input type="text" id="cedula-search" placeholder="Buscar por Cédula" required>
+                            <button type="submit" class="btn btn-primary">
+                                <span class="btn-text">Buscar</span>
+                                <span class="btn-loading" style="display: none;">Buscando...</span>
+                            </button>
+                        </div>
+                    </form>
+                    <div id="check-in-message" class="message" style="display: none;"></div>
+                    <div id="search-results" class="search-results"></div>
+                </div>
+            </div>
+
+            <!-- List Page -->
+            <div class="page" id="listado-page">
+                <div class="page-container">
+                    <div class="page-header">
+                        <h2 class="page-title">Listado de Personas Registradas</h2>
+                        <div class="page-actions">
+                            <button id="export-pdf-btn" class="btn btn-secondary">Generar PDF</button>
+                            <button id="export-csv-btn" class="btn btn-secondary" title="Exporta registros seleccionados o todos los filtrados">📊 Generar CSV</button>
+                        </div>
+                    </div>
+                    <div class="filter-container">
+                        <!-- Primera fila: Búsqueda y contadores -->
+                        <div class="filter-row-1">
+                            <div class="search-bar-container">
+                                <div class="search-input-group">
+                                    <input type="text" id="list-search" placeholder="Buscar por nombre, cédula, comunidad..." class="search-input">
+                                    <button type="button" id="clear-search" class="clear-search-btn" style="display: none;">✕</button>
+                                </div>
+                                <div class="search-options">
+                                    <select id="search-field" class="search-field-select">
+                                        <option value="all">Todos los campos</option>
+                                        <option value="name">Nombre</option>
+                                        <option value="cedula">Cédula</option>
+                                        <option value="community">Comunidad</option>
+                                        <option value="ubch">CV</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="general-counters">
+                                <div class="counter-item">
+                                    <span class="counter-label">Total:</span>
+                                    <span class="counter-value" id="total-counter">0</span>
+                                </div>
+                                <div class="counter-item">
+                                    <span class="counter-label">Votaron:</span>
+                                    <span class="counter-value voted" id="voted-counter">0</span>
+                                </div>
+                                <div class="counter-item">
+                                    <span class="counter-label">No Votaron:</span>
+                                    <span class="counter-value not-voted" id="not-voted-counter">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Segunda fila: Filtros principales y avanzados -->
+                        <div class="filter-row-2">
+                        <div class="filter-buttons">
+                                <button class="filter-btn active" data-filter="all">
+                                    <span class="filter-text">Todos</span>
+                                    <span class="filter-count" id="all-count">0</span>
+                                </button>
+                                <button class="filter-btn" data-filter="voted">
+                                    <span class="filter-text">Votaron</span>
+                                    <span class="filter-count" id="voted-count">0</span>
+                                </button>
+                                <button class="filter-btn" data-filter="not-voted">
+                                    <span class="filter-text">No Votaron</span>
+                                    <span class="filter-count" id="not-voted-count">0</span>
+                                </button>
+                        </div>
+                            
+                            <div class="advanced-filters">
+                        <div class="ubch-filter">
+                                    <label for="ubch-filter-select">CV:</label>
+                            <select id="ubch-filter-select" class="ubch-filter-select">
+                                <option value="">Todos los CV</option>
+                            </select>
+                        </div>
+                        <div class="community-filter">
+                                    <label for="community-filter-select">Comunidad:</label>
+                            <select id="community-filter-select" class="community-filter-select">
+                                <option value="">Todas las Comunidades</option>
+                            </select>
+                        </div>
+                                <div class="age-filter">
+                                    <label for="age-filter-select">Edad:</label>
+                                    <select id="age-filter-select" class="age-filter-select">
+                                        <option value="">Todas las edades</option>
+                                        <option value="16-25">16-25 años</option>
+                                        <option value="26-35">26-35 años</option>
+                                        <option value="36-45">36-45 años</option>
+                                        <option value="46-55">46-55 años</option>
+                                        <option value="56+">56+ años</option>
+                                    </select>
+                    </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información de filtros aplicados -->
+                        <div class="filter-info" id="filter-info" style="display: none;">
+                            <span class="filter-info-text">Filtros aplicados</span>
+                        </div>
+                    </div>
+                    <!-- Acciones masivas -->
+                    <div id="bulk-actions" class="bulk-actions">
+                        <div class="bulk-select-all">
+                            <input type="checkbox" id="select-all-checkbox" class="row-checkbox">
+                            <label for="select-all-checkbox">Seleccionar todos</label>
+                        </div>
+                        <div class="bulk-actions-buttons">
+                            <button class="btn btn-success btn-small" onclick="votingSystem.bulkConfirmVotes()">🎯 Confirmar Votos</button>
+                            <button class="btn btn-danger btn-small" onclick="votingSystem.bulkDeleteVotes()">❌ Eliminar</button>
+                        </div>
+                    </div>
+
+                    <!-- Vista detallada -->
+                    <div id="detail-view" class="detail-view">
+                        <div class="detail-header">
+                            <h3 class="detail-title">Detalles del Registro</h3>
+                            <button class="detail-close" onclick="votingSystem.closeDetailView()">✕</button>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-section">
+                                <h4>Información Personal</h4>
+                                <div class="detail-info"><strong>Nombre:</strong> <span id="detail-name"></span></div>
+                                <div class="detail-info"><strong>Cédula:</strong> <span id="detail-cedula"></span></div>
+                                <div class="detail-info"><strong>Teléfono:</strong> <span id="detail-telefono"></span></div>
+                                <div class="detail-info"><strong>Sexo:</strong> <span id="detail-sexo"></span></div>
+                                <div class="detail-info"><strong>Edad:</strong> <span id="detail-edad"></span></div>
+                            </div>
+                            <div class="detail-section">
+                                <h4>Información Electoral</h4>
+                                <div class="detail-info"><strong>Centro de Votación:</strong> <span id="detail-ubch"></span></div>
+                                <div class="detail-info"><strong>Comunidad:</strong> <span id="detail-community"></span></div>
+                                <div class="detail-info"><strong>Estado del Voto:</strong> <span id="detail-vote-status"></span></div>
+                                <div class="detail-info"><strong>Fecha de Registro:</strong> <span id="detail-registered-at"></span></div>
+                                <div class="detail-info"><strong>Registrado por:</strong> <span id="detail-registered-by"></span></div>
+                            </div>
+                            <div class="detail-section">
+                                <h4>Acciones</h4>
+                                <div class="detail-actions">
+                                    <button class="btn btn-primary" onclick="votingSystem.editFromDetail()">🔄 Editar</button>
+                                    <button class="btn btn-success" onclick="votingSystem.confirmFromDetail()">🎯 Confirmar Voto</button>
+                                    <button class="btn btn-danger" onclick="votingSystem.deleteFromDetail()">❌ Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <div class="loading-overlay" id="table-loading" style="display: none;">
+                            <div class="loading-spinner"></div>
+                        </div>
+                        <table id="registros-table" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="header-checkbox" class="row-checkbox"></th>
+                                    <th class="sortable-header" data-sort="name">Nombre ↕</th>
+                                    <th class="sortable-header" data-sort="cedula">Cédula ↕</th>
+                                    <th class="sortable-header" data-sort="sexo">Sexo ↕</th>
+                                    <th class="sortable-header" data-sort="edad">Edad ↕</th>
+                                    <th class="sortable-header" data-sort="ubch">CV ↕</th>
+                                    <th class="sortable-header" data-sort="community">Comunidad ↕</th>
+                                    <th class="sortable-header" data-sort="voted">Votó ↕</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div id="pagination-container" class="pagination-container">
+                            <div class="pagination-info">
+                                Mostrando <span id="pagination-start">0</span> a <span id="pagination-end">0</span> de <span id="pagination-total">0</span> registros
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn" id="first-page">« Primera</button>
+                                <button class="pagination-btn" id="prev-page">‹ Anterior</button>
+                                <div id="page-numbers"></div>
+                                <button class="pagination-btn" id="next-page">Siguiente ›</button>
+                                <button class="pagination-btn" id="last-page">Última »</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Page -->
+            <div class="page" id="dashboard-page">
+                <div class="page-container">
+                    <h2 class="page-title">Totales Generales</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Total de Personas Registradas</h3>
+                            <p class="stat-number" id="total-registered">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total de Votos Confirmados</h3>
+                            <p class="stat-number" id="total-voted">0</p>
+                        </div>
+                    </div>
+                    <div class="progress-section">
+                        <h3>Progreso de Votación</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="vote-progress"></div>
+                        </div>
+                        <p class="progress-text" id="progress-text">0 de 0 personas han votado.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Page -->
+            <div class="page" id="statistics-page">
+                <div class="page-container">
+                    <div class="page-header">
+                        <h2 class="page-title">Estadísticas Detalladas</h2>
+                        <div class="page-actions">
+                            <button id="projection-btn" class="btn btn-primary">Modo Proyección</button>
+                            <button id="export-stats-pdf-btn" class="btn btn-secondary">Descargar PDF</button>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stats-card">
+                            <h3>Votos por CV</h3>
+                            <div class="stats-list" id="ubch-stats"></div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Votos por Comunidad</h3>
+                            <div class="stats-list" id="community-stats"></div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Votos por Sexo</h3>
+                            <div class="stats-list" id="sexo-stats"></div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Votos por Rango de Edad</h3>
+                            <div class="stats-list" id="edad-stats"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Projection View -->
+        <div id="projection-view" class="projection-view" style="display: none;">
+            <div class="projection-header">
+                <h1>Proyección en Tiempo Real</h1>
+                <button id="exit-projection-btn" class="btn btn-danger">Salir</button>
+            </div>
+            <div class="projection-content">
+                <div class="projection-main">
+                    <h2>Participación General</h2>
+                    <div class="projection-number" id="projection-votes">0</div>
+                    <div class="projection-label">Votos</div>
+                    <div class="projection-progress">
+                        <div class="projection-progress-fill" id="projection-progress-fill"></div>
+                    </div>
+                    <p class="projection-text" id="projection-text">0 de 0</p>
+                </div>
+                <div class="projection-stats">
+                    <h2>Votos por CV</h2>
+                    <div class="projection-list" id="projection-ubch-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <div id="delete-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Confirmar Eliminación</h3>
+                <p>¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.</p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancel-delete">Cancelar</button>
+                    <button class="btn btn-danger" id="confirm-delete">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Edición -->
+        <div id="edit-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Editar Registro</h3>
+                <form id="edit-form" class="edit-form">
+                    <div class="form-group">
+                        <label for="edit-community">Comunidad</label>
+                        <select id="edit-community" name="community" required>
+                            <option value="">Selecciona una comunidad</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-name">Nombre</label>
+                        <input type="text" id="edit-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-cedula">Cédula</label>
+                        <input type="text" id="edit-cedula" name="cedula" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-telefono">Teléfono (opcional)</label>
+                        <input type="text" id="edit-telefono" name="telefono">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-sexo">Sexo</label>
+                        <select id="edit-sexo" name="sexo" required>
+                            <option value="">Selecciona el sexo</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-edad">Edad</label>
+                        <input type="number" id="edit-edad" name="edad" min="16" max="120" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-ubch">Centro de Votación (CV)</label>
+                        <select id="edit-ubch" name="ubch" required>
+                            <option value="">Selecciona un Centro de Votación</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-edit">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="save-edit">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2025 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>
+        </footer>
+    </div>
+
+    
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="sync-manager.js"></script>
+    <script src="service-manager.js"></script>
+    <script src="init-system.js"></script>
     <script src="choices.min.js"></script>
     
     <script>
@@ -421,6 +947,29 @@
         }
 
         // Sistema de inicialización manejado por init-system.js
+
+        // Carga dinámica de Choices.js solo cuando se necesite
+        function loadChoicesJS() {
+            if (window.Choices) return Promise.resolve(); // Ya cargado
+            
+            return new Promise((resolve, reject) => {
+                // Cargar CSS primero
+                const cssLink = document.createElement('link');
+                cssLink.rel = 'stylesheet';
+                cssLink.href = 'choices.min.css';
+                document.head.appendChild(cssLink);
+                
+                // Cargar JS
+                const script = document.createElement('script');
+                script.src = 'choices.min.js';
+                script.onload = () => {
+                    console.log('✅ Choices.js cargado dinámicamente');
+                    resolve();
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
 
         // Variables para registro masivo
         let bulkRegistrations = [];
