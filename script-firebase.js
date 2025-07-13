@@ -82,13 +82,21 @@ class VotingSystemFirebase extends VotingSystem {
         this.currentSortField = null;
         this.currentSortDirection = 'asc';
         this.currentDetailVote = null;
+        this.initialized = false;
         
         console.log('✅ Instancia de VotingSystemFirebase creada correctamente');
         
-        this.init();
+        // NO inicializar automáticamente - dejar que auto-init.js maneje la inicialización
+        // this.init();
     }
 
     async init() {
+        // Evitar múltiples inicializaciones
+        if (this.initialized) {
+            console.log('⚠️ VotingSystemFirebase ya inicializado, evitando duplicación');
+            return;
+        }
+        
         console.log('🔄 Inicializando VotingSystemFirebase...');
         
         // Verificar usuario actual y establecer página inicial según rol
@@ -101,8 +109,8 @@ class VotingSystemFirebase extends VotingSystem {
             }
         }
             
-            // Cargar datos desde Firebase
-            await this.loadDataFromFirebase();
+        // Cargar datos desde Firebase
+        await this.loadDataFromFirebase();
         
         // Configurar event listeners
         this.setupEventListeners();
@@ -116,6 +124,7 @@ class VotingSystemFirebase extends VotingSystem {
         // Inicializar sistema offline
         this.inicializarSistemaOffline();
         
+        this.initialized = true;
         console.log('✅ VotingSystemFirebase inicializado correctamente');
     }
 
@@ -133,6 +142,15 @@ class VotingSystemFirebase extends VotingSystem {
             // Verificar si Firebase está disponible
             if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
                 console.log('⚠️ Firebase no disponible, cargando datos locales');
+                this.isLoadingData = false;
+                return this.loadDataLocally();
+            }
+            
+            // Verificar si Firebase está realmente inicializado
+            try {
+                await window.firebaseDB.votesCollection.get();
+            } catch (error) {
+                console.log('⚠️ Firebase no responde, cargando datos locales');
                 this.isLoadingData = false;
                 return this.loadDataLocally();
             }
@@ -245,7 +263,7 @@ class VotingSystemFirebase extends VotingSystem {
                 console.log('✅ No hay votos locales, iniciando con lista vacía');
             }
             
-            // Usar configuración UBCH por defecto
+            // Usar configuración UBCH por defecto (SIEMPRE disponible)
             this.ubchToCommunityMap = {
                 "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "COMUNIDAD NO DEFINIDA"],
                 "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "COMUNIDAD NO DEFINIDA"],
@@ -268,12 +286,17 @@ class VotingSystemFirebase extends VotingSystem {
                 "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "COMUNIDAD NO DEFINIDA"]
             };
             
+            // Marcar como cargado
+            this.ubchConfigLoaded = true;
+            
             console.log(`✅ Configuración UBCH cargada: ${Object.keys(this.ubchToCommunityMap).length} UBCH disponibles`);
+            console.log('📋 Comunidades disponibles:', Object.values(this.ubchToCommunityMap).flat().length);
             
         } catch (error) {
             console.error('❌ Error cargando datos locales:', error);
             this.votes = [];
             this.ubchToCommunityMap = {};
+            this.ubchConfigLoaded = false;
         }
     }
 
@@ -915,20 +938,17 @@ class VotingSystemFirebase extends VotingSystem {
 
         // Verificar si hay datos disponibles
         if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
-            console.log('⚠️ No hay datos disponibles, intentando recargar...');
-            console.log('🔍 DEBUG: ubchToCommunityMap está vacío o no definido');
-            form.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
-            this.showMessage('Cargando datos...', 'info', 'registration');
+            console.log('⚠️ No hay datos disponibles, cargando configuración por defecto...');
             
-            // Intentar recargar la configuración
-            this.loadDataFromFirebase().then(() => {
-                console.log('🔍 DEBUG: Datos recargados, renderizando de nuevo...');
-                this.renderRegistrationPage();
-            }).catch(error => {
-                console.error('❌ Error recargando datos:', error);
-                this.showMessage('Error cargando datos. Contacte al administrador.', 'error', 'registration');
-            });
-            return;
+            // Cargar configuración por defecto inmediatamente
+            this.loadDataLocally();
+            
+            // Si aún no hay datos, mostrar error
+            if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
+                console.error('❌ No se pudieron cargar los datos de configuración');
+                this.showMessage('Error cargando configuración. Contacte al administrador.', 'error', 'registration');
+                return;
+            }
         }
 
         console.log('🔍 DEBUG: Datos disponibles, procediendo a cargar formulario...');
