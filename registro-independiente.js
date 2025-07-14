@@ -1,4 +1,3 @@
-// Choices.js solo debe cargarse en la página de registro si se usa autocompletado avanzado. No cargarlo globalmente.
 // --- REGISTRO UBCH/COMUNIDAD AISLADO ---
 
 // Configuración estática (puedes cargarla dinámicamente si lo prefieres)

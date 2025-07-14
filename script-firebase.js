@@ -82,21 +82,13 @@ class VotingSystemFirebase extends VotingSystem {
         this.currentSortField = null;
         this.currentSortDirection = 'asc';
         this.currentDetailVote = null;
-        this.initialized = false;
         
         console.log('✅ Instancia de VotingSystemFirebase creada correctamente');
         
-        // NO inicializar automáticamente - dejar que auto-init.js maneje la inicialización
-        // this.init();
+        this.init();
     }
 
     async init() {
-        // Evitar múltiples inicializaciones
-        if (this.initialized) {
-            console.log('⚠️ VotingSystemFirebase ya inicializado, evitando duplicación');
-            return;
-        }
-        
         console.log('🔄 Inicializando VotingSystemFirebase...');
         
         // Verificar usuario actual y establecer página inicial según rol
@@ -109,8 +101,8 @@ class VotingSystemFirebase extends VotingSystem {
             }
         }
             
-        // Cargar datos desde Firebase
-        await this.loadDataFromFirebase();
+            // Cargar datos desde Firebase
+            await this.loadDataFromFirebase();
         
         // Configurar event listeners
         this.setupEventListeners();
@@ -124,7 +116,6 @@ class VotingSystemFirebase extends VotingSystem {
         // Inicializar sistema offline
         this.inicializarSistemaOffline();
         
-        this.initialized = true;
         console.log('✅ VotingSystemFirebase inicializado correctamente');
     }
 
@@ -142,15 +133,6 @@ class VotingSystemFirebase extends VotingSystem {
             // Verificar si Firebase está disponible
             if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
                 console.log('⚠️ Firebase no disponible, cargando datos locales');
-                this.isLoadingData = false;
-                return this.loadDataLocally();
-            }
-            
-            // Verificar si Firebase está realmente inicializado
-            try {
-                await window.firebaseDB.votesCollection.get();
-            } catch (error) {
-                console.log('⚠️ Firebase no responde, cargando datos locales');
                 this.isLoadingData = false;
                 return this.loadDataLocally();
             }
@@ -263,7 +245,7 @@ class VotingSystemFirebase extends VotingSystem {
                 console.log('✅ No hay votos locales, iniciando con lista vacía');
             }
             
-            // Usar configuración UBCH por defecto (SIEMPRE disponible)
+            // Usar configuración UBCH por defecto
             this.ubchToCommunityMap = {
                 "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "COMUNIDAD NO DEFINIDA"],
                 "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "COMUNIDAD NO DEFINIDA"],
@@ -286,17 +268,12 @@ class VotingSystemFirebase extends VotingSystem {
                 "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "COMUNIDAD NO DEFINIDA"]
             };
             
-            // Marcar como cargado
-            this.ubchConfigLoaded = true;
-            
             console.log(`✅ Configuración UBCH cargada: ${Object.keys(this.ubchToCommunityMap).length} UBCH disponibles`);
-            console.log('📋 Comunidades disponibles:', Object.values(this.ubchToCommunityMap).flat().length);
             
         } catch (error) {
             console.error('❌ Error cargando datos locales:', error);
             this.votes = [];
             this.ubchToCommunityMap = {};
-            this.ubchConfigLoaded = false;
         }
     }
 
@@ -938,17 +915,20 @@ class VotingSystemFirebase extends VotingSystem {
 
         // Verificar si hay datos disponibles
         if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
-            console.log('⚠️ No hay datos disponibles, cargando configuración por defecto...');
+            console.log('⚠️ No hay datos disponibles, intentando recargar...');
+            console.log('🔍 DEBUG: ubchToCommunityMap está vacío o no definido');
+            form.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+            this.showMessage('Cargando datos...', 'info', 'registration');
             
-            // Cargar configuración por defecto inmediatamente
-            this.loadDataLocally();
-            
-            // Si aún no hay datos, mostrar error
-            if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
-                console.error('❌ No se pudieron cargar los datos de configuración');
-                this.showMessage('Error cargando configuración. Contacte al administrador.', 'error', 'registration');
-                return;
-            }
+            // Intentar recargar la configuración
+            this.loadDataFromFirebase().then(() => {
+                console.log('🔍 DEBUG: Datos recargados, renderizando de nuevo...');
+                this.renderRegistrationPage();
+            }).catch(error => {
+                console.error('❌ Error recargando datos:', error);
+                this.showMessage('Error cargando datos. Contacte al administrador.', 'error', 'registration');
+            });
+            return;
         }
 
         console.log('🔍 DEBUG: Datos disponibles, procediendo a cargar formulario...');
@@ -988,8 +968,12 @@ class VotingSystemFirebase extends VotingSystem {
         console.log(`📊 Resumen: ${todasLasComunidades.size} comunidades, ${Object.keys(this.ubchToCommunityMap).length} centros de votación`);
         this.showMessage(`Formulario listo con ${todasLasComunidades.size} comunidades disponibles`, 'success', 'registration');
 
-        // Inicializar Choices.js para el autocompletado de comunidades (carga dinámica)
-        this.initializeChoicesIfNeeded();
+        // Inicializar Choices.js para el autocompletado de comunidades
+        if (window.initializeChoicesForCommunity) {
+            setTimeout(() => {
+                window.initializeChoicesForCommunity();
+            }, 100);
+        }
 
         // Iniciar sincronización automática si está disponible
         if (window.offlineQueueManager) {
@@ -1000,104 +984,6 @@ class VotingSystemFirebase extends VotingSystem {
         this.actualizarIndicadorOffline();
         this.actualizarFormularioOffline();
     }
-
-    // === CARGA DINÁMICA DE CHOICES.JS ===
-    
-    async initializeChoicesIfNeeded() {
-        // Solo cargar Choices.js si no está disponible y estamos en la página de registro
-        if (typeof Choices === 'undefined' && this.currentPage === 'registration') {
-            try {
-                console.log('🔄 Cargando Choices.js dinámicamente...');
-                
-                // Cargar CSS primero
-                await this.loadChoicesCSS();
-                
-                // Cargar JS
-                await this.loadChoicesJS();
-                
-                // Inicializar Choices.js en los selects
-                await this.initializeChoicesForSelects();
-                
-                console.log('✅ Choices.js cargado dinámicamente');
-            } catch (error) {
-                console.warn('⚠️ No se pudo cargar Choices.js:', error);
-            }
-        } else if (typeof Choices !== 'undefined') {
-            // Si ya está disponible, inicializar directamente
-            await this.initializeChoicesForSelects();
-        }
-    }
-
-    async loadChoicesCSS() {
-        return new Promise((resolve, reject) => {
-            // Verificar si ya está cargado
-            if (document.querySelector('link[href*="choices"]')) {
-                resolve();
-                return;
-            }
-
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = 'choices.min.css';
-            link.onload = resolve;
-            link.onerror = reject;
-            document.head.appendChild(link);
-        });
-    }
-
-    async loadChoicesJS() {
-        return new Promise((resolve, reject) => {
-            // Verificar si ya está cargado
-            if (typeof Choices !== 'undefined') {
-                resolve();
-                return;
-            }
-
-            const script = document.createElement('script');
-            script.src = 'choices.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-
-    async initializeChoicesForSelects() {
-        try {
-            // Cargar Choices.js dinámicamente si no está disponible
-            if (typeof Choices === 'undefined') {
-                console.log('🔄 Cargando Choices.js dinámicamente...');
-                await this.loadChoicesJS();
-            }
-
-            // Inicializar Choices.js en los selects de comunidad y UBCH
-            const communitySelect = document.getElementById('community');
-            const ubchSelect = document.getElementById('ubch');
-
-            if (communitySelect && !communitySelect.choices) {
-                new Choices(communitySelect, {
-                    searchEnabled: true,
-                    searchPlaceholderValue: 'Buscar comunidad...',
-                    noResultsText: 'No se encontraron comunidades',
-                    itemSelectText: 'Presiona para seleccionar'
-                });
-            }
-
-            if (ubchSelect && !ubchSelect.choices) {
-                new Choices(ubchSelect, {
-                    searchEnabled: true,
-                    searchPlaceholderValue: 'Buscar centro de votación...',
-                    noResultsText: 'No se encontraron centros de votación',
-                    itemSelectText: 'Presiona para seleccionar'
-                });
-            }
-
-            console.log('✅ Choices.js inicializado en los selects');
-        } catch (error) {
-            console.warn('⚠️ Error al inicializar Choices.js:', error);
-        }
-    }
-
-    // === FIN CARGA DINÁMICA DE CHOICES.JS ===
 
     // Los selects de comunidad y CV son independientes, no necesitan funciones de vinculación
 
