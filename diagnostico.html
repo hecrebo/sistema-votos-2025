@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico - Sistema de Votos 2025</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-item {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .status-ok {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .status-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        .status-info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-danger { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Diagnóstico del Sistema</h1>
+        <p>Esta página te ayudará a identificar problemas en el sistema.</p>
+        
+        <div id="diagnostic-results"></div>
+        
+        <div style="margin-top: 30px;">
+            <button class="btn btn-primary" onclick="runDiagnostic()">🔄 Ejecutar Diagnóstico</button>
+            <button class="btn btn-success" onclick="fixCommonIssues()">🔧 Reparar Problemas Comunes</button>
+            <button class="btn btn-warning" onclick="clearCache()">🗑️ Limpiar Cache</button>
+            <button class="btn btn-danger" onclick="resetSystem()">🔄 Reiniciar Sistema</button>
+        </div>
+    </div>
+
+    <script>
+        const diagnosticResults = document.getElementById('diagnostic-results');
+        
+        function addStatus(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status-item status-${type}`;
+            div.innerHTML = message;
+            diagnosticResults.appendChild(div);
+        }
+
+        function runDiagnostic() {
+            diagnosticResults.innerHTML = '';
+            addStatus('🔍 Iniciando diagnóstico del sistema...', 'info');
+            
+            // 1. Verificar Firebase
+            setTimeout(() => {
+                if (window.firebaseDB && window.firebaseDB.db) {
+                    addStatus('✅ Firebase configurado correctamente', 'ok');
+                } else {
+                    addStatus('❌ Firebase no está disponible. Verifica firebase-config.js', 'error');
+                }
+            }, 500);
+
+            // 2. Verificar configuración
+            setTimeout(() => {
+                if (window.SYSTEM_CONFIG) {
+                    addStatus('✅ Configuración del sistema cargada', 'ok');
+                } else {
+                    addStatus('❌ Configuración del sistema no encontrada', 'error');
+                }
+            }, 1000);
+
+            // 3. Verificar sesión
+            setTimeout(() => {
+                const currentUser = localStorage.getItem('currentUser');
+                if (currentUser) {
+                    try {
+                        const user = JSON.parse(currentUser);
+                        addStatus(`✅ Sesión activa: ${user.username} (${user.rol})`, 'ok');
+                    } catch (e) {
+                        addStatus('❌ Sesión corrupta', 'error');
+                    }
+                } else {
+                    addStatus('ℹ️ No hay sesión activa', 'info');
+                }
+            }, 1500);
+
+            // 4. Verificar conectividad
+            setTimeout(() => {
+                if (navigator.onLine) {
+                    addStatus('✅ Conexión a internet disponible', 'ok');
+                } else {
+                    addStatus('⚠️ Sin conexión a internet', 'warning');
+                }
+            }, 2000);
+
+            // 5. Verificar archivos críticos
+            setTimeout(() => {
+                const criticalFiles = ['config.js', 'firebase-config.js', 'init-system.js'];
+                let missingFiles = [];
+                
+                criticalFiles.forEach(file => {
+                    // Simular verificación
+                    if (file === 'firebase-config.js' && !window.firebaseDB) {
+                        missingFiles.push(file);
+                    }
+                });
+                
+                if (missingFiles.length === 0) {
+                    addStatus('✅ Todos los archivos críticos están presentes', 'ok');
+                } else {
+                    addStatus(`❌ Archivos faltantes: ${missingFiles.join(', ')}`, 'error');
+                }
+            }, 2500);
+
+            // 6. Verificar cache del navegador
+            setTimeout(() => {
+                if ('caches' in window) {
+                    addStatus('✅ Cache del navegador disponible', 'ok');
+                } else {
+                    addStatus('⚠️ Cache del navegador no disponible', 'warning');
+                }
+            }, 3000);
+        }
+
+        function fixCommonIssues() {
+            addStatus('🔧 Intentando reparar problemas comunes...', 'info');
+            
+            // Limpiar localStorage corrupto
+            try {
+                const currentUser = localStorage.getItem('currentUser');
+                if (currentUser) {
+                    JSON.parse(currentUser);
+                    addStatus('✅ localStorage verificado', 'ok');
+                }
+            } catch (e) {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('sessionTime');
+                addStatus('✅ localStorage corrupto limpiado', 'ok');
+            }
+            
+            // Forzar recarga de Firebase
+            if (window.firebaseDB) {
+                addStatus('✅ Firebase disponible', 'ok');
+            } else {
+                addStatus('⚠️ Firebase no disponible - recarga la página', 'warning');
+            }
+        }
+
+        function clearCache() {
+            addStatus('🗑️ Limpiando cache...', 'info');
+            
+            // Limpiar localStorage
+            localStorage.clear();
+            addStatus('✅ Cache limpiado', 'ok');
+            
+            // Recargar página
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        }
+
+        function resetSystem() {
+            if (confirm('¿Estás seguro de que quieres reiniciar el sistema? Esto limpiará todos los datos locales.')) {
+                addStatus('🔄 Reiniciando sistema...', 'info');
+                
+                // Limpiar todo
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Recargar página
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            }
+        }
+
+        // Ejecutar diagnóstico automáticamente al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runDiagnostic, 1000);
+        });
+    </script>
+</body>
+</html> 

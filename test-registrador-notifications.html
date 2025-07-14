@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notificaciones Registrador - Sistema de Votos 2025</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+        }
+        
+        .header p {
+            color: #666;
+            margin: 0;
+            font-size: 1.2em;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .test-section h3 {
+            color: #333;
+            margin: 0 0 15px 0;
+            font-size: 1.3em;
+        }
+        
+        .status-info {
+            background: #e8f5e8;
+            border: 1px solid #28a745;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .status-info h4 {
+            color: #155724;
+            margin: 0 0 10px 0;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        .status-value {
+            font-weight: 600;
+        }
+        
+        .status-value.online {
+            color: #28a745;
+        }
+        
+        .status-value.offline {
+            color: #dc3545;
+        }
+        
+        .login-section {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .login-section h4 {
+            color: #856404;
+            margin: 0 0 10px 0;
+        }
+        
+        .login-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .login-form input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .login-form button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .login-form button:hover {
+            background: #5a67d8;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        
+        .test-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 1em;
+        }
+        
+        .test-btn.info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .test-btn.success {
+            background: linear-gradient(135deg, #28a745 0%, #43e97b 100%);
+            color: white;
+        }
+        
+        .test-btn.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ffecb3 100%);
+            color: #333;
+        }
+        
+        .test-btn.error {
+            background: linear-gradient(135deg, #dc3545 0%, #ff758c 100%);
+            color: white;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .log-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .log-section h4 {
+            color: #333;
+            margin: 0 0 10px 0;
+        }
+        
+        .log-container {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions h4 {
+            color: #1565c0;
+            margin: 0 0 10px 0;
+        }
+        
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+            color: #1565c0;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Test Notificaciones Registrador</h1>
+            <p>Sistema de Votos 2025 - Verificación de Notificaciones</p>
+        </div>
+
+        <div class="instructions">
+            <h4>📋 Instrucciones de Prueba</h4>
+            <ol>
+                <li><strong>Inicia sesión como registrador</strong> usando las credenciales de prueba</li>
+                <li><strong>Abre el panel de administración</strong> en otra pestaña</li>
+                <li><strong>Envía notificaciones</strong> desde el panel de administración</li>
+                <li><strong>Verifica</strong> que las notificaciones lleguen a esta pestaña</li>
+            </ol>
+        </div>
+
+        <div class="status-info">
+            <h4>🔍 Estado del Sistema</h4>
+            <div class="status-item">
+                <span>Usuario Actual:</span>
+                <span class="status-value" id="current-user">No iniciado</span>
+            </div>
+            <div class="status-item">
+                <span>Rol:</span>
+                <span class="status-value" id="current-role">No iniciado</span>
+            </div>
+            <div class="status-item">
+                <span>Sistema de Notificaciones:</span>
+                <span class="status-value" id="notification-status">Verificando...</span>
+            </div>
+            <div class="status-item">
+                <span>Firebase Connection:</span>
+                <span class="status-value" id="firebase-status">Verificando...</span>
+            </div>
+            <div class="status-item">
+                <span>Realtime System:</span>
+                <span class="status-value" id="realtime-status">Verificando...</span>
+            </div>
+        </div>
+
+        <div class="login-section">
+            <h4>🔐 Iniciar Sesión como Registrador</h4>
+            <div class="login-form">
+                <input type="text" id="username" placeholder="Usuario" value="YRAIMA PINTO">
+                <input type="password" id="password" placeholder="Contraseña" value="13518010">
+                <button onclick="loginAsRegistrador()">Iniciar Sesión</button>
+            </div>
+            <p><small>Usa las credenciales de prueba: YRAIMA PINTO / 13518010</small></p>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Pruebas de Notificaciones</h3>
+            <div class="test-buttons">
+                <button class="test-btn info" onclick="testLocalNotification('info')">ℹ️ Info Local</button>
+                <button class="test-btn success" onclick="testLocalNotification('success')">✅ Éxito Local</button>
+                <button class="test-btn warning" onclick="testLocalNotification('warning')">⚠️ Advertencia Local</button>
+                <button class="test-btn error" onclick="testLocalNotification('error')">❌ Error Local</button>
+            </div>
+            <p><small>Estos botones prueban notificaciones locales para verificar que el sistema funciona.</small></p>
+        </div>
+
+        <div class="log-section">
+            <h4>📋 Log de Actividad</h4>
+            <div class="log-container" id="activity-log">
+                Sistema de prueba iniciado...
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="notification-system.js"></script>
+    <script src="realtime-notifications.js"></script>
+    
+    <script>
+        // Función para agregar logs
+        function addLog(message) {
+            const logContainer = document.getElementById('activity-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.textContent += `[${timestamp}] ${message}\n`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(message);
+        }
+
+        // Función para verificar estado del sistema
+        function checkSystemStatus() {
+            // Verificar usuario actual
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const currentUserElement = document.getElementById('current-user');
+            const currentRoleElement = document.getElementById('current-role');
+            
+            if (currentUser.username) {
+                currentUserElement.textContent = currentUser.username;
+                currentUserElement.className = 'status-value online';
+                currentRoleElement.textContent = currentUser.rol || 'No definido';
+                currentRoleElement.className = 'status-value online';
+            } else {
+                currentUserElement.textContent = 'No iniciado';
+                currentUserElement.className = 'status-value offline';
+                currentRoleElement.textContent = 'No iniciado';
+                currentRoleElement.className = 'status-value offline';
+            }
+
+            // Verificar sistema de notificaciones
+            const notificationStatus = document.getElementById('notification-status');
+            if (window.notificationSystem) {
+                notificationStatus.textContent = 'Online';
+                notificationStatus.className = 'status-value online';
+            } else {
+                notificationStatus.textContent = 'Offline';
+                notificationStatus.className = 'status-value offline';
+            }
+
+            // Verificar Firebase
+            const firebaseStatus = document.getElementById('firebase-status');
+            if (window.firebaseDB) {
+                firebaseStatus.textContent = 'Online';
+                firebaseStatus.className = 'status-value online';
+            } else {
+                firebaseStatus.textContent = 'Offline';
+                firebaseStatus.className = 'status-value offline';
+            }
+
+            // Verificar sistema en tiempo real
+            const realtimeStatus = document.getElementById('realtime-status');
+            if (window.realtimeNotificationSystem && window.realtimeNotificationSystem.isInitialized) {
+                realtimeStatus.textContent = 'Online';
+                realtimeStatus.className = 'status-value online';
+            } else {
+                realtimeStatus.textContent = 'Offline';
+                realtimeStatus.className = 'status-value offline';
+            }
+        }
+
+        // Función para iniciar sesión como registrador
+        function loginAsRegistrador() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                addLog('❌ Error: Usuario y contraseña son requeridos');
+                return;
+            }
+            
+            // Simular login (en un sistema real esto verificaría las credenciales)
+            const sessionData = {
+                username: username,
+                rol: 'registrador',
+                loginTime: new Date().toISOString()
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(sessionData));
+            localStorage.setItem('sessionTime', Date.now().toString());
+            
+            addLog(`✅ Sesión iniciada como: ${username} (${sessionData.rol})`);
+            checkSystemStatus();
+            
+            // Reinicializar el sistema de notificaciones con el nuevo usuario
+            if (window.realtimeNotificationSystem) {
+                window.realtimeNotificationSystem.currentUser = sessionData;
+                addLog('🔄 Sistema de notificaciones reinicializado con nuevo usuario');
+            }
+        }
+
+        // Función para probar notificaciones locales
+        function testLocalNotification(type) {
+            const messages = {
+                'info': 'Esta es una notificación de información local.',
+                'success': '¡Operación completada exitosamente!',
+                'warning': 'Advertencia: El sistema detectó actividad inusual.',
+                'error': 'Error: No se pudo procesar la solicitud.'
+            };
+            
+            if (window.notificationSystem) {
+                window.notificationSystem.show(messages[type], type, true);
+                addLog(`🧪 Notificación local enviada (${type}): ${messages[type]}`);
+            } else {
+                addLog('❌ Sistema de notificaciones no disponible');
+            }
+        }
+
+        // Verificar estado al cargar
+        window.addEventListener('load', () => {
+            addLog('🧪 Test de notificaciones para registrador iniciado');
+            setTimeout(checkSystemStatus, 1000);
+        });
+
+        // Verificar estado cada 5 segundos
+        setInterval(checkSystemStatus, 5000);
+
+        // Interceptar notificaciones para logging
+        const originalShow = window.notificationSystem?.show;
+        if (window.notificationSystem && originalShow) {
+            window.notificationSystem.show = function(message, type, autoDismiss, duration) {
+                addLog(`📨 Notificación recibida: ${message} (${type})`);
+                return originalShow.call(this, message, type, autoDismiss, duration);
+            };
+        }
+
+        // Interceptar notificaciones en tiempo real
+        const originalShowRealtime = window.realtimeNotificationSystem?.showRealtimeNotification;
+        if (window.realtimeNotificationSystem && originalShowRealtime) {
+            window.realtimeNotificationSystem.showRealtimeNotification = function(notificationData) {
+                addLog(`📨 Notificación en tiempo real: ${notificationData.message} (${notificationData.type})`);
+                return originalShowRealtime.call(this, notificationData);
+            };
+        }
+    </script>
+</body>
+</html> 

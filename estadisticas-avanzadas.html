@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas Avanzadas - Sistema de Votos 2025</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="estadisticas-avanzadas.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" sizes="192x192" href="favicon.ico/icon-512x512.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.ico/apple-icon-180x180.png">
+    <meta name="description" content="Sistema de Registro de Votos 2025. Plataforma moderna para registro, control y estadísticas de votación.">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Encabezado principal -->
+        <header class="header dashboard-header">
+            <div class="header-content">
+                <div class="header-top">
+                    <div class="logo-container">
+                        <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
+                    </div>
+                    <div>
+                        <h1 class="header-title" style="font-size:2.2em; margin-bottom:0;">Panel de Estadísticas</h1>
+                        <p class="header-subtitle" style="font-size:1.1em; color:#667eea; margin-top:8px;">Visualización avanzada y ordenada de los datos del municipio</p>
+                    </div>
+                </div>
+                <div class="user-info">
+                    <span class="user-id" id="userId"></span>
+                    <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Volver al Sistema</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content stats-container">
+            <!-- DASHBOARD AVANZADO -->
+            <div class="dashboard-filtros" style="display:flex; gap:18px; align-items:center; margin-bottom:18px;">
+                <label for="filtro-comunidad">Comunidad:</label>
+                <select id="filtro-comunidad" class="dashboard-select">
+                    <option value="">Todas</option>
+                </select>
+                <label for="filtro-ubch">Centro de Votación:</label>
+                <select id="filtro-ubch" class="dashboard-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <section class="dashboard-grid" style="margin-bottom:40px;">
+                <div class="dashboard-card">
+                    <h3>👥 Registrados</h3>
+                    <p id="dashboard-total-registrados" class="dashboard-number">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3>✅ Votos Confirmados</h3>
+                    <p id="dashboard-total-votos" class="dashboard-number">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3>📈 % Participación</h3>
+                    <p id="dashboard-porcentaje-participacion" class="dashboard-number">0%</p>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Registros por Mes</h3>
+                    <canvas id="dashboard-registros-mes-chart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Votos por Comunidad</h3>
+                    <canvas id="dashboard-votos-comunidad-chart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Crecimiento de Registros</h3>
+                    <canvas id="dashboard-crecimiento-chart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Flujo de Confirmación de Votos por Hora (6am - 10pm)</h3>
+                    <canvas id="dashboard-flujo-horas-chart"></canvas>
+                </div>
+                <div class="dashboard-card">
+                    <h3>🏆 Top Comunidades</h3>
+                    <ul id="dashboard-ranking-comunidades"></ul>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Distribución por Sexo</h3>
+                    <canvas id="dashboard-sexo-chart"></canvas>
+                </div>
+                <div class="dashboard-card dashboard-chart">
+                    <h3>Distribución por Edad</h3>
+                    <canvas id="dashboard-edad-chart"></canvas>
+                </div>
+                <div class="dashboard-card">
+                    <h3>🕒 Actividad Reciente</h3>
+                    <ul id="dashboard-actividad-reciente"></ul>
+                </div>
+            </section>
+
+            <!-- Tarjetas resumen -->
+            <div class="stats-summary" style="margin-bottom:40px;">
+                <div class="stat-summary">
+                    <div style="font-size:2em;">👥</div>
+                    <div class="stat-number" id="total-registered-general">0</div>
+                    <div class="stat-label">Registrados</div>
+                </div>
+                <div class="stat-summary">
+                    <div style="font-size:2em;">🗳️</div>
+                    <div class="stat-number" id="total-voted-general">0</div>
+                    <div class="stat-label">Votaron</div>
+                </div>
+                <div class="stat-summary">
+                    <div style="font-size:2em;">📈</div>
+                    <div class="stat-number" id="participation-rate-general">0%</div>
+                    <div class="stat-label">Participación</div>
+                </div>
+                <div class="stat-summary">
+                    <div style="font-size:2em;">🏛️</div>
+                    <div class="stat-number" id="total-ubch-general">0</div>
+                    <div class="stat-label">Centros de Votación</div>
+                </div>
+                <div class="stat-summary">
+                    <div style="font-size:2em;">🏘️</div>
+                    <div class="stat-number" id="total-communities-general">0</div>
+                    <div class="stat-label">Comunidades</div>
+                </div>
+            </div>
+
+            <div class="separator"></div>
+
+            <!-- Grid de gráficos -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">Votos por Centro de Votación</h3>
+                    <canvas id="ubch-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3 class="chart-title">Votos por Comunidad</h3>
+                    <canvas id="community-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="separator"></div>
+
+            <!-- Listas interactivas de acceso rápido -->
+            <div class="stats-grid" style="margin-bottom:40px;">
+                <div class="stats-card">
+                    <h3>🔎 Ir a Centro de Votación</h3>
+                    <div class="stats-list" id="cv-link-list"></div>
+                </div>
+                <div class="stats-card">
+                    <h3>🔎 Ir a Comunidad</h3>
+                    <div class="stats-list" id="community-link-list"></div>
+                </div>
+            </div>
+
+            <!-- Modal de estadísticas detalladas -->
+            <div id="detalle-modal" class="modal" style="display:none;">
+                <div class="modal-content" id="detalle-modal-content">
+                    <!-- Aquí se llenarán las estadísticas detalladas dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Listas detalladas -->
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>🏛️ Centros de Votación</h3>
+                    <div class="stats-list" id="all-ubch"></div>
+                </div>
+                <div class="stats-card">
+                    <h3>🏘️ Comunidades</h3>
+                    <div class="stats-list" id="all-communities"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>© 2025 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>
+        </footer>
+
+        <button id="projection-mode-btn" class="btn btn-primary projection-fixed-btn">Modo Proyección</button>
+        <div id="projection-overlay" class="projection-view" style="display:none;">
+            <div class="projection-header">
+                <h1>Proyección en Tiempo Real</h1>
+                <button id="exit-projection-btn" class="btn btn-danger">Salir</button>
+            </div>
+            <div class="projection-content">
+                <div class="projection-main">
+                    <h2>Participación General</h2>
+                    <div class="projection-number" id="projection-total-votos">0</div>
+                    <div class="projection-label">Votos Confirmados</div>
+                    <div class="projection-progress">
+                        <div class="projection-progress-fill" id="projection-progress-fill"></div>
+                    </div>
+                    <p class="projection-text" id="projection-text">0 de 0 personas</p>
+                    <div class="projection-label" id="projection-porcentaje">0%</div>
+                </div>
+                <div class="projection-stats">
+                    <h2>Top 5 Comunidades</h2>
+                    <div class="projection-list" id="projection-ranking-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Solo cargar estos scripts aquí porque son necesarios para estadísticas y exportación PDF -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+        <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js" defer></script>
+
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+        <script src="firebase-config.js"></script>
+        <script src="script-firebase.js"></script>
+        <script src="estadisticas-avanzadas.js"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.estadisticasAvanzadas = new EstadisticasAvanzadas();
+        });
+        </script>
+    </div>
+</body>
+</html> 

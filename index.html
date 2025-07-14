@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Registro de Votos 2025</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="msapplication-TileColor" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="favicon.ico/apple-icon-180x180.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.ico/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="favicon.ico/favicon-96x96.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.ico/apple-icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="favicon.ico/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="favicon.ico/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="favicon.ico/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="favicon.ico/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="favicon.ico/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="favicon.ico/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="favicon.ico/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="57x57" href="favicon.ico/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" href="favicon.ico/apple-icon.png">
+    <link rel="apple-touch-icon-precomposed" href="favicon.ico/apple-icon-precomposed.png">
+    
+    <!-- Android Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="favicon.ico/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="144x144" href="favicon.ico/android-icon-144x144.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="favicon.ico/android-icon-96x96.png">
+    <link rel="icon" type="image/png" sizes="72x72" href="favicon.ico/android-icon-72x72.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="favicon.ico/android-icon-48x48.png">
+    <link rel="icon" type="image/png" sizes="36x36" href="favicon.ico/android-icon-36x36.png">
+    
+    <!-- Microsoft Icons -->
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="favicon.ico/ms-icon-144x144.png">
+    <meta name="msapplication-config" content="favicon.ico/browserconfig.xml">
+    
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PDF Libraries (cargar antes que otros scripts) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js"></script>
+    
+    <script src="config.js"></script>
+    <script src="script-firebase.js"></script>
+    <script src="auto-init.js"></script>
+    <script src="test-automatico.js"></script>
+    <script src="test-proyeccion.js"></script>
+    <script src="queue-manager.js"></script>
+    <script src="notification-system.js"></script>
+    <script src="realtime-notifications.js"></script>
+    
+    <!-- Agregar Choices.js para autocomplete -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <link rel="stylesheet" href="choices.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-top">
+                    <div class="logo-container">
+                        <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
+                    </div>
+                    <h1 class="header-title">Registro de Votos y Estadísticas</h1>
+                </div>
+                <nav class="nav-menu">
+                    <button class="nav-btn active" data-page="registration" id="nav-registration">Registro</button>
+                    <button class="nav-btn" data-page="check-in" id="nav-check-in">Confirmar Voto</button>
+                    <button class="nav-btn" data-page="listado" id="nav-listado">Listado</button>
+                    <button class="nav-btn" data-page="dashboard" id="nav-dashboard">Totales</button>
+                    <button class="nav-btn" data-page="statistics" id="nav-statistics">Estadísticas</button>
+                    <button class="nav-btn" onclick="window.location.href='estadisticas-avanzadas.html'" id="nav-advanced-stats">📊 Estadísticas Avanzadas</button>
+                </nav>
+                <div class="user-info">
+                    <span class="user-id" id="userId"></span>
+                    <div class="sync-status">
+                        <span class="sync-spinner" id="sync-spinner"></span>
+                        <span class="sync-check" id="sync-check"></span>
+                        <span class="sync-indicator" id="sync-indicator">🔄</span>
+                        <span class="sync-text" id="sync-text">Sincronizando</span>
+                    </div>
+                    <!-- Indicador de estado offline -->
+                    <div class="offline-indicator" id="offline-indicator">
+                        <span class="offline-icon">📴</span>
+                        <span class="offline-text">Sin conexión</span>
+                                    </div>
+                    <!-- Eliminar panel y botones de migración -->
+                </div>
+                <!-- Menú desplegable móvil -->
+                <div class="mobile-menu">
+                    <button class="menu-toggle" onclick="toggleMenu()">⋮</button>
+                    <div class="menu-dropdown" id="menu-dropdown">
+                        <!-- El contenido del menú se generará dinámicamente por JS según el rol -->
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Registration Page -->
+            <div class="page active" id="registration-page">
+                <div class="page-container">
+                    <h2 class="page-title">Registro de Persona</h2>
+                    
+                    <!-- Selector de modo de registro -->
+                    <div class="registration-mode-selector">
+                        <button type="button" class="mode-btn active" data-mode="individual" onclick="switchRegistrationMode('individual')">
+                            👤 Registro Individual
+                        </button>
+                        <button type="button" class="mode-btn" data-mode="bulk" onclick="switchRegistrationMode('bulk')">
+                            📊 Registro Masivo (Excel)
+                        </button>
+                        <button type="button" class="mode-btn" data-mode="mylistado" onclick="switchRegistrationMode('mylistado')">
+                            📋 Mi Listado
+                        </button>
+                    </div>
+                    
+                    <!-- Formulario de registro único con listas independientes -->
+                    <div id="individual-registration" class="registration-mode">
+                        <form id="registration-form" class="registration-form" autocomplete="off">
+                            <div class="form-group">
+                                <label for="community">Comunidad</label>
+                                <select id="community" name="community" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="name">Nombre de la Persona</label>
+                                <input type="text" id="name" name="name" placeholder="Ej: Juan Pérez" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="cedula">Cédula</label>
+                                <input type="text" id="cedula" name="cedula" placeholder="Ej: 12345678" required title="Introduce una cédula válida (solo números, 6 a 10 dígitos)" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="telefono">Teléfono (opcional)</label>
+                                <input type="text" id="telefono" name="telefono" placeholder="Ej: 04121234567" title="Introduce un teléfono válido (ej: 04121234567)" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="sexo">Sexo</label>
+                                <select id="sexo" name="sexo" required>
+                                    <option value="">Selecciona el sexo</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edad">Edad</label>
+                                <input type="number" id="edad" name="edad" placeholder="Ej: 25" min="16" max="120" required title="Introduce una edad válida (entre 16 y 120 años)" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="ubch">CV</label>
+                                <select id="ubch" name="ubch" required></select>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-large" id="register-btn">
+                                <span class="btn-text">Registrar Persona</span>
+                                <span class="btn-loading" style="display: none;">Registrando...</span>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Registro masivo desde Excel -->
+                    <div id="bulk-registration" class="registration-mode" style="display: none;">
+                        <div class="admin-card import-section">
+                            <h3>📋 Registro Masivo (Pega los datos de Excel aquí)</h3>
+                            <div class="import-info">
+                                <p>Pega los datos copiados de Excel directamente en la tabla. Puedes editar los valores antes de cargar.</p>
+                                <p>Columnas esperadas: <b>CV, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</b></p>
+                            </div>
+                            <div style="overflow-x:auto;">
+                                <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false" style="min-width:800px;">
+                                    <thead>
+                                        <tr>
+                                            <th>CV</th>
+                                            <th>Comunidad</th>
+                                            <th>Nombre</th>
+                                            <th>Cédula</th>
+                                            <th>Teléfono</th>
+                                            <th>Sexo</th>
+                                            <th>Edad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="paste-table-body">
+                                        <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="import-controls">
+                                <button class="btn btn-success" onclick="importPasteTable()">Cargar a Firebase</button>
+                                <button class="btn btn-warning" onclick="clearPasteTable()">Limpiar Tabla</button>
+                                <button class="btn btn-info" onclick="limpiarColaYForzarSync()">🔄 Limpiar Cola & Sincronizar</button>
+                            </div>
+                            <div id="import-massive-status" class="import-status info" style="display:none;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Nueva sección: Mi Listado -->
+                    <div id="mylistado-registration" class="registration-mode" style="display: none;">
+                        <div class="mylistado-card">
+                            <h3>📋 Mi Listado</h3>
+                            <div class="mylistado-actions">
+                                <button class="btn btn-primary" onclick="cargarMiListado()">🔄 Actualizar Mi Listado</button>
+                                <button class="btn btn-secondary" onclick="exportarMiListado()">📊 Exportar Excel</button>
+                                <button class="btn btn-warning" onclick="insertarRegistrosPrueba()">🧪 Registros de Prueba</button>
+                                <button class="btn btn-danger" onclick="limpiarMiListado()">🗑️ Limpiar Listado</button>
+                            </div>
+                            <div class="mylistado-search-container">
+                                <input type="text" id="mylistado-search" placeholder="Buscar en mi listado..." style="padding: 10px 15px; border-radius: 8px; border: 1px solid #d1d5db; width: 100%; max-width: 400px; margin-bottom: 15px;">
+                            </div>
+                            <div id="mylistado-container">
+                                <div id="mylistado-loading" style="text-align: center; padding: 20px; display: none;">
+                                    <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                                    <p>Cargando mi listado...</p>
+                                </div>
+                                <div id="mylistado-content"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="registration-message" class="message" style="display: none;"></div>
+                    <div id="queue-status" class="queue-status" style="display: none;"></div>
+                    <div id="thank-you-message" class="thank-you-message" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Check-in Page -->
+            <div class="page" id="check-in-page">
+                <div class="page-container">
+                    <h2 class="page-title">Confirmar Voto</h2>
+                    <form id="check-in-form" class="check-in-form">
+                        <div class="search-container">
+                            <input type="text" id="cedula-search" placeholder="Buscar por Cédula" required>
+                            <button type="submit" class="btn btn-primary">
+                                <span class="btn-text">Buscar</span>
+                                <span class="btn-loading" style="display: none;">Buscando...</span>
+                            </button>
+                        </div>
+                    </form>
+                    <div id="check-in-message" class="message" style="display: none;"></div>
+                    <div id="search-results" class="search-results"></div>
+                </div>
+            </div>
+
+            <!-- List Page -->
+            <div class="page" id="listado-page">
+                <div class="page-container">
+                    <div class="page-header">
+                        <h2 class="page-title">Listado de Personas Registradas</h2>
+                        <div class="page-actions">
+                            <button id="export-pdf-btn" class="btn btn-secondary">Generar PDF</button>
+                            <button id="export-csv-btn" class="btn btn-secondary" title="Exporta registros seleccionados o todos los filtrados">📊 Generar CSV</button>
+                        </div>
+                    </div>
+                    <div class="filter-container">
+                        <!-- Primera fila: Búsqueda y contadores -->
+                        <div class="filter-row-1">
+                            <div class="search-bar-container">
+                                <div class="search-input-group">
+                                    <input type="text" id="list-search" placeholder="Buscar por nombre, cédula, comunidad..." class="search-input">
+                                    <button type="button" id="clear-search" class="clear-search-btn" style="display: none;">✕</button>
+                                </div>
+                                <div class="search-options">
+                                    <select id="search-field" class="search-field-select">
+                                        <option value="all">Todos los campos</option>
+                                        <option value="name">Nombre</option>
+                                        <option value="cedula">Cédula</option>
+                                        <option value="community">Comunidad</option>
+                                        <option value="ubch">CV</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="general-counters">
+                                <div class="counter-item">
+                                    <span class="counter-label">Total:</span>
+                                    <span class="counter-value" id="total-counter">0</span>
+                                </div>
+                                <div class="counter-item">
+                                    <span class="counter-label">Votaron:</span>
+                                    <span class="counter-value voted" id="voted-counter">0</span>
+                                </div>
+                                <div class="counter-item">
+                                    <span class="counter-label">No Votaron:</span>
+                                    <span class="counter-value not-voted" id="not-voted-counter">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Segunda fila: Filtros principales y avanzados -->
+                        <div class="filter-row-2">
+                        <div class="filter-buttons">
+                                <button class="filter-btn active" data-filter="all">
+                                    <span class="filter-text">Todos</span>
+                                    <span class="filter-count" id="all-count">0</span>
+                                </button>
+                                <button class="filter-btn" data-filter="voted">
+                                    <span class="filter-text">Votaron</span>
+                                    <span class="filter-count" id="voted-count">0</span>
+                                </button>
+                                <button class="filter-btn" data-filter="not-voted">
+                                    <span class="filter-text">No Votaron</span>
+                                    <span class="filter-count" id="not-voted-count">0</span>
+                                </button>
+                        </div>
+                            
+                            <div class="advanced-filters">
+                        <div class="ubch-filter">
+                                    <label for="ubch-filter-select">CV:</label>
+                            <select id="ubch-filter-select" class="ubch-filter-select">
+                                <option value="">Todos los CV</option>
+                            </select>
+                        </div>
+                        <div class="community-filter">
+                                    <label for="community-filter-select">Comunidad:</label>
+                            <select id="community-filter-select" class="community-filter-select">
+                                <option value="">Todas las Comunidades</option>
+                            </select>
+                        </div>
+                                <div class="age-filter">
+                                    <label for="age-filter-select">Edad:</label>
+                                    <select id="age-filter-select" class="age-filter-select">
+                                        <option value="">Todas las edades</option>
+                                        <option value="16-25">16-25 años</option>
+                                        <option value="26-35">26-35 años</option>
+                                        <option value="36-45">36-45 años</option>
+                                        <option value="46-55">46-55 años</option>
+                                        <option value="56+">56+ años</option>
+                                    </select>
+                    </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información de filtros aplicados -->
+                        <div class="filter-info" id="filter-info" style="display: none;">
+                            <span class="filter-info-text">Filtros aplicados</span>
+                        </div>
+                    </div>
+                    <!-- Acciones masivas -->
+                    <div id="bulk-actions" class="bulk-actions">
+                        <div class="bulk-select-all">
+                            <input type="checkbox" id="select-all-checkbox" class="row-checkbox">
+                            <label for="select-all-checkbox">Seleccionar todos</label>
+                        </div>
+                        <div class="bulk-actions-buttons">
+                            <button class="btn btn-success btn-small" onclick="votingSystem.bulkConfirmVotes()">🎯 Confirmar Votos</button>
+                            <button class="btn btn-danger btn-small" onclick="votingSystem.bulkDeleteVotes()">❌ Eliminar</button>
+                        </div>
+                    </div>
+
+                    <!-- Vista detallada -->
+                    <div id="detail-view" class="detail-view">
+                        <div class="detail-header">
+                            <h3 class="detail-title">Detalles del Registro</h3>
+                            <button class="detail-close" onclick="votingSystem.closeDetailView()">✕</button>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-section">
+                                <h4>Información Personal</h4>
+                                <div class="detail-info"><strong>Nombre:</strong> <span id="detail-name"></span></div>
+                                <div class="detail-info"><strong>Cédula:</strong> <span id="detail-cedula"></span></div>
+                                <div class="detail-info"><strong>Teléfono:</strong> <span id="detail-telefono"></span></div>
+                                <div class="detail-info"><strong>Sexo:</strong> <span id="detail-sexo"></span></div>
+                                <div class="detail-info"><strong>Edad:</strong> <span id="detail-edad"></span></div>
+                            </div>
+                            <div class="detail-section">
+                                <h4>Información Electoral</h4>
+                                <div class="detail-info"><strong>CV:</strong> <span id="detail-ubch"></span></div>
+                                <div class="detail-info"><strong>Comunidad:</strong> <span id="detail-community"></span></div>
+                                <div class="detail-info"><strong>Estado del Voto:</strong> <span id="detail-vote-status"></span></div>
+                                <div class="detail-info"><strong>Fecha de Registro:</strong> <span id="detail-registered-at"></span></div>
+                                <div class="detail-info"><strong>Registrado por:</strong> <span id="detail-registered-by"></span></div>
+                            </div>
+                            <div class="detail-section">
+                                <h4>Acciones</h4>
+                                <div class="detail-actions">
+                                    <button class="btn btn-primary" onclick="votingSystem.editFromDetail()">🔄 Editar</button>
+                                    <button class="btn btn-success" onclick="votingSystem.confirmFromDetail()">🎯 Confirmar Voto</button>
+                                    <button class="btn btn-danger" onclick="votingSystem.deleteFromDetail()">❌ Eliminar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <div class="loading-overlay" id="table-loading" style="display: none;">
+                            <div class="loading-spinner"></div>
+                        </div>
+                        <table id="registros-table" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="header-checkbox" class="row-checkbox"></th>
+                                    <th class="sortable-header" data-sort="name">Nombre ↕</th>
+                                    <th class="sortable-header" data-sort="cedula">Cédula ↕</th>
+                                    <th class="sortable-header" data-sort="telefono">Teléfono ↕</th>
+                                    <th class="sortable-header" data-sort="sexo">Sexo ↕</th>
+                                    <th class="sortable-header" data-sort="edad">Edad ↕</th>
+                                    <th class="sortable-header" data-sort="ubch">CV ↕</th>
+                                    <th class="sortable-header" data-sort="community">Comunidad ↕</th>
+                                    <th class="sortable-header" data-sort="voted">Votó ↕</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div id="pagination-container" class="pagination-container">
+                            <div class="pagination-info">
+                                Mostrando <span id="pagination-start">0</span> a <span id="pagination-end">0</span> de <span id="pagination-total">0</span> registros
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn" id="first-page">« Primera</button>
+                                <button class="pagination-btn" id="prev-page">‹ Anterior</button>
+                                <div id="page-numbers"></div>
+                                <button class="pagination-btn" id="next-page">Siguiente ›</button>
+                                <button class="pagination-btn" id="last-page">Última »</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Page -->
+            <div class="page" id="dashboard-page">
+                <div class="page-container">
+                    <h2 class="page-title">Totales Generales</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Total de Personas Registradas</h3>
+                            <p class="stat-number" id="total-registered">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Total de Votos Confirmados</h3>
+                            <p class="stat-number" id="total-voted">0</p>
+                        </div>
+                    </div>
+                    <div class="progress-section">
+                        <h3>Progreso de Votación</h3>
+                        <div id="progress-percentage" style="font-size:1.2em; font-weight:bold; margin-bottom:8px; color:#4f46e5;"></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="vote-progress"></div>
+                        </div>
+                        <p class="progress-text" id="progress-text">0 de 0 personas han votado.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Page -->
+            <div class="page" id="statistics-page">
+                <div class="page-container">
+                    <div class="page-header">
+                        <h2 class="page-title">Estadísticas Detalladas</h2>
+                        <div class="page-actions">
+                            <button id="projection-btn" class="btn btn-primary">Modo Proyección</button>
+                            <button id="export-stats-pdf-btn" class="btn btn-secondary">Descargar PDF</button>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stats-card">
+                            <h3>Votos por CV</h3>
+                            <div class="stats-list" id="ubch-stats"></div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Votos por Comunidad</h3>
+                            <div class="stats-list" id="community-stats"></div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Votos por Sexo</h3>
+                            <div class="stats-list" id="sexo-stats"></div>
+                        </div>
+                        <div class="stats-card">
+                            <h3>Votos por Rango de Edad</h3>
+                            <div class="stats-list" id="edad-stats"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Projection View -->
+        <div id="projection-view" class="projection-view" style="display: none;">
+            <div class="projection-header">
+                <h1>Proyección en Tiempo Real</h1>
+                <button id="exit-projection-btn" class="btn btn-danger">Salir</button>
+            </div>
+            <div class="projection-content">
+                <div class="projection-main">
+                    <h2>Participación General</h2>
+                    <div class="projection-number" id="projection-votes">0</div>
+                    <div class="projection-label">Votos</div>
+                    <div class="projection-progress">
+                        <div class="projection-progress-fill" id="projection-progress-fill"></div>
+                    </div>
+                    <p class="projection-text" id="projection-text">0 de 0</p>
+                </div>
+                <div class="projection-stats">
+                    <h2>Votos por CV</h2>
+                    <div class="projection-list" id="projection-ubch-list"></div>
+                </div>
+            </div>
+            <div class="projection-footer">
+                <div class="logo-container" style="width:60px; height:60px; margin-right:1.2em;">
+                    <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
+                </div>
+                <span style="font-size:1.2em; font-family:'Inter',Arial,sans-serif; font-weight:600; letter-spacing:0.5px;">Logo Sistema de Registro de Votos 2025 &bull; Desarrollado por la VR</span>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <div id="delete-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Confirmar Eliminación</h3>
+                <p>¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.</p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancel-delete">Cancelar</button>
+                    <button class="btn btn-danger" id="confirm-delete">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Edición -->
+        <div id="edit-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>Editar Registro</h3>
+                <form id="edit-form" class="edit-form">
+                    <div class="form-group">
+                        <label for="edit-community">Comunidad</label>
+                        <select id="edit-community" name="community" required>
+                            <option value="">Selecciona una comunidad</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-name">Nombre</label>
+                        <input type="text" id="edit-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-cedula">Cédula</label>
+                        <input type="text" id="edit-cedula" name="cedula" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-telefono">Teléfono (opcional)</label>
+                        <input type="text" id="edit-telefono" name="telefono">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-sexo">Sexo</label>
+                        <select id="edit-sexo" name="sexo" required>
+                            <option value="">Selecciona el sexo</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-edad">Edad</label>
+                        <input type="number" id="edit-edad" name="edad" min="16" max="120" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-ubch">CV</label>
+                        <select id="edit-ubch" name="ubch" required>
+                            <option value="">Selecciona un CV</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-edit">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="save-edit">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2025 Registro de Votos y Estadísticas. Todos los derechos reservados.</p>
+        </footer>
+    </div>
+
+    
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="sync-manager.js"></script>
+    <script src="service-manager.js"></script>
+    <script src="init-system.js"></script>
+    <script src="choices.min.js"></script>
+    
+    <script>
+        const USUARIOS_INICIALES = [
+            // Superusuarios
+            { username: "diego corrales", password: "alcalde1", rol: "superusuario" },
+            { username: "victor", password: "admin", rol: "superusuario" },
+            { username: "superadmin_01", password: "Sup3r_Adm1n#2o24", rol: "superusuario" },
+            { username: "superadmin_02", password: "aB5!zP9$qW_sU", rol: "superusuario" },
+            { username: "superadmin_03", password: "rT7@eX3&yU_sU", rol: "superusuario" },
+            { username: "superadmin_04", password: "kL9#mN1!bV_sU", rol: "superusuario" },
+            { username: "superadmin_05", password: "zX8$cV6@fG_sU", rol: "superusuario" },
+            // Administradores
+            { username: "admin_01", password: "P@ssw0rd_Adm_01", rol: "admin" },
+            { username: "admin_02", password: "Adm_Secure_02!", rol: "admin" },
+            { username: "admin_03", password: "Gestion_2024_03", rol: "admin" },
+            { username: "admin_04", password: "4dminUser_p4ss", rol: "admin" },
+            { username: "admin_05", password: "Adm!n_Syst3m_05", rol: "admin" },
+            { username: "admin_06", password: "UserAdmin_06#", rol: "admin" },
+            { username: "admin_07", password: "Control_Panel_07", rol: "admin" },
+            { username: "admin_08", password: "Adm_Access_08$", rol: "admin" },
+            { username: "admin_09", password: "My_Admin_P@ss09", rol: "admin" },
+            { username: "admin_10", password: "P@ss_Adm_Global", rol: "admin" },
+            // Registradores
+            { username: "registrador_01", password: "RegUsr_2o24_01", rol: "registrador" },
+            { username: "registrador_02", password: "UserReg_Pass_02", rol: "registrador" },
+            { username: "registrador_03", password: "Reg!strador_03", rol: "registrador" },
+            { username: "registrador_04", password: "Acc3s_Reg_04", rol: "registrador" },
+            { username: "registrador_05", password: "DataEntry_05$", rol: "registrador" },
+            { username: "registrador_06", password: "RegUsr_2o24_06", rol: "registrador" },
+            { username: "registrador_07", password: "UserReg_Pass_07", rol: "registrador" },
+            { username: "registrador_08", password: "Reg!strador_08", rol: "registrador" },
+            { username: "registrador_09", password: "Acc3s_Reg_09", rol: "registrador" },
+            { username: "registrador_10", password: "DataEntry_10$", rol: "registrador" },
+            { username: "registrador_11", password: "RegUsr_2o24_11", rol: "registrador" },
+            { username: "registrador_12", password: "UserReg_Pass_12", rol: "registrador" },
+            { username: "registrador_13", password: "Reg!strador_13", rol: "registrador" },
+            { username: "registrador_14", password: "Acc3s_Reg_14", rol: "registrador" },
+            { username: "registrador_15", password: "DataEntry_15$", rol: "registrador" },
+            { username: "registrador_16", password: "RegUsr_2o24_16", rol: "registrador" },
+            { username: "registrador_17", password: "UserReg_Pass_17", rol: "registrador" },
+            { username: "registrador_18", password: "Reg!strador_18", rol: "registrador" },
+            { username: "registrador_19", password: "Acc3s_Reg_19", rol: "registrador" },
+            { username: "registrador_20", password: "DataEntry_20$", rol: "registrador" },
+            { username: "registrador_21", password: "RegUsr_2o24_21", rol: "registrador" },
+            { username: "registrador_22", password: "UserReg_Pass_22", rol: "registrador" },
+            { username: "registrador_23", password: "Reg!strador_23", rol: "registrador" },
+            { username: "registrador_24", password: "Acc3s_Reg_24", rol: "registrador" },
+            { username: "registrador_25", password: "DataEntry_25$", rol: "registrador" },
+            { username: "registrador_26", password: "RegUsr_2o24_26", rol: "registrador" },
+            { username: "registrador_27", password: "UserReg_Pass_27", rol: "registrador" },
+            { username: "registrador_28", password: "Reg!strador_28", rol: "registrador" },
+            { username: "registrador_29", password: "Acc3s_Reg_29", rol: "registrador" },
+            { username: "registrador_30", password: "DataEntry_30$", rol: "registrador" },
+            { username: "registrador_31", password: "RegUsr_2o24_31", rol: "registrador" },
+            { username: "registrador_32", password: "UserReg_Pass_32", rol: "registrador" },
+            { username: "registrador_33", password: "Reg!strador_33", rol: "registrador" },
+            { username: "registrador_34", password: "Acc3s_Reg_34", rol: "registrador" },
+            { username: "registrador_35", password: "DataEntry_35$", rol: "registrador" },
+            { username: "registrador_36", password: "RegUsr_2o24_36", rol: "registrador" },
+            { username: "registrador_37", password: "UserReg_Pass_37", rol: "registrador" },
+            { username: "registrador_38", password: "Reg!strador_38", rol: "registrador" },
+            { username: "registrador_39", password: "Acc3s_Reg_39", rol: "registrador" },
+            { username: "registrador_40", password: "DataEntry_40$", rol: "registrador" },
+            { username: "registrador_41", password: "RegUsr_2o24_41", rol: "registrador" },
+            { username: "registrador_42", password: "UserReg_Pass_42", rol: "registrador" },
+            { username: "registrador_43", password: "Reg!strador_43", rol: "registrador" },
+            { username: "registrador_44", password: "Acc3s_Reg_44", rol: "registrador" },
+            { username: "registrador_45", password: "DataEntry_45$", rol: "registrador" },
+            { username: "registrador_46", password: "RegUsr_2o24_46", rol: "registrador" },
+            { username: "registrador_47", password: "UserReg_Pass_47", rol: "registrador" },
+            { username: "registrador_48", password: "Reg!strador_48", rol: "registrador" },
+            { username: "registrador_49", password: "Acc3s_Reg_49", rol: "registrador" },
+            { username: "registrador_50", password: "RegUsr_Final_50", rol: "registrador" },
+            // Nuevos registradores con nombres reales
+            { username: "YRAIMA PINTO", password: "13518010", rol: "registrador" },
+            { username: "DARRY OVIEDO", password: "13202937", rol: "registrador" },
+            { username: "IBIRMA GONZALEZ", password: "6846374", rol: "registrador" },
+            { username: "HEIDY AVENDAÑO", password: "13087047", rol: "registrador" },
+            { username: "LILIANGEL RODRIGUEZ", password: "23432113", rol: "registrador" },
+            { username: "LEOWALDO SEGOVIA", password: "16243232", rol: "registrador" },
+            { username: "LIDA SANCHEZ", password: "7933221", rol: "registrador" },
+            { username: "NINA MORENO", password: "15055595", rol: "registrador" },
+            { username: "CARLOS AVENDAÑO", password: "4885476", rol: "registrador" },
+            { username: "KATIUSKA VERGARA", password: "13455771", rol: "registrador" },
+            { username: "GLADYS MARTINEZ", password: "6372937", rol: "registrador" },
+            { username: "DENNYS LOPEZ", password: "15654130", rol: "registrador" },
+            { username: "YNGRID FERNANDEZ", password: "11345082", rol: "registrador" },
+            { username: "MAYRA CONTRERAS", password: "14899707", rol: "registrador" },
+            { username: "NAHIMA DALYS", password: "13954994", rol: "registrador" },
+            { username: "JAVIER PEREZ", password: "10730988", rol: "registrador" },
+            { username: "YELIDA LARA", password: "7380194", rol: "registrador" },
+            { username: "SUGIR MUÑOZ", password: "17530417", rol: "registrador" },
+            { username: "AMILCAR JASPE", password: "18532546", rol: "registrador" },
+            { username: "MILAGROS VILLEGAS", password: "11098987", rol: "registrador" },
+            { username: "REINA RODRIGUEZ", password: "14717754", rol: "registrador" },
+            { username: "IRIS CABELLO", password: "5268555", rol: "registrador" },
+            { username: "FERNANDA QUINTERO", password: "13236761", rol: "registrador" },
+            { username: "YSABEL RIVAS", password: "18532837", rol: "registrador" },
+            { username: "YETSURY SANCHEZ", password: "20759670", rol: "registrador" },
+            { username: "JANETH FLORES", password: "8830118", rol: "registrador" },
+            { username: "CANDIDA FERNANDEZ", password: "13646202", rol: "registrador" },
+            { username: "FRANYELIS SEQUERA", password: "15609598", rol: "registrador" },
+            { username: "MAIKEL ANDRADE", password: "16542701", rol: "registrador" },
+            { username: "ZAYDA HERNANDEZ", password: "5698961", rol: "registrador" },
+            { username: "FRANCIS CONTRERAS", password: "15581776", rol: "registrador" },
+            { username: "ANAHIS ACEVEDO", password: "5338471", rol: "registrador" },
+            { username: "JESUS GUZMAN", password: "11943006", rol: "registrador" },
+            { username: "CANDELARIA RAMOS", password: "9848204", rol: "registrador" },
+            { username: "JESUS CALDERON", password: "11987291", rol: "registrador" },
+            { username: "LILIA JUAREZ", password: "5362888", rol: "registrador" },
+            { username: "YUNEIDY PINTO", password: "20699632", rol: "registrador" },
+            { username: "ELIZABETH AGUIAR", password: "15333071", rol: "registrador" },
+            { username: "JHOAN ANGEL", password: "19772158", rol: "registrador" },
+            { username: "ALBANI HERRERA", password: "23430503", rol: "registrador" },
+            { username: "YOSAINI ESCOBAR", password: "18167185", rol: "registrador" },
+            { username: "LUIS GUTIERREZ", password: "19667240", rol: "registrador" },
+            { username: "MARIA HERIBERTA TOVAR", password: "5370901", rol: "registrador" },
+            { username: "LISANDRA CORONA", password: "24518796", rol: "registrador" },
+            { username: "ANDREINA FERNANDEZ", password: "20941865", rol: "registrador" },
+            { username: "MILAGROS DIAZ", password: "9692529", rol: "registrador" },
+            { username: "JESUS HERRERA", password: "12118763", rol: "registrador" },
+            { username: "LEIDY BARRIOS", password: "18166116", rol: "registrador" },
+            { username: "ROBERSY VASQUEZ", password: "16864029", rol: "registrador" },
+            { username: "SANTIAGO LOYO", password: "22005127", rol: "registrador" },
+            { username: "SIKIU GARCIA", password: "11165709", rol: "registrador" },
+            { username: "EFRAIN CHIRINOS", password: "12604184", rol: "registrador" },
+            { username: "ENEIDA MARQUEZ", password: "11150347", rol: "registrador" },
+            { username: "NEIDA FLORES", password: "15161126", rol: "registrador" },
+            { username: "MARYURI BENAVENTA", password: "13454809", rol: "registrador" },
+            { username: "ADRIANA LA CRUZ", password: "13900179", rol: "registrador" },
+            { username: "LINYU SALCEDO", password: "15259454", rol: "registrador" },
+            { username: "YENIFER CORZO", password: "16205348", rol: "registrador" },
+            { username: "JANET GUZMAN", password: "9679125", rol: "registrador" },
+            { username: "INGRID CESAR", password: "12856450", rol: "registrador" },
+            { username: "YOSYMAR MONSALVE", password: "19364063", rol: "registrador" },
+            { username: "JANETH FUENTES", password: "15258472", rol: "registrador" },
+            { username: "LUIS OLIVEROS", password: "3920033", rol: "registrador" },
+            { username: "CARLOS GUTIERREZ", password: "14355085", rol: "registrador" },
+            { username: "MIRIAM ESTRADA", password: "15259811", rol: "registrador" },
+            { username: "IVAN ANTEQUERA", password: "15407161", rol: "registrador" },
+            { username: "LUISA DE CHACON", password: "8520238", rol: "registrador" },
+            { username: "GENESIS MEDINAS", password: "21584875", rol: "registrador" },
+            { username: "AIRAM SAMBRANO", password: "20243594", rol: "registrador" },
+            { username: "EUGERY RIVAS", password: "14051835", rol: "registrador" },
+            { username: "LEONEL SEQUERA", password: "12343202", rol: "registrador" },
+            // Verificadores de votos
+            { username: "maria ordoñez", password: "20161765", rol: "verificador" },
+            { username: "reinaldo aguilar", password: "12478928", rol: "verificador" },
+            { username: "ana alvarez", password: "12341809", rol: "verificador" },
+            { username: "perla valera", password: "7257936", rol: "verificador" },
+            { username: "willy garcia", password: "18639693", rol: "verificador" },
+            { username: "iris marquez", password: "16581399", rol: "verificador" },
+            { username: "justo perez", password: "18867076", rol: "verificador" },
+            { username: "jose rodriguez", password: "26389924", rol: "verificador" },
+            { username: "nereyda guerrero", password: "8823392", rol: "verificador" },
+            { username: "yoiny betancourt", password: "26804061", rol: "verificador" },
+            { username: "erminia pulido", password: "14713807", rol: "verificador" },
+            { username: "jonas cordoba", password: "25981075", rol: "verificador" },
+            { username: "luis barcasnegra", password: "14754397", rol: "verificador" },
+            { username: "jose ledezma", password: "11177021", rol: "verificador" },
+            { username: "herminia leon", password: "11353776", rol: "verificador" },
+            { username: "darlis botello", password: "9535936", rol: "verificador" },
+            { username: "miguel hernandez", password: "9658902", rol: "verificador" },
+            { username: "hipolita molina", password: "7073680", rol: "verificador" },
+            { username: "fidel ernesto aguilar", password: "7091235", rol: "verificador" }
+        ];
+
+        function showMessage(message, type = 'info') {
+            const loginMessage = document.getElementById('login-message');
+            loginMessage.textContent = message;
+            loginMessage.className = `login-message ${type}`;
+            loginMessage.style.display = 'block';
+            if (type === 'success') {
+                setTimeout(() => { loginMessage.style.display = 'none'; }, 3000);
+            }
+        }
+
+        function renderLoginForm() {
+            return `
+                <div class="login-container">
+                    <div class="login-header">
+                        <img src="logo.jpg" alt="Logo Sistema de Votos">
+                        <h1>Bienvenido</h1>
+                        <p>Sistema de Registro de Votos 2025</p>
+                    </div>
+                    <div id="login-message" class="login-message" style="display:none;"></div>
+                    <form id="login-form" class="login-form">
+                        <div class="form-group">
+                            <label for="username">Usuario</label>
+                            <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Contraseña</label>
+                            <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required>
+                        </div>
+                        <button type="submit" class="login-btn" id="login-btn">
+                            <span class="btn-text">Iniciar Sesión</span>
+                            <span class="btn-loading" style="display:none;"><div class="spinner"></div>Iniciando sesión...</span>
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+
+        function renderAppContent(user) {
+            // Aquí puedes mostrar el contenido real de la app según el rol
+            // Ejemplo básico:
+            return `<div class="app-content">
+                <h2>¡Hola, ${user.username}!</h2>
+                <p>Tu rol es: <strong>${user.rol}</strong></p>
+                <button onclick="logout()">Cerrar Sesión</button>
+                <!-- Aquí va el resto de la app -->
+            </div>`;
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('sessionTime');
+            window.location.href = 'login.html';
+        }
+
+        function checkSession() {
+            const currentUser = localStorage.getItem('currentUser');
+            const sessionTime = localStorage.getItem('sessionTime');
+            
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                        return;
+            }
+            
+            // Verificar si la sesión ha expirado (24 horas)
+            if (sessionTime && (Date.now() - parseInt(sessionTime)) > 24 * 60 * 60 * 1000) {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('sessionTime');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Mostrar información del usuario
+            try {
+                const user = JSON.parse(currentUser);
+                const userInfo = document.getElementById('userId');
+                if (userInfo) {
+                    userInfo.textContent = `${user.username} (${user.rol})`;
+                }
+            } catch (error) {
+                console.error('Error al mostrar información del usuario:', error);
+            }
+        }
+
+        // === MIS REGISTROS - USANDO DATOS DEL PANEL DE ADMINISTRACIÓN ===
+        window.renderMyRecordsTable = async function() {
+            const tableBody = document.querySelector('#myrecords-table tbody');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
+            
+            try {
+                // Obtener usuario actual
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const username = normalizarUsuario(currentUser.username || '');
+                
+                if (!username) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No hay usuario activo</td></tr>';
+                    return;
+                }
+                
+                // Cargar datos desde Firebase (igual que en admin-panel)
+                const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).get();
+                const allUsers = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Filtrar por el usuario actual
+                const misRegistros = allUsers.filter(user => 
+                    (user.registeredBy || '').trim().toLowerCase() === username
+                );
+                
+                if (misRegistros.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
+                    return;
+                }
+                
+                // Renderizar tabla
+                let rows = '';
+                misRegistros.forEach(d => {
+                    rows += `<tr>
+                        <td>${d.name || ''}</td>
+                        <td>${d.cedula || ''}</td>
+                        <td>${d.telefono || ''}</td>
+                        <td>${d.sexo || ''}</td>
+                        <td>${d.edad || ''}</td>
+                        <td>${d.ubch || ''}</td>
+                        <td>${d.community || ''}</td>
+                        <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
+                    </tr>`;
+                });
+                tableBody.innerHTML = rows;
+                
+                console.log(`✅ Mis Registros: ${misRegistros.length} registros encontrados para ${username}`);
+                
+            } catch (error) {
+                console.error('❌ Error cargando Mis Registros:', error);
+                tableBody.innerHTML = '<tr><td colspan="8">Error cargando registros</td></tr>';
+            }
+        };
+
+        // Descargar los registros del usuario actual como CSV
+        window.downloadMyRecordsAsCSV = async function() {
+            // Consultar solo la cola local
+            let registrosLocales = [];
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
+                try {
+                    registrosLocales = window.offlineQueueManager.obtenerColaLocal();
+                } catch (e) {
+                    console.error('Error consultando cola local:', e);
+                }
+            }
+            if (!registrosLocales || registrosLocales.length === 0) {
+                alert('No tienes registros propios aún.');
+                return;
+            }
+            // Generar CSV con punto y coma y BOM UTF-8
+            let csv = 'Nombre;Cédula;Teléfono;Sexo;Edad;UBCH;Comunidad;Fecha\n';
+            registrosLocales.forEach(d => {
+                csv += `"${d.name||''}";"${d.cedula||''}";"${d.telefono||''}";"${d.sexo||''}";"${d.edad||''}";"${d.ubch||''}";"${d.community||''}";"${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}"\n`;
+            });
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csv], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mis_registros.csv';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        }
+
+        // Mostrar la tabla cada vez que se entra en la sección
+        if (typeof switchRegistrationMode === 'function') {
+            const oldSwitch = switchRegistrationMode;
+            window.switchRegistrationMode = function(mode) {
+                oldSwitch(mode);
+                if (mode === 'myrecords') {
+                    setTimeout(() => {
+                        window.renderMyRecordsTable();
+                    }, 100);
+                }
+            };
+        }
+
+        // Función para normalizar el nombre de usuario (minúsculas y sin espacios extra)
+        function normalizarUsuario(username) {
+            return (username || '').trim().toLowerCase();
+        }
+
+        // Sistema de inicialización manejado por init-system.js
+
+        // Variables para registro masivo
+        let bulkRegistrations = [];
+        let bulkFile = null;
+
+        // --- Persistencia temporal del formulario y modo de registro ---
+        function saveRegistrationDraft() {
+            const mode = localStorage.getItem('registrationMode') || 'individual';
+            const draft = { mode };
+            if (mode === 'individual') {
+                const form = document.getElementById('registration-form');
+                if (form) {
+                    draft.ubch = form.ubch ? form.ubch.value : '';
+                    draft.community = form.community ? form.community.value : '';
+                    draft.name = form.name ? form.name.value : '';
+                    draft.cedula = form.cedula ? form.cedula.value : '';
+                    draft.telefono = form.telefono ? form.telefono.value : '';
+                    draft.sexo = form.sexo ? form.sexo.value : '';
+                    draft.edad = form.edad ? form.edad.value : '';
+                }
+            }
+            localStorage.setItem('registrationDraft', JSON.stringify(draft));
+        }
+
+        // Solo restaurar el draft una vez al cargar la página
+        let registrationDraftRestored = false;
+        function restoreRegistrationDraftOnce() {
+            if (registrationDraftRestored) return;
+            registrationDraftRestored = true;
+            const draftStr = localStorage.getItem('registrationDraft');
+            if (!draftStr) return;
+            let draft;
+            try {
+                draft = JSON.parse(draftStr);
+            } catch (e) { return; }
+            if (draft.mode) {
+                switchRegistrationMode(draft.mode);
+            }
+            if (draft.mode === 'individual') {
+                const form = document.getElementById('registration-form');
+                if (form) {
+                    form._pendingDraft = draft;
+                    setRegistrationDraftValues(form, draft);
+                }
+            }
+        }
+
+        function setRegistrationDraftValues(form, draft) {
+            // Asigna los valores del borrador si existen las opciones
+            if (form.ubch && draft.ubch) {
+                form.ubch.value = draft.ubch;
+            }
+            if (form.community && draft.community) {
+                form.community.value = draft.community;
+            }
+            if (form.name) form.name.value = draft.name || '';
+            if (form.cedula) form.cedula.value = draft.cedula || '';
+            if (form.telefono) form.telefono.value = draft.telefono || '';
+            if (form.sexo) form.sexo.value = draft.sexo || '';
+            if (form.edad) form.edad.value = draft.edad || '';
+        }
+
+        function clearRegistrationDraft() {
+            localStorage.removeItem('registrationDraft');
+        }
+
+        // Elimina cualquier refresco automático de selects por eventos personalizados
+        // (No volver a llamar a onUBCHAndCommunityLoaded ni restaurar draft por eventos)
+
+        // Configurar el input de archivo para registro masivo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Limpiar draft de registro al cargar la página
+            clearRegistrationDraft();
+            const bulkFileInput = document.getElementById('bulk-excel-input');
+            if (bulkFileInput) {
+                bulkFileInput.addEventListener('change', handleBulkFileSelect);
+            }
+            // Forzar modo individual al cargar
+            switchRegistrationMode('individual');
+            // Restaurar draft SOLO una vez al cargar la página
+            setTimeout(restoreRegistrationDraftOnce, 200);
+        });
+
+        // Al enviar el formulario, guardar el draft actualizado y limpiar si es necesario
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registration-form');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    saveRegistrationDraft();
+                    // Si quieres limpiar el draft tras registro exitoso, llama a clearRegistrationDraft() después del registro
+                });
+            }
+        });
+
+        // === FUNCIONES PARA CAMBIO DE MODO DE REGISTRO ===
+        
+        // Cambiar entre registro individual, masivo y mi listado
+        function switchRegistrationMode(mode) {
+            const individualDiv = document.getElementById('individual-registration');
+            const bulkDiv = document.getElementById('bulk-registration');
+            const myListadoDiv = document.getElementById('mylistado-registration');
+            const modeButtons = document.querySelectorAll('.mode-btn');
+            
+            // Actualizar botones
+            modeButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Mostrar/ocultar secciones
+            if (mode === 'individual') {
+                individualDiv.style.display = 'block';
+                bulkDiv.style.display = 'none';
+                myListadoDiv.style.display = 'none';
+            } else if (mode === 'bulk') {
+                individualDiv.style.display = 'none';
+                bulkDiv.style.display = 'block';
+                myListadoDiv.style.display = 'none';
+            } else if (mode === 'mylistado') {
+                individualDiv.style.display = 'none';
+                bulkDiv.style.display = 'none';
+                myListadoDiv.style.display = 'block';
+                setTimeout(() => {
+                    cargarMiListado();
+                }, 100);
+            }
+            console.log(`✅ Modo de registro cambiado a: ${mode}`);
+        }
+
+        // === FUNCIONES PARA REGISTRO MASIVO SIMPLE ===
+        
+        // Variables para el registro masivo
+        let pasteTable, pasteTableBody, importStatus;
+
+        // Inicializar elementos cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            pasteTable = document.getElementById('paste-table');
+            pasteTableBody = document.getElementById('paste-table-body');
+            importStatus = document.getElementById('import-massive-status');
+
+            // Permitir pegar datos desde Excel
+            if (pasteTable) {
+                pasteTable.addEventListener('paste', function (e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text');
+                    const rows = text.split('\n').filter(row => row.trim() !== '');
+                    pasteTableBody.innerHTML = '';
+                    rows.forEach(row => {
+                        const cols = row.split('\t');
+                        const tr = document.createElement('tr');
+                        for (let i = 0; i < 7; i++) {
+                            const td = document.createElement('td');
+                            td.contentEditable = 'true';
+                            td.textContent = cols[i] ? cols[i].trim() : '';
+                            tr.appendChild(td);
+                        }
+                        pasteTableBody.appendChild(tr);
+                    });
+                });
+            }
+
+            // Resaltar celda activa y fila activa
+            if (pasteTableBody) {
+                pasteTableBody.addEventListener('focusin', function(e) {
+                    if (e.target.tagName === 'TD') {
+                        // Quitar resaltado previo
+                        Array.from(pasteTableBody.rows).forEach(row => row.classList.remove('active-row'));
+                        e.target.parentElement.classList.add('active-row');
+                    }
+                });
+                
+                pasteTableBody.addEventListener('focusout', function(e) {
+                    if (e.target.tagName === 'TD') {
+                        e.target.parentElement.classList.remove('active-row');
+                    }
+                });
+
+                // Limpiar placeholder al enfocar
+                pasteTableBody.addEventListener('focusin', function(e) {
+                    if (e.target.classList.contains('placeholder')) {
+                        e.target.classList.remove('placeholder');
+                        e.target.textContent = '';
+                    }
+                });
+            }
+
+            // También después de pegar, si la tabla queda vacía
+            if (pasteTable) {
+                pasteTable.addEventListener('paste', function() {
+                    setTimeout(showPastePlaceholder, 100);
+                });
+            }
+
+            // Mostrar placeholder al cargar
+            setTimeout(showPastePlaceholder, 500);
+        });
+
+        // Limpiar tabla
+        function clearPasteTable() {
+            if (pasteTableBody) {
+                pasteTableBody.innerHTML = '<tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>';
+                if (importStatus) {
+                    importStatus.style.display = 'none';
+                }
+            }
+        }
+
+        // Validar y cargar datos a Firebase
+        async function importPasteTable() {
+            if (!pasteTableBody || !importStatus) {
+                alert('Error: Elementos de la tabla no encontrados');
+                return;
+            }
+
+            // Verificar que Firebase esté disponible
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                alert('Error: Firebase no está disponible. Intenta recargar la página.');
+                return;
+            }
+
+            importStatus.style.display = 'block';
+            importStatus.className = 'import-status info';
+            importStatus.textContent = 'Validando y cargando datos...';
+            
+            let count = 0, errors = 0;
+            
+            for (let tr of pasteTableBody.rows) {
+                const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
+                
+                // Validación básica
+                if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (!/^\d{6,10}$/.test(cedula)) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (!/^04\d{9}$/.test(telefono)) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (!['M','F','m','f'].includes(sexo)) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                if (isNaN(edad) || edad < 16 || edad > 120) {
+                    errors++;
+                    tr.style.background = '#fff3cd';
+                    continue;
+                }
+                
+                // Preparar datos
+                const data = {
+                    ubch,
+                    community,
+                    name,
+                    cedula: cedula.replace(/\D/g, ''),
+                    telefono: telefono.replace(/\D/g, ''),
+                    sexo: sexo.toUpperCase(),
+                    edad: parseInt(edad),
+                    registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
+                    voted: false,
+                    registeredAt: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+                
+                try {
+                    // Verificar duplicados por cédula
+                    const existing = await window.firebaseDB.votesCollection.where('cedula','==',data.cedula).get();
+                    if (!existing.empty) {
+                        tr.style.background = '#ffeaa7'; // Amarillo: duplicado
+                        continue;
+                    }
+                    
+                    await window.firebaseDB.votesCollection.add(data);
+                    tr.style.background = '#d4edda'; // Verde: éxito
+                    count++;
+                    // Aquí pegas el fragmento:
+                    guardarRegistroLocal({
+                        nombre: data.name,
+                        cedula: data.cedula,
+                        telefono: data.telefono,
+                        sexo: data.sexo,
+                        edad: data.edad,
+                        ubch: data.ubch,
+                        comunidad: data.community,
+                        fecha: new Date().toLocaleString()
+                    });
+                } catch (err) {
+                    tr.style.background = '#f8d7da'; // Rojo: error
+                    errors++;
+                }
+            }
+            
+            if (count > 0 && errors === 0) {
+                importStatus.className = 'import-status success';
+                importStatus.textContent = `✅ ${count} registros cargados exitosamente.`;
+            } else if (count > 0 && errors > 0) {
+                importStatus.className = 'import-status warning';
+                importStatus.textContent = `⚠️ ${count} registros cargados. ${errors} filas con errores o duplicados.`;
+                } else {
+                importStatus.className = 'import-status error';
+                importStatus.textContent = `❌ No se cargaron registros. Verifica los datos.`;
+            }
+        }
+
+        // Sugerencia visual en la primera celda si la tabla está vacía
+        function showPastePlaceholder() {
+            if (pasteTableBody && pasteTableBody.rows.length === 1) {
+                const firstRow = pasteTableBody.rows[0];
+                let empty = true;
+                for (let td of firstRow.cells) {
+                    if (td.textContent.trim() !== '') empty = false;
+                }
+                if (empty) {
+                    firstRow.cells[0].classList.add('placeholder');
+                    firstRow.cells[0].textContent = 'Haz clic aquí y pega los datos de Excel';
+                }
+            }
+        }
+        
+        // También después de limpiar la tabla
+        const oldClearPasteTable = clearPasteTable;
+        clearPasteTable = function() {
+            oldClearPasteTable();
+            setTimeout(showPastePlaceholder, 100);
+        };
+
+        // Función para limpiar la cola y forzar sincronización
+        async function limpiarColaYForzarSync() {
+            if (window.offlineQueueManager) {
+                // Limpiar cola local
+                window.offlineQueueManager.limpiarColaLocal();
+                
+                // Forzar sincronización
+                await window.offlineQueueManager.forzarSincronizacion();
+                
+                alert('✅ Cola limpiada y sincronización forzada');
+                } else {
+                alert('❌ Gestor de cola no disponible');
+                }
+        }
+
+        // Registrar Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(function(registration) {
+                        console.log('✅ Service Worker registrado exitosamente:', registration.scope);
+                        console.log('📱 PWA Status:', {
+                            scope: registration.scope,
+                            active: registration.active,
+                            installing: registration.installing,
+                            waiting: registration.waiting
+                        });
+                        
+                        // Verificar si la página está controlada por el SW
+                        if (navigator.serviceWorker.controller) {
+                            console.log('✅ Página controlada por Service Worker');
+                        } else {
+                            console.log('⚠️ Página no controlada por Service Worker');
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('❌ Error registrando Service Worker:', error);
+                    });
+            });
+        } else {
+            console.log('❌ Service Worker no soportado en este navegador');
+        }
+
+        // Función fácil para mostrar 'Mis Registros' consultando solo los registros del usuario actual desde Firebase
+        async function mostrarMisRegistrosFacil() {
+            const tableBody = document.querySelector('#myrecords-table tbody');
+            if (!tableBody) return;
+            tableBody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
+
+            // Consultar solo la cola local
+            let registrosLocales = [];
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
+                try {
+                    registrosLocales = window.offlineQueueManager.obtenerColaLocal();
+                } catch (e) {
+                    console.error('Error consultando cola local:', e);
+                }
+            }
+
+            if (!registrosLocales || registrosLocales.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
+                return;
+            }
+
+            // Renderizar tabla
+            let rows = '';
+            registrosLocales.forEach(d => {
+                rows += `<tr>
+                    <td>${d.name || ''}</td>
+                    <td>${d.cedula || ''}</td>
+                    <td>${d.telefono || ''}</td>
+                    <td>${d.sexo || ''}</td>
+                    <td>${d.edad || ''}</td>
+                    <td>${d.ubch || ''}</td>
+                    <td>${d.community || ''}</td>
+                    <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
+                </tr>`;
+            });
+            tableBody.innerHTML = rows;
+        }
+
+        // === FUNCIÓN DE PRUEBA: Insertar registros de prueba para el usuario actual ===
+        function insertarRegistrosDePrueba() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const username = normalizarUsuario(currentUser.username || '');
+            if (!username) {
+                alert('No hay usuario activo');
+                return;
+            }
+            
+            console.log('🧪 Insertando registros de prueba para:', username);
+            
+            // Crear 2 registros de prueba para Firebase
+            if (window.firebaseDB && window.firebaseDB.votesCollection) {
+                for (let i = 1; i <= 2; i++) {
+                    const data = {
+                        name: `Prueba Firebase ${i}`,
+                        cedula: `9000000${i}`,
+                        telefono: `0412000000${i}`,
+                        sexo: i % 2 === 0 ? 'F' : 'M',
+                        edad: 20 + i,
+                        ubch: 'UBCH PRUEBA',
+                        community: 'Comunidad Prueba',
+                        registeredBy: username,
+                        voted: false,
+                        registeredAt: new Date().toISOString(),
+                        createdAt: new Date().toISOString()
+                    };
+                    window.firebaseDB.votesCollection.add(data);
+                }
+            }
+            
+            // Crear 2 registros de prueba en la cola local
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.guardarEnColaLocal === 'function') {
+                for (let i = 1; i <= 2; i++) {
+                    const data = {
+                        name: `Prueba Local ${i}`,
+                        cedula: `8000000${i}`,
+                        telefono: `0412000000${i}`,
+                        sexo: i % 2 === 0 ? 'F' : 'M',
+                        edad: 30 + i,
+                        ubch: 'UBCH LOCAL',
+                        community: 'Comunidad Local',
+                        registeredBy: username,
+                        voted: false,
+                        registeredAt: new Date().toISOString(),
+                        createdAt: new Date().toISOString()
+                    };
+                    window.offlineQueueManager.guardarEnColaLocal(data);
+                }
+            }
+            
+            // Crear 2 registros de prueba directamente en localStorage
+            const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+            for (let i = 1; i <= 2; i++) {
+                registrosLocales.push({
+                    nombre: `Prueba Local Direct ${i}`,
+                    cedula: `7000000${i}`,
+                    telefono: `0412000000${i}`,
+                    sexo: i % 2 === 0 ? 'F' : 'M',
+                    edad: 40 + i,
+                    ubch: 'UBCH DIRECTO',
+                    comunidad: 'Comunidad Directa',
+                    fecha: new Date().toLocaleString()
+                });
+            }
+            localStorage.setItem('misRegistrosLocales', JSON.stringify(registrosLocales));
+            
+            alert('✅ Registros de prueba insertados. Revisa "Mis Registros".');
+            
+            // Refrescar la vista
+            setTimeout(() => {
+                if (window.renderMyRecordsTable) window.renderMyRecordsTable();
+                if (window.renderMisRegistrosComoTarjetas) renderMisRegistrosComoTarjetas();
+            }, 1000);
+        }
+
+        // Eliminar la creación de los botones de prueba y migración en la sección 'Mis Registros'
+        // Solo dejar los botones principales
+        document.addEventListener('DOMContentLoaded', function() {
+            const myRecordsActions = document.querySelector('.myrecords-actions');
+            if (myRecordsActions) {
+                // Eliminar todos los botones excepto los dos principales
+                const allowed = ['Descargar como Excel', 'Ver Mis Registros'];
+                Array.from(myRecordsActions.querySelectorAll('button')).forEach(btn => {
+                    if (!allowed.includes(btn.textContent.trim())) {
+                        btn.remove();
+                    }
+                });
+            }
+        });
+
+        // === SISTEMA DE MI LISTADO ===
+        
+        // Variable global para almacenar el listado del usuario
+        let miListadoData = [];
+        
+        // Función principal para cargar el listado del usuario actual
+        async function cargarMiListado() {
+            const loadingDiv = document.getElementById('mylistado-loading');
+            const contentDiv = document.getElementById('mylistado-content');
+            
+            // Mostrar loading
+            loadingDiv.style.display = 'block';
+            contentDiv.innerHTML = '';
+            
+            try {
+                // Obtener usuario actual
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const username = normalizarUsuario(currentUser.username || '');
+                
+                if (!username) {
+                    throw new Error('No hay usuario activo');
+                }
+                
+                console.log(`🔍 Cargando listado para usuario: ${username}`);
+                
+                // Limpiar listado anterior
+                miListadoData = [];
+                
+                // 1. Cargar desde Firebase
+                if (window.firebaseDB && window.firebaseDB.votesCollection) {
+                    try {
+                        const snapshot = await window.firebaseDB.votesCollection
+                            .where('registeredBy', '==', username)
+                            .orderBy('createdAt', 'desc')
+                            .get();
+                        
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            miListadoData.push({
+                                id: doc.id,
+                                nombre: data.name || '',
+                                cedula: data.cedula || '',
+                                telefono: data.telefono || '',
+                                sexo: data.sexo || '',
+                                edad: data.edad || '',
+                                ubch: data.ubch || '',
+                                comunidad: data.community || '',
+                                fecha: data.registeredAt ? new Date(data.registeredAt).toLocaleString('es-VE') : '',
+                                fuente: 'Firebase'
+                            });
+                        });
+                        
+                        console.log(`📊 Cargados ${snapshot.size} registros de Firebase`);
+                    } catch (error) {
+                        console.error('❌ Error cargando desde Firebase:', error);
+                    }
+                }
+                
+                // 2. Cargar desde localStorage
+                try {
+                    const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+                    registrosLocales.forEach(reg => {
+                        miListadoData.push({
+                            id: 'local_' + Date.now() + Math.random(),
+                            nombre: reg.nombre || '',
+                            cedula: reg.cedula || '',
+                            telefono: reg.telefono || '',
+                            sexo: reg.sexo || '',
+                            edad: reg.edad || '',
+                            ubch: reg.ubch || '',
+                            comunidad: reg.comunidad || '',
+                            fecha: reg.fecha || '',
+                            fuente: 'Local'
+                        });
+                    });
+                    
+                    console.log(`💾 Cargados ${registrosLocales.length} registros locales`);
+                } catch (error) {
+                    console.error('❌ Error cargando registros locales:', error);
+                }
+                
+                // 3. Cargar desde cola offline
+                try {
+                    if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
+                        const colaLocal = window.offlineQueueManager.obtenerColaLocal();
+                        colaLocal.forEach(reg => {
+                            miListadoData.push({
+                                id: 'cola_' + (reg.id || Date.now() + Math.random()),
+                                nombre: reg.name || '',
+                                cedula: reg.cedula || '',
+                                telefono: reg.telefono || '',
+                                sexo: reg.sexo || '',
+                                edad: reg.edad || '',
+                                ubch: reg.ubch || '',
+                                comunidad: reg.community || '',
+                                fecha: reg.registeredAt ? new Date(reg.registeredAt).toLocaleString('es-VE') : '',
+                                fuente: 'Cola'
+                            });
+                        });
+                        
+                        console.log(`🔄 Cargados ${colaLocal.length} registros de cola`);
+                    }
+                } catch (error) {
+                    console.error('❌ Error cargando cola offline:', error);
+                }
+                
+                // Eliminar duplicados por cédula (mantener el más reciente)
+                const uniqueData = [];
+                const seenCedulas = new Set();
+                
+                miListadoData.forEach(registro => {
+                    if (!seenCedulas.has(registro.cedula)) {
+                        seenCedulas.add(registro.cedula);
+                        uniqueData.push(registro);
+                    }
+                });
+                
+                miListadoData = uniqueData;
+                
+                console.log(`📋 Total de registros únicos: ${miListadoData.length}`);
+                
+                // Renderizar el listado
+                renderizarMiListado(miListadoData);
+                
+            } catch (error) {
+                console.error('❌ Error cargando mi listado:', error);
+                contentDiv.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #dc3545;">
+                        <h4>❌ Error al cargar el listado</h4>
+                        <p>${error.message}</p>
+                        <button class="btn btn-primary" onclick="cargarMiListado()">🔄 Reintentar</button>
+                    </div>
+                `;
+            } finally {
+                // Ocultar loading
+                loadingDiv.style.display = 'none';
+            }
+        }
+        
+        // Función para renderizar el listado
+        function renderizarMiListado(datos) {
+            const contentDiv = document.getElementById('mylistado-content');
+            
+            if (datos.length === 0) {
+                contentDiv.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6c757d;">
+                        <h4>📋 Tu listado está vacío</h4>
+                        <p>Aún no has registrado ninguna persona.</p>
+                        <button class="btn btn-primary" onclick="switchRegistrationMode('individual')">➕ Registrar Primera Persona</button>
+                        <button class="btn btn-warning" onclick="insertarRegistrosPrueba()">🧪 Cargar Datos de Prueba</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div style="margin-bottom: 15px; padding: 10px; background: #e9ecef; border-radius: 5px;">
+                    <strong>📊 Resumen:</strong> ${datos.length} personas registradas
+                </div>
+                <div class="listado-grid">
+            `;
+            
+            datos.forEach(persona => {
+                const sexoIcon = persona.sexo === 'M' ? '👨' : persona.sexo === 'F' ? '👩' : '👤';
+                const fuenteColor = persona.fuente === 'Firebase' ? '#28a745' : persona.fuente === 'Local' ? '#007bff' : '#ffc107';
+                
+                html += `
+                    <div class="listado-card" style="border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="font-size: 1.1em;">${sexoIcon} ${persona.nombre}</strong>
+                            <span style="background: ${fuenteColor}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8em;">${persona.fuente}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9em; color: #6c757d;">
+                            <div><strong>Cédula:</strong> ${persona.cedula}</div>
+                            <div><strong>Teléfono:</strong> ${persona.telefono || 'N/A'}</div>
+                            <div><strong>Edad:</strong> ${persona.edad} años</div>
+                            <div><strong>Sexo:</strong> ${persona.sexo === 'M' ? 'Masculino' : persona.sexo === 'F' ? 'Femenino' : 'N/A'}</div>
+                            <div><strong>UBCH:</strong> ${persona.ubch}</div>
+                            <div><strong>Comunidad:</strong> ${persona.comunidad}</div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.8em; color: #6c757d;">
+                            <strong>Fecha:</strong> ${persona.fecha}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            contentDiv.innerHTML = html;
+        }
+        
+        // Función para filtrar el listado
+        function filtrarMiListado() {
+            const searchInput = document.getElementById('mylistado-search');
+            const query = searchInput.value.toLowerCase().trim();
+            
+            if (!query) {
+                renderizarMiListado(miListadoData);
+                return;
+            }
+            
+            const datosFiltrados = miListadoData.filter(persona => {
+                return persona.nombre.toLowerCase().includes(query) ||
+                       persona.cedula.includes(query) ||
+                       persona.telefono.includes(query) ||
+                       persona.ubch.toLowerCase().includes(query) ||
+                       persona.comunidad.toLowerCase().includes(query);
+            });
+            
+            renderizarMiListado(datosFiltrados);
+        }
+        
+        // Función para exportar el listado
+        function exportarMiListado() {
+            if (miListadoData.length === 0) {
+                alert('❌ No hay datos para exportar');
+                return;
+            }
+            
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const username = currentUser.username || 'usuario';
+            
+            let csv = 'Nombre,Cédula,Teléfono,Sexo,Edad,UBCH,Comunidad,Fecha,Fuente\n';
+            
+            miListadoData.forEach(persona => {
+                csv += `"${persona.nombre}","${persona.cedula}","${persona.telefono}","${persona.sexo}","${persona.edad}","${persona.ubch}","${persona.comunidad}","${persona.fecha}","${persona.fuente}"\n`;
+            });
+            
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mi_listado_${username}_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log(`📊 Listado exportado: ${miListadoData.length} registros`);
+        }
+        
+        // Función para insertar registros de prueba
+        function insertarRegistrosPrueba() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const username = normalizarUsuario(currentUser.username || '');
+            
+            if (!username) {
+                alert('❌ No hay usuario activo');
+                return;
+            }
+            
+            const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+            const timestamp = new Date().toLocaleString();
+            
+            // Crear 3 registros de prueba
+            for (let i = 1; i <= 3; i++) {
+                registrosLocales.push({
+                    nombre: `Persona Prueba ${i}`,
+                    cedula: `${Date.now()}${i}`.slice(-8),
+                    telefono: `0412${String(Math.floor(Math.random() * 10000000)).padStart(7, '0')}`,
+                    sexo: i % 2 === 0 ? 'F' : 'M',
+                    edad: 20 + i,
+                    ubch: 'UBCH PRUEBA',
+                    comunidad: 'Comunidad Prueba',
+                    fecha: timestamp
+                });
+            }
+            
+            localStorage.setItem('misRegistrosLocales', JSON.stringify(registrosLocales));
+            
+            alert('✅ 3 registros de prueba agregados');
+            
+            // Recargar el listado
+            cargarMiListado();
+        }
+        
+        // Función para limpiar el listado
+        function limpiarMiListado() {
+            if (confirm('⚠️ ¿Estás seguro de que quieres limpiar todos los registros locales?\n\nEsto NO afectará los registros en Firebase.')) {
+                localStorage.removeItem('misRegistrosLocales');
+                alert('🗑️ Registros locales eliminados');
+                cargarMiListado();
+            }
+        }
+        
+        // Configurar el buscador cuando la página cargue
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('mylistado-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', filtrarMiListado);
+            }
+        });
+
+        // Función simple para probar el botón
+        function probarMiListado() {
+            console.log('🔍 Probando Mi Listado...');
+            alert('✅ El botón funciona correctamente');
+            
+            // Crear un registro de prueba simple
+            const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+            registrosLocales.push({
+                nombre: 'Prueba Simple',
+                cedula: '12345678',
+                telefono: '04121234567',
+                sexo: 'M',
+                edad: 30,
+                ubch: 'UBCH TEST',
+                comunidad: 'Comunidad Test',
+                fecha: new Date().toLocaleString()
+            });
+            localStorage.setItem('misRegistrosLocales', JSON.stringify(registrosLocales));
+            
+            // Intentar cargar el listado
+            if (typeof cargarMiListado === 'function') {
+                cargarMiListado();
+            } else {
+                console.error('❌ Función cargarMiListado no encontrada');
+            }
+        }
+        
+        // === FUNCIÓN DE DIAGNÓSTICO ===
+        async function diagnosticarRegistros() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const username = normalizarUsuario(currentUser.username || '');
+            
+            console.log('🔍 === DIAGNÓSTICO DE REGISTROS ===');
+            console.log('Usuario actual:', currentUser);
+            console.log('Username normalizado:', username);
+            
+            if (!username) {
+                alert('❌ No hay usuario activo');
+                return;
+            }
+            
+            // 1. Verificar registros en Firebase
+            let firebaseCount = 0;
+            if (window.firebaseDB && window.firebaseDB.votesCollection) {
+                try {
+                    const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).get();
+                    firebaseCount = snapshot.size;
+                    console.log('📊 Registros en Firebase:', firebaseCount);
+                    
+                    // Mostrar algunos ejemplos
+                    snapshot.forEach((doc, index) => {
+                        if (index < 3) {
+                            const data = doc.data();
+                            console.log(`- ${data.name} (${data.cedula}) -> registeredBy: "${data.registeredBy}"`);
+                        }
+                    });
+                } catch (error) {
+                    console.error('❌ Error consultando Firebase:', error);
+                }
+            }
+            
+            // 2. Verificar registros locales
+            const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+            console.log('💾 Registros locales:', registrosLocales.length);
+            
+            // 3. Verificar cola offline
+            let colaCount = 0;
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
+                try {
+                    const colaLocal = window.offlineQueueManager.obtenerColaLocal();
+                    colaCount = colaLocal.length;
+                    console.log('🔄 Registros en cola offline:', colaCount);
+                } catch (error) {
+                    console.error('❌ Error consultando cola offline:', error);
+                }
+            }
+            
+            const totalRegistros = firebaseCount + registrosLocales.length + colaCount;
+            
+            alert(`🔍 DIAGNÓSTICO COMPLETO:\n\n` +
+                  `Usuario: ${username}\n` +
+                  `Firebase: ${firebaseCount} registros\n` +
+                  `Locales: ${registrosLocales.length} registros\n` +
+                  `Cola offline: ${colaCount} registros\n` +
+                  `TOTAL: ${totalRegistros} registros\n\n` +
+                  `Revisa la consola (F12) para más detalles.`);
+        }
+
+        // === FUNCIÓN DE MIGRACIÓN: Normalizar todos los 'registeredBy' en Firebase ===
+        // (Eliminada por limpieza de interfaz)
+        // ... existing code ...
+        // Agregar botón de migración en la sección 'Mis Registros' (solo pruebas)
+        // (Eliminado por limpieza de interfaz)
+        // ... existing code ...
+
+        // === FUNCIÓN PARA LIMPIAR LA COLA LOCAL ===
+        function limpiarMisRegistrosLocales() {
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.limpiarColaLocal === 'function') {
+                if (confirm('¿Seguro que quieres borrar todos tus registros locales?')) {
+                    window.offlineQueueManager.limpiarColaLocal();
+                    mostrarMisRegistrosFacil();
+                }
+            } else {
+                alert('No se puede limpiar la cola local.');
+            }
+        }
+
+        // Agregar botón de limpiar cola local en la sección 'Mis Registros'
+        document.addEventListener('DOMContentLoaded', function() {
+            const myRecordsActions = document.querySelector('.myrecords-actions');
+            if (myRecordsActions) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-danger';
+                btn.textContent = 'Limpiar Mis Registros Locales';
+                btn.onclick = limpiarMisRegistrosLocales;
+                myRecordsActions.appendChild(btn);
+            }
+        });
+
+        // Definir switchRegistrationMode globalmente para evitar errores de referencia
+        window.switchRegistrationMode = function(mode) {
+            const individualDiv = document.getElementById('individual-registration');
+            const bulkDiv = document.getElementById('bulk-registration');
+            const myRecordsDiv = document.getElementById('myrecords-registration');
+            const modeButtons = document.querySelectorAll('.mode-btn');
+            // Actualizar botones
+            modeButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('active');
+                }
+            });
+            // Mostrar/ocultar secciones
+            if (mode === 'individual') {
+                individualDiv.style.display = 'block';
+                bulkDiv.style.display = 'none';
+                myRecordsDiv.style.display = 'none';
+            } else if (mode === 'bulk') {
+                individualDiv.style.display = 'none';
+                bulkDiv.style.display = 'block';
+                myRecordsDiv.style.display = 'none';
+            } else if (mode === 'mylistado') {
+                individualDiv.style.display = 'none';
+                bulkDiv.style.display = 'none';
+                myRecordsDiv.style.display = 'block';
+            }
+            console.log(`✅ Modo de registro cambiado a: ${mode}`);
+        };
+
+        // === FUNCIÓN PARA LIMPIAR TODO (local y Firebase) ===
+        // (Eliminada por seguridad y limpieza de interfaz)
+        // ... existing code ...
+        // Eliminar el botón de limpieza total si existe
+        document.addEventListener('DOMContentLoaded', function() {
+            const myRecordsActions = document.querySelector('.myrecords-actions');
+            if (myRecordsActions) {
+                Array.from(myRecordsActions.querySelectorAll('button')).forEach(btn => {
+                    if (btn.textContent.trim() === 'Limpiar TODO (local y Firebase)') {
+                        btn.remove();
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <!-- Contenedor de Notificaciones -->
+    <div id="notification-container"></div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+# Archivos de configuración sensibles
+firebase-config.js
+sistema-votos-2025-firebase-adminsdk-fbsvc-f2a93e33dd.json
+credenciales-firebase.json
+credenciales-sistema.html
+
+# Archivos de datos y pruebas
+datos_prueba_masivo.csv
+datos_prueba_masivo.txt
+registros_prueba.csv
+plantilla .xlsx
+
+# Archivos de backup
+backup_actual/
+*.backup
+*.bak
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos temporales
+*.tmp
+*.temp
+*.log
+
+# Archivos de node_modules (si se agregan en el futuro)
+node_modules/
+
+# Archivos de build
+dist/
+build/
+
+# Archivos de cache
+.cache/ 

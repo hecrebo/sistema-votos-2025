@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Notificaciones - Sistema de Votos 2025</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .test-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-btn:hover { background: #0056b3; }
+        .test-btn.success { background: #28a745; }
+        .test-btn.warning { background: #ffc107; color: black; }
+        .test-btn.error { background: #dc3545; }
+        .test-btn.info { background: #17a2b8; }
+    </style>
+</head>
+<body>
+    <h1>🔔 Prueba del Sistema de Notificaciones</h1>
+    
+    <div class="test-card">
+        <h2>📋 Estado del Sistema</h2>
+        <div id="system-status"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>🧪 Pruebas de Notificaciones</h2>
+        <div class="test-buttons">
+            <button class="test-btn info" onclick="testNotification('info')">Info</button>
+            <button class="test-btn success" onclick="testNotification('success')">Success</button>
+            <button class="test-btn warning" onclick="testNotification('warning')">Warning</button>
+            <button class="test-btn error" onclick="testNotification('error')">Error</button>
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>🎯 Pruebas Específicas</h2>
+        <div class="test-buttons">
+            <button class="test-btn" onclick="testRegistration()">Registro Exitoso</button>
+            <button class="test-btn" onclick="testVoteConfirmation()">Confirmación de Voto</button>
+            <button class="test-btn" onclick="testError()">Error de Sistema</button>
+            <button class="test-btn" onclick="testSync()">Sincronización</button>
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>🛠️ Controles</h2>
+        <div class="test-buttons">
+            <button class="test-btn" onclick="clearAllNotifications()">Limpiar Todas</button>
+            <button class="test-btn" onclick="testMultiple()">Múltiples Notificaciones</button>
+            <button class="test-btn" onclick="window.location.href='index.html'">Ir al Sistema</button>
+        </div>
+    </div>
+
+    <!-- Contenedor de Notificaciones -->
+    <div id="notification-container"></div>
+
+    <script src="notification-system.js"></script>
+    <script>
+        let notificationSystem;
+
+        function updateSystemStatus() {
+            const statusDiv = document.getElementById('system-status');
+            if (notificationSystem) {
+                const status = notificationSystem.getStatus();
+                statusDiv.innerHTML = `
+                    <p><strong>Contenedor:</strong> ${status.containerExists ? '✅ Presente' : '❌ Ausente'}</p>
+                    <p><strong>Notificaciones Activas:</strong> ${status.activeNotifications}</p>
+                    <p><strong>Máximo Permitido:</strong> ${status.maxNotifications}</p>
+                `;
+            } else {
+                statusDiv.innerHTML = '<p>❌ Sistema de notificaciones no inicializado</p>';
+            }
+        }
+
+        function testNotification(type) {
+            const messages = {
+                'info': 'Esta es una notificación de información del sistema.',
+                'success': '¡Operación completada exitosamente!',
+                'warning': 'Advertencia: El sistema detectó actividad inusual.',
+                'error': 'Error: No se pudo procesar la solicitud.'
+            };
+            
+            if (notificationSystem) {
+                notificationSystem.show(messages[type], type, true, 5000);
+                updateSystemStatus();
+            } else {
+                alert('Sistema de notificaciones no disponible');
+            }
+        }
+
+        function testRegistration() {
+            if (notificationSystem) {
+                notificationSystem.show('✅ Persona registrada exitosamente: Juan Pérez (12345678)', 'success', true, 4000);
+                updateSystemStatus();
+            }
+        }
+
+        function testVoteConfirmation() {
+            if (notificationSystem) {
+                notificationSystem.show('🗳️ Voto confirmado: María González (87654321)', 'success', true, 4000);
+                updateSystemStatus();
+            }
+        }
+
+        function testError() {
+            if (notificationSystem) {
+                notificationSystem.show('❌ Error de conexión con Firebase. Verificando...', 'error', true, 6000);
+                updateSystemStatus();
+            }
+        }
+
+        function testSync() {
+            if (notificationSystem) {
+                notificationSystem.show('🔄 Sincronizando datos con el servidor...', 'info', true, 3000);
+                setTimeout(() => {
+                    if (notificationSystem) {
+                        notificationSystem.show('✅ Sincronización completada. 15 registros actualizados.', 'success', true, 4000);
+                        updateSystemStatus();
+                    }
+                }, 2000);
+            }
+        }
+
+        function clearAllNotifications() {
+            if (notificationSystem) {
+                notificationSystem.clearAll();
+                updateSystemStatus();
+            }
+        }
+
+        function testMultiple() {
+            if (notificationSystem) {
+                notificationSystem.show('📊 Cargando estadísticas...', 'info', false);
+                setTimeout(() => {
+                    notificationSystem.show('✅ Estadísticas cargadas correctamente', 'success', false);
+                }, 1000);
+                setTimeout(() => {
+                    notificationSystem.show('⚠️ Algunos datos pueden estar desactualizados', 'warning', false);
+                }, 2000);
+                setTimeout(() => {
+                    notificationSystem.show('🔄 Actualizando datos en segundo plano...', 'info', false);
+                }, 3000);
+                updateSystemStatus();
+            }
+        }
+
+        // Inicializar sistema de notificaciones
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                notificationSystem = new NotificationSystem();
+                console.log('✅ Sistema de notificaciones inicializado');
+                updateSystemStatus();
+            } catch (error) {
+                console.error('❌ Error inicializando sistema de notificaciones:', error);
+                document.getElementById('system-status').innerHTML = '<p>❌ Error: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html> 
