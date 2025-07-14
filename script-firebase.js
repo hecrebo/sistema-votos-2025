@@ -90,33 +90,29 @@ class VotingSystemFirebase extends VotingSystem {
 
     async init() {
         console.log('🔄 Inicializando VotingSystemFirebase...');
-        
         // Verificar usuario actual y establecer página inicial según rol
-        const currentUser = this.getCurrentUser();
-        if (currentUser) {
-            if (currentUser.rol === 'verificador') {
-                this.currentPage = 'check-in';
-            } else if (currentUser.rol === 'registrador') {
-                this.currentPage = 'registration';
-            }
+        const userForHeader = this.getCurrentUser();
+        if (!userForHeader || !userForHeader.username) {
+            window.location.href = 'login.html';
+            return;
         }
-            
-            // Cargar datos desde Firebase
-            await this.loadDataFromFirebase();
-        
+        if (userForHeader.rol === 'verificador') {
+            this.currentPage = 'check-in';
+        } else if (userForHeader.rol === 'registrador') {
+            this.currentPage = 'registration';
+        }
+        // Cargar datos desde Firebase
+        await this.loadDataFromFirebase();
         // Configurar event listeners
         this.setupEventListeners();
-        
         // Configurar navegación según rol
         this.setupNavigationByRole();
-        
         // Renderizar página inicial
         this.renderCurrentPage();
-        
         // Inicializar sistema offline
         this.inicializarSistemaOffline();
-        
         console.log('✅ VotingSystemFirebase inicializado correctamente');
+        this.updateUserId();
     }
 
     async loadDataFromFirebase() {
@@ -151,30 +147,30 @@ class VotingSystemFirebase extends VotingSystem {
             const ubchSnapshot = await window.firebaseDB.ubchCollection.doc('config').get();
             if (ubchSnapshot.exists) {
                 this.ubchToCommunityMap = ubchSnapshot.data().mapping;
-                    console.log('✅ Configuración UBCH cargada desde Firebase');
+                    console.log('✅ Configuración CV cargada desde Firebase');
                 } else {
                     // Si no existe en Firebase, usar configuración por defecto
-                    console.log('⚠️ No se encontró configuración UBCH en Firebase, usando configuración por defecto');
+                    console.log('⚠️ No se encontró configuración CV en Firebase, usando configuración por defecto');
                     this.ubchToCommunityMap = {
-                            "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "COMUNIDAD NO DEFINIDA"],
-                            "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "COMUNIDAD NO DEFINIDA"],
-                            "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "COMUNIDAD NO DEFINIDA"],
-                            "CASA COMUNAL": ["LOS JABILLOS", "COMUNIDAD NO DEFINIDA"],
-                            "UNIDAD EDUCATIVA MONSEÑOR JACINTO SOTO LAYERA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "COMUNIDAD NO DEFINIDA"],
-                            "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "COMUNIDAD NO DEFINIDA"],
-                            "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "COMUNIDAD NO DEFINIDA"],
-                            "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "COMUNIDAD NO DEFINIDA"],
-                            "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "COMUNIDAD NO DEFINIDA"],
-                            "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "COMUNIDAD NO DEFINIDA"]
+                            "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+                            "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+                            "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+                            "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+                            "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+                            "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+                            "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "CONSOLACIÓN"],
+                            "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+                            "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+                            "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+                            "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "CONSOLACIÓN"],
+                            "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+                            "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+                            "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+                            "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+                            "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+                            "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+                            "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+                            "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
                     };
                     
                     // Guardar configuración por defecto en Firebase para futuras cargas
@@ -186,34 +182,34 @@ class VotingSystemFirebase extends VotingSystem {
                     const todasLasComunidades = Object.values(this.ubchToCommunityMap).flat();
                     const comunidadesUnicas = [...new Set(todasLasComunidades)];
                     
-                    console.log(`📊 Configuración UBCH: ${totalUBCH} centros de votación, ${comunidadesUnicas.length} comunidades únicas`);
+                    console.log(`📊 Configuración CV: ${totalUBCH} centros de votación, ${comunidadesUnicas.length} comunidades únicas`);
                     console.log(`📋 Lista única de comunidades: (${comunidadesUnicas.length}) [${comunidadesUnicas.join(', ')}]`);
                     
                     this.ubchConfigLoaded = true;
                     
             } catch (error) {
-                console.error('❌ Error cargando configuración UBCH:', error);
+                console.error('❌ Error cargando configuración CV:', error);
                 // Usar configuración por defecto en caso de error
                 this.ubchToCommunityMap = {
-                        "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "COMUNIDAD NO DEFINIDA"],
-                        "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "COMUNIDAD NO DEFINIDA"],
-                        "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "COMUNIDAD NO DEFINIDA"],
-                        "CASA COMUNAL": ["LOS JABILLOS", "COMUNIDAD NO DEFINIDA"],
-                        "UNIDAD EDUCATIVA MONSEÑOR JACINTO SOTO LAYERA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "COMUNIDAD NO DEFINIDA"],
-                        "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "COMUNIDAD NO DEFINIDA"],
-                        "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "COMUNIDAD NO DEFINIDA"],
-                        "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "COMUNIDAD NO DEFINIDA"],
-                        "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "COMUNIDAD NO DEFINIDA"],
-                        "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "COMUNIDAD NO DEFINIDA"]
+                        "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+                        "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+                        "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+                        "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+                        "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+                        "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+                        "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "CONSOLACIÓN"],
+                        "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+                        "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+                        "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+                        "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "CONSOLACIÓN"],
+                        "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+                        "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+                        "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+                        "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+                        "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+                        "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+                        "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+                        "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
                     };
                     this.ubchConfigLoaded = true;
                 }
@@ -247,28 +243,28 @@ class VotingSystemFirebase extends VotingSystem {
             
             // Usar configuración UBCH por defecto
             this.ubchToCommunityMap = {
-                "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "COMUNIDAD NO DEFINIDA"],
-                "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "COMUNIDAD NO DEFINIDA"],
-                "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "COMUNIDAD NO DEFINIDA"],
-                "CASA COMUNAL": ["LOS JABILLOS", "COMUNIDAD NO DEFINIDA"],
-                "UNIDAD EDUCATIVA MONSEÑOR JACINTO SOTO LAYERA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "COMUNIDAD NO DEFINIDA"],
-                "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "COMUNIDAD NO DEFINIDA"],
-                "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "COMUNIDAD NO DEFINIDA"],
-                "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "COMUNIDAD NO DEFINIDA"],
-                "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "COMUNIDAD NO DEFINIDA"],
-                "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "COMUNIDAD NO DEFINIDA"]
+                "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+                "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+                "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+                "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+                "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+                "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+                "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "CONSOLACIÓN"],
+                "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+                "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+                "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+                "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "CONSOLACIÓN"],
+                "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+                "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+                "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+                "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+                "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+                "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+                "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+                "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
             };
             
-            console.log(`✅ Configuración UBCH cargada: ${Object.keys(this.ubchToCommunityMap).length} UBCH disponibles`);
+            console.log(`✅ Configuración CV cargada: ${Object.keys(this.ubchToCommunityMap).length} CV disponibles`);
             
         } catch (error) {
             console.error('❌ Error cargando datos locales:', error);
@@ -284,9 +280,9 @@ class VotingSystemFirebase extends VotingSystem {
                 mapping: this.ubchToCommunityMap,
                 lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log('✅ Configuración UBCH guardada en Firebase');
+            console.log('✅ Configuración CV guardada en Firebase');
         } catch (error) {
-            console.error('❌ Error guardando configuración UBCH:', error);
+            console.error('❌ Error guardando configuración CV:', error);
         }
     }
 
@@ -548,7 +544,7 @@ class VotingSystemFirebase extends VotingSystem {
 
         // Validar UBCH y comunidad
         if (!data.ubch || !data.community) {
-            return { isValid: false, message: 'Debe seleccionar UBCH y comunidad' };
+            return { isValid: false, message: 'Debe seleccionar CV y comunidad' };
         }
 
         return { isValid: true, message: 'Datos válidos' };
@@ -599,6 +595,22 @@ class VotingSystemFirebase extends VotingSystem {
                 form.reset();
                 const stats = window.offlineQueueManager.obtenerEstadisticasCola();
                 window.offlineQueueManager.actualizarIndicadorCola(stats.total);
+                
+                // ASEGURAR que se guarde también en "Mis Registros"
+                if (typeof guardarRegistroLocal === 'function') {
+                    guardarRegistroLocal({
+                        nombre: name,
+                        cedula: registrationData.cedula,
+                        telefono: registrationData.telefono,
+                        sexo: sexo,
+                        edad: edad,
+                        ubch: ubch,
+                        comunidad: community,
+                        fecha: new Date().toLocaleString()
+                    });
+                }
+                
+                if (window.renderMyRecordsTable) window.renderMyRecordsTable();
             } else {
                 console.warn('⚠️ Gestor offline no disponible, usando sistema anterior');
                 await this.saveVoteToFirebase(registrationData);
@@ -606,6 +618,20 @@ class VotingSystemFirebase extends VotingSystem {
                 this.showMessage('👤 Nuevo registro: ' + name + ' en ' + community, 'success', 'registration');
                 await this.generateThankYouMessage(name, ubch, community);
                 form.reset();
+                
+                // ASEGURAR que se guarde también en "Mis Registros"
+                if (typeof guardarRegistroLocal === 'function') {
+                    guardarRegistroLocal({
+                        nombre: name,
+                        cedula: registrationData.cedula,
+                        telefono: registrationData.telefono,
+                        sexo: sexo,
+                        edad: edad,
+                        ubch: ubch,
+                        comunidad: community,
+                        fecha: new Date().toLocaleString()
+                    });
+                }
             }
         } catch (error) {
             console.error('❌ Error al registrar:', error);
@@ -820,6 +846,9 @@ class VotingSystemFirebase extends VotingSystem {
                 this.applyFilters();
             });
         }
+
+        // 1. Métodos para el modo proyección
+        this.setupProjectionEvents();
     }
 
     navigateToPage(page) {
@@ -1113,7 +1142,7 @@ class VotingSystemFirebase extends VotingSystem {
                     <p>Cédula: ${person.cedula}</p>
                     <p>Sexo: ${person.sexo === 'M' ? 'Masculino' : person.sexo === 'F' ? 'Femenino' : 'N/A'}</p>
                     <p>Edad: ${person.edad || 'N/A'} años</p>
-                    <p>UBCH: ${person.ubch}</p>
+                    <p>CV: ${person.ubch}</p>
                     <p>Comunidad: ${person.community}</p>
                     <p class="vote-status-info">
                         <strong>Estado del voto:</strong> 
@@ -1311,30 +1340,24 @@ class VotingSystemFirebase extends VotingSystem {
             console.warn('⚠️ No se encontró el selector ubch-filter-select');
             return;
         }
-
-        // Obtener todas las UBCH únicas de los registros
-        const uniqueUBCHs = [...new Set(this.votes.map(vote => vote.ubch).filter(ubch => ubch))];
-        
-        console.log(`🔄 Poblando filtro UBCH con ${uniqueUBCHs.length} UBCH únicas:`, uniqueUBCHs);
-        
+        // Obtener todos los Centros de Votación posibles del mapa
+        const allCVs = Object.keys(this.ubchToCommunityMap || {}).sort();
+        console.log(`🔄 Poblando filtro CV con ${allCVs.length} centros posibles:`, allCVs);
         // Limpiar opciones existentes
-        ubchSelect.innerHTML = '<option value="">Todas las UBCH</option>';
-        
-        // Agregar opciones para cada UBCH
-        uniqueUBCHs.sort().forEach(ubch => {
+        ubchSelect.innerHTML = '<option value="">Todos los CV</option>';
+        // Agregar opciones para cada CV
+        allCVs.forEach(cv => {
             const option = document.createElement('option');
-            option.value = ubch;
-            option.textContent = ubch;
+            option.value = cv;
+            option.textContent = cv;
             ubchSelect.appendChild(option);
         });
-        
-        console.log(`✅ Filtro UBCH poblado con ${ubchSelect.options.length} opciones`);
-        
+        console.log(`✅ Filtro CV poblado con ${ubchSelect.options.length} opciones`);
         // Verificar que el evento change esté funcionando
         if (!ubchSelect.hasAttribute('data-event-bound')) {
             ubchSelect.setAttribute('data-event-bound', 'true');
             ubchSelect.addEventListener('change', (e) => {
-                console.log(`🔄 Filtro UBCH cambiado a: "${e.target.value}"`);
+                console.log(`🔄 Filtro CV cambiado a: "${e.target.value}"`);
                 this.applyFilters();
             });
         }
@@ -1348,7 +1371,7 @@ class VotingSystemFirebase extends VotingSystem {
             return;
         }
 
-        // Obtener todas las comunidades posibles del mapa UBCH
+        // Obtener todas las comunidades posibles del mapa
         const todasLasComunidades = new Set();
         Object.values(this.ubchToCommunityMap).forEach(comunidades => {
             comunidades.forEach(comunidad => todasLasComunidades.add(comunidad));
@@ -1959,7 +1982,7 @@ class VotingSystemFirebase extends VotingSystem {
         document.getElementById('edit-sexo').value = vote.sexo || '';
         document.getElementById('edit-edad').value = vote.edad || '';
 
-        // Configurar UBCH y comunidad
+        // Configurar CV y comunidad
         this.populateEditUBCH(vote.ubch, vote.community);
     }
 
@@ -1968,7 +1991,7 @@ class VotingSystemFirebase extends VotingSystem {
         const communitySelect = document.getElementById('edit-community');
 
         // Limpiar opciones existentes
-        ubchSelect.innerHTML = '<option value="">Selecciona una UBCH</option>';
+        ubchSelect.innerHTML = '<option value="">Selecciona un CV</option>';
         communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
 
         // Agregar opciones de UBCH
@@ -2066,14 +2089,15 @@ class VotingSystemFirebase extends VotingSystem {
         document.getElementById('total-registered').textContent = totalRegistered;
         document.getElementById('total-voted').textContent = totalVoted;
         document.getElementById('vote-progress').style.width = `${percentage}%`;
-        document.getElementById('vote-progress').textContent = `${percentage.toFixed(1)}%`;
+        document.getElementById('vote-progress').textContent = '';
+        document.getElementById('progress-percentage').textContent = `${percentage.toFixed(1)}%`;
         document.getElementById('progress-text').textContent = `${totalVoted} de ${totalRegistered} personas han votado.`;
     }
 
     renderStatisticsPage() {
         const votedVotes = this.votes.filter(vote => vote.voted);
         
-        // Estadísticas por UBCH
+        // Estadísticas por CV
         const ubchStats = {};
         votedVotes.forEach(vote => {
             ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
@@ -2345,7 +2369,7 @@ class VotingSystemFirebase extends VotingSystem {
                 yPos += 5;
             }
             if (filterInfo.ubchFilter) {
-                doc.text(`• UBCH: ${filterInfo.ubchFilter}`, 25, yPos);
+                doc.text(`• CV: ${filterInfo.ubchFilter}`, 25, yPos);
                 yPos += 5;
             }
             if (filterInfo.communityFilter) {
@@ -2375,7 +2399,7 @@ class VotingSystemFirebase extends VotingSystem {
         ]);
 
         doc.autoTable({
-            head: [['Nombre', 'Cédula', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Votó']],
+            head: [['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó']],
             body: tableData,
             startY: filterInfo.hasFilters ? 65 : 50,
             styles: {
@@ -2440,7 +2464,7 @@ class VotingSystemFirebase extends VotingSystem {
 
     // Método para exportar registros específicos a CSV
     exportVotesToCSV(votesData, fileName) {
-        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Votó'];
+        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
         const rows = votesData.map(vote => [
             `"${(vote.name || '').replace(/"/g, '""')}"`,
             `"${(vote.cedula || '').replace(/"/g, '""')}"`,
@@ -2472,7 +2496,7 @@ class VotingSystemFirebase extends VotingSystem {
         const filteredVotes = this.getFilteredVotes();
         const filterInfo = this.getFilterInfo();
         
-        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'UBCH', 'Comunidad', 'Votó'];
+        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
         const rows = filteredVotes.map(vote => [
             `"${(vote.name || '').replace(/"/g, '""')}"`,
             `"${(vote.cedula || '').replace(/"/g, '""')}"`,
@@ -2509,25 +2533,25 @@ class VotingSystemFirebase extends VotingSystem {
         console.log('🔄 Forzando recarga y actualización de configuración en Firebase...');
         // Configuración local correcta
         const configCorrecta = {
-            "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "COMUNIDAD NO DEFINIDA"],
-            "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "COMUNIDAD NO DEFINIDA"],
-            "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "COMUNIDAD NO DEFINIDA"],
-            "CASA COMUNAL": ["LOS JABILLOS", "COMUNIDAD NO DEFINIDA"],
-            "UNIDAD EDUCATIVA MONSEÑOR JACINTO SOTO LAYERA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "COMUNIDAD NO DEFINIDA"],
-            "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "COMUNIDAD NO DEFINIDA"],
-            "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "COMUNIDAD NO DEFINIDA"],
-            "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "COMUNIDAD NO DEFINIDA"],
-            "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "COMUNIDAD NO DEFINIDA"],
-            "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "COMUNIDAD NO DEFINIDA"]
+            "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+            "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+            "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+            "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+            "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+            "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+            "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "CONSOLACIÓN"],
+            "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+            "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+            "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+            "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "CONSOLACIÓN"],
+            "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+            "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+            "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+            "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+            "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+            "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+            "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+            "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
         };
         // Actualizar en memoria y en Firebase
         this.ubchToCommunityMap = configCorrecta;
@@ -2536,7 +2560,7 @@ class VotingSystemFirebase extends VotingSystem {
                 mapping: configCorrecta,
                 lastUpdated: (window.firebase && window.firebase.firestore && window.firebase.firestore.FieldValue && window.firebase.firestore.FieldValue.serverTimestamp) ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date()
             });
-            console.log('✅ Configuración UBCH actualizada en Firebase');
+            console.log('✅ Configuración CV actualizada en Firebase');
         } else {
             console.warn('⚠️ No se pudo actualizar Firebase, usando solo local');
         }
@@ -2613,6 +2637,112 @@ class VotingSystemFirebase extends VotingSystem {
             navButtons.forEach(btn => btn.style.display = 'block');
         }
     }
+
+    updateUserId() {
+        const userIdElement = document.getElementById('userId');
+        const userForHeader = this.getCurrentUser();
+        if (userIdElement && userForHeader && userForHeader.username) {
+            userIdElement.textContent = `${userForHeader.username} (${userForHeader.rol})`;
+        } else if (userIdElement) {
+            userIdElement.textContent = '';
+        }
+    }
+
+    // 1. Métodos para el modo proyección
+    enterProjectionMode() {
+        const overlay = document.getElementById('projection-view');
+        overlay.style.display = 'block';
+        document.body.classList.add('projection-mode');
+        this.updateProjection();
+        this.projectionInterval = setInterval(() => this.updateProjection(), 30000);
+        // Solicitar pantalla completa
+        if (overlay.requestFullscreen) {
+            overlay.requestFullscreen();
+        } else if (overlay.webkitRequestFullscreen) { // Safari
+            overlay.webkitRequestFullscreen();
+        } else if (overlay.msRequestFullscreen) { // IE11
+            overlay.msRequestFullscreen();
+        }
+    }
+
+    exitProjectionMode() {
+        const overlay = document.getElementById('projection-view');
+        overlay.style.display = 'none';
+        document.body.classList.remove('projection-mode');
+        if (this.projectionInterval) clearInterval(this.projectionInterval);
+        // Salir de pantalla completa si está activo
+        if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) { // Safari
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) { // IE11
+                document.msExitFullscreen();
+            }
+        }
+    }
+
+    updateProjection() {
+        // Obtener todos los CV posibles (19) desde this.ubchToCommunityMap
+        const allCVs = Object.keys(this.ubchToCommunityMap || {}).sort();
+        // Filtrar votos actuales
+        const votes = this.votes || [];
+        // Contar votos por CV
+        const votosPorCV = {};
+        const registradosPorCV = {};
+        allCVs.forEach(cv => { votosPorCV[cv] = 0; registradosPorCV[cv] = 0; });
+        votes.forEach(v => {
+            if (v.ubch && registradosPorCV.hasOwnProperty(v.ubch)) {
+                registradosPorCV[v.ubch]++;
+                if (v.voted) votosPorCV[v.ubch]++;
+            }
+        });
+        // Totales
+        const totalRegistrados = votes.length;
+        const totalVotaron = votes.filter(v => v.voted).length;
+        const porcentaje = totalRegistrados ? ((totalVotaron / totalRegistrados) * 100).toFixed(1) : 0;
+        // Actualizar DOM general
+        document.getElementById('projection-votes').textContent = totalVotaron.toLocaleString();
+        document.getElementById('projection-text').textContent = `${totalVotaron.toLocaleString()} de ${totalRegistrados.toLocaleString()}`;
+        const fill = document.getElementById('projection-progress-fill');
+        fill.style.width = porcentaje + '%';
+        fill.textContent = porcentaje + '%';
+        // Mostrar los 19 CV como tarjetas
+        const rankingList = document.getElementById('projection-ubch-list');
+        rankingList.innerHTML = allCVs.map((cv, i) => {
+            const votos = votosPorCV[cv];
+            const registrados = registradosPorCV[cv];
+            const porcentajeCV = registrados ? ((votos / registrados) * 100).toFixed(1) : 0;
+            return `
+            <div class='projection-item' style="background:#232946; border-radius:1rem; padding:1rem 1.2rem; margin-bottom:1.2rem; box-shadow:0 2px 8px rgba(80,112,255,0.08);">
+                <div class='projection-item-header' style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                    <span class='projection-item-name' style="font-size:1.1em; font-weight:600; color:#fff;">${i+1}. ${cv}</span>
+                    <span class='projection-item-count' style="font-size:1.2em; font-weight:700; color:#43e97b;">${votos}</span>
+                </div>
+                <div style="font-size:0.95em; color:#bfc9d1; margin-bottom:0.3em;">Registrados: ${registrados}</div>
+                <div class='projection-item-progress' style="width:100%; height:0.8rem; background:#374151; border-radius:0.5rem; overflow:hidden; margin-bottom:0.2em;">
+                    <div class='projection-item-progress-fill' style="height:100%; background:linear-gradient(90deg,#10b981,#34d399); width:${porcentajeCV}%; transition:width 0.5s; border-radius:0.5rem;"></div>
+                </div>
+                <div style="font-size:0.9em; color:#43e97b;">${porcentajeCV}% participación</div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    // 2. Asignar eventos al cargar la página principal
+    setupProjectionEvents() {
+        const btn = document.getElementById('projection-btn');
+        const exitBtn = document.getElementById('exit-projection-btn');
+        if (btn) btn.onclick = () => this.enterProjectionMode();
+        if (exitBtn) exitBtn.onclick = () => this.exitProjectionMode();
+        // Cerrar con Escape
+        document.addEventListener('keydown', (e) => {
+            const overlay = document.getElementById('projection-view');
+            if (overlay.style.display !== 'none' && (e.key === 'Escape' || e.key === 'Esc')) {
+                this.exitProjectionMode();
+            }
+        });
+    }
 }
 
 // Inicializar el sistema cuando el DOM esté listo
@@ -2635,27 +2765,128 @@ window.renderMyRecordsTable = async function() {
             tableBody.innerHTML = '<tr><td colspan="8">No hay usuario activo</td></tr>';
             return;
         }
-        // Consultar registros de este usuario
+        
+        console.log('🔍 Buscando registros para usuario:', username);
+        
+        // Obtener registros de múltiples fuentes
+        const records = [];
+        
+        // 1. Registros de Firebase
+        try {
         const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).orderBy('createdAt', 'desc').limit(500).get();
-        if (snapshot.empty) {
+        snapshot.forEach(doc => {
+            const d = doc.data();
+                records.push({
+                    name: d.name || '',
+                    cedula: d.cedula || '',
+                    telefono: d.telefono || '',
+                    sexo: d.sexo || '',
+                    edad: d.edad || '',
+                    ubch: d.ubch || '',
+                    community: d.community || '',
+                    registeredAt: d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : '',
+                    source: 'Firebase'
+                });
+            });
+            console.log('📊 Registros de Firebase:', records.length);
+        } catch (error) {
+            console.error('❌ Error consultando Firebase:', error);
+        }
+        
+        // 2. Registros locales (misRegistrosLocales)
+        try {
+            const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+            registrosLocales.forEach(r => {
+                records.push({
+                    name: r.nombre || '',
+                    cedula: r.cedula || '',
+                    telefono: r.telefono || '',
+                    sexo: r.sexo || '',
+                    edad: r.edad || '',
+                    ubch: r.ubch || '',
+                    community: r.comunidad || '',
+                    registeredAt: r.fecha || '',
+                    source: 'Local'
+                });
+            });
+            console.log('💾 Registros locales agregados:', registrosLocales.length);
+        } catch (error) {
+            console.error('❌ Error consultando registros locales:', error);
+        }
+        
+        // 3. Cola offline
+        try {
+            if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
+                const colaLocal = window.offlineQueueManager.obtenerColaLocal();
+                colaLocal.forEach(r => {
+                    records.push({
+                        name: r.name || '',
+                        cedula: r.cedula || '',
+                        telefono: r.telefono || '',
+                        sexo: r.sexo || '',
+                        edad: r.edad || '',
+                        ubch: r.ubch || '',
+                        community: r.community || '',
+                        registeredAt: r.registeredAt ? (new Date(r.registeredAt)).toLocaleString('es-VE', {hour12:true}) : '',
+                        source: 'Cola'
+                    });
+                });
+                console.log('🔄 Registros de cola agregados:', colaLocal.length);
+            }
+        } catch (error) {
+            console.error('❌ Error consultando cola offline:', error);
+        }
+        
+        // Eliminar duplicados por cédula (mantener el más reciente)
+        const uniqueRecords = [];
+        const seenCedulas = new Set();
+        records.forEach(record => {
+            if (!seenCedulas.has(record.cedula)) {
+                seenCedulas.add(record.cedula);
+                uniqueRecords.push(record);
+            }
+        });
+        
+        console.log('📋 Total de registros únicos:', uniqueRecords.length);
+        if (uniqueRecords.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
             return;
         }
-        let rows = '';
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            rows += `<tr>
-                <td>${d.name || ''}</td>
-                <td>${d.cedula || ''}</td>
-                <td>${d.telefono || ''}</td>
-                <td>${d.sexo || ''}</td>
-                <td>${d.edad || ''}</td>
-                <td>${d.ubch || ''}</td>
-                <td>${d.community || ''}</td>
-                <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
-            </tr>`;
-        });
-        tableBody.innerHTML = rows;
+        
+        // Función para renderizar filas filtradas
+        function renderRows(filtered) {
+            if (!filtered.length) {
+                tableBody.innerHTML = '<tr><td colspan="8">No se encontraron registros.</td></tr>';
+                return;
+            }
+            tableBody.innerHTML = filtered.map(d => `
+                <tr>
+                    <td>${d.name}</td>
+                    <td>${d.cedula}</td>
+                    <td>${d.telefono}</td>
+                    <td>${d.sexo}</td>
+                    <td>${d.edad}</td>
+                    <td>${d.ubch}</td>
+                    <td>${d.community}</td>
+                    <td>${d.registeredAt}</td>
+                </tr>
+            `).join('');
+        }
+        // Inicial: mostrar todos
+        renderRows(uniqueRecords);
+        // Filtrado en tiempo real
+        const searchInput = document.getElementById('myrecords-search');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.oninput = function() {
+                const q = this.value.trim().toLowerCase();
+                if (!q) return renderRows(uniqueRecords);
+                const filtered = uniqueRecords.filter(d =>
+                    Object.values(d).some(val => (val+'').toLowerCase().includes(q))
+                );
+                renderRows(filtered);
+            };
+        }
     } catch (e) {
         tableBody.innerHTML = '<tr><td colspan="8">Error cargando registros</td></tr>';
     }
@@ -2669,7 +2900,7 @@ window.downloadMyRecordsAsCSV = async function() {
     if (!username) return alert('No hay usuario activo');
     const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).orderBy('createdAt', 'desc').limit(1000).get();
     if (snapshot.empty) return alert('No tienes registros propios aún.');
-    let csv = 'Nombre,Cédula,Teléfono,Sexo,Edad,UBCH,Comunidad,Fecha\n';
+    let csv = 'Nombre,Cédula,Teléfono,Sexo,Edad,CV,Comunidad,Fecha\n';
     snapshot.forEach(doc => {
         const d = doc.data();
         csv += `"${d.name||''}","${d.cedula||''}","${d.telefono||''}","${d.sexo||''}","${d.edad||''}","${d.ubch||''}","${d.community||''}","${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}"
@@ -2700,3 +2931,243 @@ if (typeof switchRegistrationMode === 'function') {
 function normalizarUsuario(username) {
     return (username || '').trim().toLowerCase();
 }
+
+// --- Exportar Mis Registros (solo usuario actual) ---
+document.addEventListener('DOMContentLoaded', function() {
+    const btnCSV = document.getElementById('myrecords-export-csv');
+    const btnPDF = document.getElementById('myrecords-export-pdf');
+    if (btnCSV) {
+        btnCSV.addEventListener('click', async function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const username = normalizarUsuario(currentUser.username || '');
+            if (!username) return alert('No hay usuario activo');
+            const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).orderBy('createdAt', 'desc').limit(1000).get();
+            if (snapshot.empty) return alert('No tienes registros propios aún.');
+            let csv = 'Nombre;Cédula;Teléfono;Sexo;Edad;CV;Comunidad;Fecha\n';
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                csv += `"${d.name||''}";"${d.cedula||''}";"${d.telefono||''}";"${d.sexo||''}";"${d.edad||''}";"${d.ubch||''}";"${d.community||''}";"${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}"\n`;
+            });
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csv], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mis_registros.csv';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        });
+    }
+    if (btnPDF) {
+        btnPDF.addEventListener('click', async function() {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                alert('Error: Librería PDF no disponible');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const username = normalizarUsuario(currentUser.username || '');
+            if (!username) return alert('No hay usuario activo');
+            const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).orderBy('createdAt', 'desc').limit(1000).get();
+            if (snapshot.empty) return alert('No tienes registros propios aún.');
+            const doc = new jsPDF();
+            doc.setFontSize(16);
+            doc.text('Mis Registros', 20, 20);
+            doc.setFontSize(10);
+            doc.text(`Total de registros: ${snapshot.size}`, 20, 30);
+            doc.text(`Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}`, 20, 36);
+            // Datos de la tabla
+            const tableData = [];
+            snapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                tableData.push([
+                    d.name || '',
+                    d.cedula || '',
+                    d.telefono || '',
+                    d.sexo || '',
+                    d.edad || '',
+                    d.ubch || '',
+                    d.community || '',
+                    d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''
+                ]);
+            });
+            doc.autoTable({
+                head: [['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Fecha']],
+                body: tableData,
+                startY: 45,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+                alternateRowStyles: { fillColor: [245, 245, 245] }
+            });
+            doc.save('mis_registros.pdf');
+        });
+    }
+});
+
+const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+const username = (currentUser.username || '').trim().toLowerCase();
+window.firebaseDB.votesCollection.where('registeredBy', '==', username).get().then(snap => console.log('Registros:', snap.size));
+
+document.addEventListener('DOMContentLoaded', function() {
+    const btnUpdateOld = document.getElementById('myrecords-update-old');
+    if (btnUpdateOld) {
+        btnUpdateOld.addEventListener('click', async function() {
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                alert('Firebase no está listo para actualizar registros.');
+                return;
+            }
+            const usernameCorrecto = 'victor';
+            const confirmacion = confirm('¿Seguro que quieres vincular todos los registros antiguos (sin usuario) a tu usuario actual?');
+            if (!confirmacion) return;
+            let actualizados = 0;
+            const snapshot = await window.firebaseDB.votesCollection.get();
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                if (!data.registeredBy || data.registeredBy === '' || data.registeredBy === null) {
+                    try {
+                        await window.firebaseDB.votesCollection.doc(doc.id).update({
+                            registeredBy: usernameCorrecto
+                        });
+                        actualizados++;
+                        console.log('Actualizado:', doc.id);
+                    } catch (err) {
+                        console.error('Error actualizando', doc.id, err);
+                    }
+                }
+            }
+            alert('Registros antiguos actualizados: ' + actualizados);
+            if (window.renderMyRecordsTable) window.renderMyRecordsTable();
+        });
+    }
+});
+
+// Guardar registro localmente tras registro exitoso
+function guardarRegistroLocal(registro) {
+    let registros = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+    registros.push(registro);
+    localStorage.setItem('misRegistrosLocales', JSON.stringify(registros));
+}
+
+// Renderizar tarjetas en Mis Registros
+async function renderMisRegistrosComoTarjetas(filtro = '') {
+    const contenedor = document.getElementById('myrecords-cards');
+    if (!contenedor) return;
+    
+    // Obtener usuario actual
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const username = normalizarUsuario(currentUser.username || '');
+    if (!username) {
+        contenedor.innerHTML = '<p style="text-align:center;">No hay usuario activo</p>';
+        return;
+    }
+    
+    // Obtener registros de múltiples fuentes (igual que renderMyRecordsTable)
+    const records = [];
+    
+    // 1. Registros locales
+    try {
+        const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+        registrosLocales.forEach(r => {
+            records.push({
+                nombre: r.nombre || '',
+                cedula: r.cedula || '',
+                telefono: r.telefono || '',
+                sexo: r.sexo || '',
+                edad: r.edad || '',
+                ubch: r.ubch || '',
+                comunidad: r.comunidad || '',
+                fecha: r.fecha || ''
+            });
+        });
+    } catch (error) {
+        console.error('❌ Error consultando registros locales para tarjetas:', error);
+    }
+    
+    // 2. Cola offline
+    try {
+        if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
+            const colaLocal = window.offlineQueueManager.obtenerColaLocal();
+            colaLocal.forEach(r => {
+                records.push({
+                    nombre: r.name || '',
+                    cedula: r.cedula || '',
+                    telefono: r.telefono || '',
+                    sexo: r.sexo || '',
+                    edad: r.edad || '',
+                    ubch: r.ubch || '',
+                    comunidad: r.community || '',
+                    fecha: r.registeredAt ? (new Date(r.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''
+                });
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error consultando cola offline para tarjetas:', error);
+    }
+    
+    // Eliminar duplicados por cédula
+    const uniqueRecords = [];
+    const seenCedulas = new Set();
+    records.forEach(record => {
+        if (!seenCedulas.has(record.cedula)) {
+            seenCedulas.add(record.cedula);
+            uniqueRecords.push(record);
+        }
+    });
+    
+    // Aplicar filtro
+    let registros = uniqueRecords;
+    if (filtro) {
+        const f = filtro.toLowerCase();
+        registros = uniqueRecords.filter(r =>
+            (r.nombre && r.nombre.toLowerCase().includes(f)) ||
+            (r.cedula && r.cedula.toLowerCase().includes(f)) ||
+            (r.telefono && r.telefono.toLowerCase().includes(f)) ||
+            (r.sexo && r.sexo.toLowerCase().includes(f)) ||
+            (r.edad && String(r.edad).includes(f)) ||
+            (r.ubch && r.ubch.toLowerCase().includes(f)) ||
+            (r.comunidad && r.comunidad.toLowerCase().includes(f)) ||
+            (r.fecha && r.fecha.toLowerCase().includes(f))
+        );
+    }
+    
+    if (registros.length === 0) {
+        contenedor.innerHTML = '<p style="text-align:center;">No tienes registros propios aún.</p>';
+        return;
+    }
+    
+    contenedor.innerHTML = registros.map(reg => `
+        <div class="tarjeta-registro">
+            <strong>${reg.nombre}</strong> - ${reg.cedula}<br>
+            Tel: ${reg.telefono} | Sexo: ${reg.sexo} | Edad: ${reg.edad}<br>
+            CV: ${reg.ubch} | Comunidad: ${reg.comunidad}<br>
+            <small>${reg.fecha}</small>
+        </div>
+    `).join('');
+}
+
+// Escuchar el input de búsqueda
+const myrecordsSearch = document.getElementById('myrecords-search');
+if (myrecordsSearch) {
+    myrecordsSearch.addEventListener('input', async function() {
+        await renderMisRegistrosComoTarjetas(this.value);
+    });
+}
+
+// Llamar al render al cargar la página
+if (document.getElementById('myrecords-cards')) {
+    renderMisRegistrosComoTarjetas();
+}
+
+// Modificar el flujo de registro exitoso para guardar localmente
+// Busca donde se muestra el mensaje de registro exitoso y agrega:
+// guardarRegistroLocal({
+//     nombre: name,
+//     cedula: cedula,
+//     telefono: telefono,
+//     sexo: sexo,
+//     edad: edad,
+//     ubch: ubch,
+//     comunidad: community,
+//     fecha: new Date().toLocaleString()
+// });
