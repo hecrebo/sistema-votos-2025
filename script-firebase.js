@@ -1,4 +1,4 @@
-﻿// Verificación global para evitar múltiples inicializaciones
+// Verificación global para evitar múltiples inicializaciones
 if (window.votingSystemInitialized) {
     console.log('⚠️ Sistema ya inicializado, evitando duplicación');
 } else {
@@ -1291,7 +1291,7 @@ class VotingSystemFirebase extends VotingSystem {
                 </td>
                 <td>${vote.name || 'N/A'}</td>
                 <td>${vote.cedula || 'N/A'}</td>
-                <td>${vote.telefono || 'N/A'}</td>
+                <td>${vote.telefono || ''}</td>
                 <td class="${sexoClass}">${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}</td>
                 <td>${vote.edad || 'N/A'}</td>
                 <td>${vote.ubch || 'N/A'}</td>
@@ -2388,11 +2388,10 @@ class VotingSystemFirebase extends VotingSystem {
         doc.setFontSize(10);
         doc.text(`Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}`, 20, filterInfo.hasFilters ? 55 : 40);
 
-        // Datos de la tabla (incluyendo Teléfono)
+        // Datos de la tabla
         const tableData = filteredVotes.map(vote => [
             vote.name,
             vote.cedula,
-            vote.telefono || '',
             vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A',
             vote.edad || 'N/A',
             vote.ubch,
@@ -2401,7 +2400,7 @@ class VotingSystemFirebase extends VotingSystem {
         ]);
 
         doc.autoTable({
-            head: [['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó']],
+            head: [['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó']],
             body: tableData,
             startY: filterInfo.hasFilters ? 65 : 50,
             styles: {
@@ -2464,15 +2463,14 @@ class VotingSystemFirebase extends VotingSystem {
         }
     }
 
-    // Método para exportar registros específicos a CSV (incluyendo Teléfono)
+    // Método para exportar registros específicos a CSV
     exportVotesToCSV(votesData, fileName) {
-        const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
+        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
         const rows = votesData.map(vote => [
             `"${(vote.name || '').replace(/"/g, '""')}"`,
             `"${(vote.cedula || '').replace(/"/g, '""')}"`,
-            `"${(vote.telefono || '').replace(/"/g, '""')}"`,
             `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
-            `"${(vote.edad || '').toString()}"`,
+            `"${vote.edad || ''}"`,
             `"${(vote.ubch || '').replace(/"/g, '""')}"`,
             `"${(vote.community || '').replace(/"/g, '""')}"`,
             `"${vote.voted ? 'Sí' : 'No'}"`
@@ -2499,13 +2497,12 @@ class VotingSystemFirebase extends VotingSystem {
         const filteredVotes = this.getFilteredVotes();
         const filterInfo = this.getFilterInfo();
         
-        const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
+        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
         const rows = filteredVotes.map(vote => [
             `"${(vote.name || '').replace(/"/g, '""')}"`,
             `"${(vote.cedula || '').replace(/"/g, '""')}"`,
-            `"${(vote.telefono || '').replace(/"/g, '""')}"`,
             `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
-            `"${(vote.edad || '').toString()}"`,
+            `"${vote.edad || ''}"`,
             `"${(vote.ubch || '').replace(/"/g, '""')}"`,
             `"${(vote.community || '').replace(/"/g, '""')}"`,
             `"${vote.voted ? 'Sí' : 'No'}"`

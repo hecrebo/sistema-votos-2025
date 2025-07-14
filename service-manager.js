@@ -65,13 +65,19 @@ class ServiceManager {
         });
         
         // Escuchar eventos de Firebase
-        if (window.firebaseDB) {
-            window.firebaseDB.votesCollection.onSnapshot(() => {
-                this.services.firebase.status = 'online';
-                this.services.firebase.lastCheck = Date.now();
-            }, (error) => {
-                this.handleFirebaseError(error);
-            });
+        if (window.firebaseDB && window.firebaseDB.votesCollection && typeof window.firebaseDB.votesCollection.onSnapshot === 'function') {
+            try {
+                window.firebaseDB.votesCollection.onSnapshot(() => {
+                    this.services.firebase.status = 'online';
+                    this.services.firebase.lastCheck = Date.now();
+                }, (error) => {
+                    this.handleFirebaseError(error);
+                });
+            } catch (error) {
+                console.warn('⚠️ No se pudo configurar listener de Firebase:', error.message);
+            }
+        } else {
+            console.warn('⚠️ Firebase no disponible para listener en tiempo real');
         }
     }
     
@@ -93,7 +99,7 @@ class ServiceManager {
     
     async checkFirebaseService() {
         try {
-            if (!window.firebaseDB) {
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
                 throw new Error('Firebase no está disponible');
             }
             
@@ -120,6 +126,10 @@ class ServiceManager {
     async checkDatabaseService() {
         try {
             // Verificar acceso a datos
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                throw new Error('Base de datos no disponible');
+            }
+            
             const snapshot = await window.firebaseDB.votesCollection.get();
             this.services.database.status = 'online';
             this.services.database.lastCheck = Date.now();

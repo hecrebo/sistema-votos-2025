@@ -16,7 +16,13 @@ class NotificationSystem {
             if (!document.getElementById('notification-container')) {
                 this.container = document.createElement('div');
                 this.container.id = 'notification-container';
-                document.body.appendChild(this.container);
+                // Verificar que document.body existe antes de appendChild
+                if (document.body) {
+                    document.body.appendChild(this.container);
+                } else {
+                    console.warn('⚠️ document.body no disponible para crear contenedor de notificaciones');
+                    return;
+                }
             } else {
                 this.container = document.getElementById('notification-container');
             }
@@ -28,7 +34,7 @@ class NotificationSystem {
             }
         } catch (error) {
             // Error silencioso si no se puede crear el contenedor
-            console.warn('No se pudo inicializar el contenedor de notificaciones');
+            console.warn('No se pudo inicializar el contenedor de notificaciones:', error.message);
         }
     }
 
