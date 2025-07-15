@@ -25,6 +25,10 @@ class EstadisticasAvanzadas {
         localStorage.setItem('ultimoDiaReporte', new Date().toDateString());
         
         await this.loadData();
+        
+        // Migrar votos existentes que tienen voteTimestamp pero no fechaConfirmacion
+        this.migrarVotosExistentes();
+        
         this.setupEventListeners();
         // Configurar filtros después de cargar datos
         this.setupDashboardFilters();
@@ -1879,6 +1883,9 @@ class EstadisticasAvanzadas {
         try {
             console.log('📊 Renderizando tabla de reportes por hora...');
             
+            // DEBUG: Verificar datos de votos
+            this.debugVotosConfirmados();
+            
             // Actualizar fecha en la tabla
             this.actualizarFechaReporte();
             
@@ -1888,7 +1895,7 @@ class EstadisticasAvanzadas {
                 return;
             }
 
-            // Obtener todos los 19 Centros de Votación (incluyendo los que no tienen votos)
+            // Obtener todos los Centros de Votación del filtro (incluyendo los que no tienen votos)
             const todosLosCV = this.obtenerTodosLosCV();
             todosLosCV.sort();
 
@@ -1901,14 +1908,22 @@ class EstadisticasAvanzadas {
                 '16:00': 0, '18:00': 0, '19:00': 0, '20:00': 0, '21:00': 0
             };
 
-            // Procesar cada centro de votación (todos los 19)
+            // Procesar cada centro de votación (todos los del filtro)
             todosLosCV.forEach((cv, index) => {
-                // Filtrar votos solo del día actual
+                // Filtrar votos solo del día actual (usar fechaConfirmacion o voteTimestamp como respaldo)
                 const votosCV = this.votes.filter(vote => 
                     vote.ubch === cv && 
                     vote.voted && 
-                    this.esVotoDelDiaActual(vote.fechaConfirmacion)
+                    this.esVotoDelDiaActual(vote.fechaConfirmacion || vote.voteTimestamp)
                 );
+                
+                // DEBUG: Mostrar votos encontrados para este CV
+                if (votosCV.length > 0) {
+                    console.log(`🔍 CV ${cv}: ${votosCV.length} votos confirmados hoy`);
+                    votosCV.forEach(voto => {
+                        console.log(`  - Voto ID: ${voto.id}, Fecha: ${voto.fechaConfirmacion}, Hora: ${new Date(voto.fechaConfirmacion).getHours()}:${new Date(voto.fechaConfirmacion).getMinutes()}`);
+                    });
+                }
                 
                 // Contar votos por hora
                 const votosPorHora = this.contarVotosPorHora(votosCV);
@@ -1920,16 +1935,16 @@ class EstadisticasAvanzadas {
                 row.innerHTML = `
                     <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold;">${index + 1}</td>
                     <td style="padding: 8px; text-align: left; border: 1px solid #ddd; font-weight: 500;">${cv}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['08:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['10:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['12:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['14:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['16:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['18:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['19:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['20:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['21:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; background: #e8f5e8; color: #2e7d32;">${Object.values(votosPorHora).reduce((sum, count) => sum + count, 0)}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['08:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['10:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['12:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['14:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['16:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['18:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['19:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['20:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['21:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; background: #e8f5e8; color: #2e7d32; font-size: 14px;">${Object.values(votosPorHora).reduce((sum, count) => sum + count, 0)}</td>
                 `;
 
                 tbody.appendChild(row);
@@ -1943,50 +1958,76 @@ class EstadisticasAvanzadas {
             // Actualizar totales en el pie de tabla
             this.actualizarTotalesReporte(totales);
 
-            console.log('✅ Tabla de reportes por hora renderizada con todos los 19 CV');
+            console.log('✅ Tabla de reportes por hora renderizada con todos los CV del filtro');
         } catch (error) {
             console.error('❌ Error renderizando reportes por hora:', error);
         }
     }
 
-    // Función para obtener todos los 19 Centros de Votación
+    // Función para obtener todos los Centros de Votación del filtro
     obtenerTodosLosCV() {
-        // Lista completa de los 19 Centros de Votación
-        const todosLosCV = [
-            'CV 01 - Escuela Básica Nacional "Simón Bolívar"',
-            'CV 02 - Escuela Básica Nacional "Rómulo Gallegos"',
-            'CV 03 - Escuela Básica Nacional "Andrés Bello"',
-            'CV 04 - Escuela Básica Nacional "Juan Vicente González"',
-            'CV 05 - Escuela Básica Nacional "Rafael Urdaneta"',
-            'CV 06 - Escuela Básica Nacional "Antonio José de Sucre"',
-            'CV 07 - Escuela Básica Nacional "José Félix Ribas"',
-            'CV 08 - Escuela Básica Nacional "José Antonio Páez"',
-            'CV 09 - Escuela Básica Nacional "Francisco de Miranda"',
-            'CV 10 - Escuela Básica Nacional "José Gregorio Monagas"',
-            'CV 11 - Escuela Básica Nacional "Manuel Piar"',
-            'CV 12 - Escuela Básica Nacional "José Tadeo Monagas"',
-            'CV 13 - Escuela Básica Nacional "Ezequiel Zamora"',
-            'CV 14 - Escuela Básica Nacional "Juan Crisóstomo Falcón"',
-            'CV 15 - Escuela Básica Nacional "José María Vargas"',
-            'CV 16 - Escuela Básica Nacional "Carlos Soublette"',
-            'CV 17 - Escuela Básica Nacional "José Laurencio Silva"',
-            'CV 18 - Escuela Básica Nacional "Tomás Lander"',
-            'CV 19 - Escuela Básica Nacional "José Félix Blanco"'
-        ];
+        // Verificar si hay filtro de CV aplicado
+        if (typeof obtenerCVFiltrados === 'function') {
+            const cvFiltrados = obtenerCVFiltrados();
+            console.log('📊 CV filtrados para tabla de reportes:', cvFiltrados.length, 'centros de votación');
+            return cvFiltrados;
+        }
         
-        return todosLosCV;
+        // Usar los mismos CV que se cargan en el filtro
+        if (this.ubchData && typeof this.ubchData === 'object') {
+            const cvOrdenados = Object.keys(this.ubchData).sort();
+            console.log('📊 CV para tabla de reportes:', cvOrdenados.length, 'centros de votación');
+            return cvOrdenados;
+        } else {
+            console.warn('⚠️ No hay datos de CV disponibles, usando lista por defecto');
+            // Lista de respaldo si no hay datos cargados
+            return [
+                'CV 01 - Escuela Básica Nacional "Simón Bolívar"',
+                'CV 02 - Escuela Básica Nacional "Rómulo Gallegos"',
+                'CV 03 - Escuela Básica Nacional "Andrés Bello"',
+                'CV 04 - Escuela Básica Nacional "Juan Vicente González"',
+                'CV 05 - Escuela Básica Nacional "Rafael Urdaneta"',
+                'CV 06 - Escuela Básica Nacional "Antonio José de Sucre"',
+                'CV 07 - Escuela Básica Nacional "José Félix Ribas"',
+                'CV 08 - Escuela Básica Nacional "José Antonio Páez"',
+                'CV 09 - Escuela Básica Nacional "Francisco de Miranda"',
+                'CV 10 - Escuela Básica Nacional "José Gregorio Monagas"',
+                'CV 11 - Escuela Básica Nacional "Manuel Piar"',
+                'CV 12 - Escuela Básica Nacional "José Tadeo Monagas"',
+                'CV 13 - Escuela Básica Nacional "Ezequiel Zamora"',
+                'CV 14 - Escuela Básica Nacional "Juan Crisóstomo Falcón"',
+                'CV 15 - Escuela Básica Nacional "José María Vargas"',
+                'CV 16 - Escuela Básica Nacional "Carlos Soublette"',
+                'CV 17 - Escuela Básica Nacional "José Laurencio Silva"',
+                'CV 18 - Escuela Básica Nacional "Tomás Lander"',
+                'CV 19 - Escuela Básica Nacional "José Félix Blanco"'
+            ];
+        }
     }
 
     // Función para verificar si un voto es del día actual
     esVotoDelDiaActual(fechaConfirmacion) {
         if (!fechaConfirmacion) return false;
         
-        const fechaVoto = new Date(fechaConfirmacion);
-        const hoy = new Date();
-        
-        return fechaVoto.getDate() === hoy.getDate() &&
-               fechaVoto.getMonth() === hoy.getMonth() &&
-               fechaVoto.getFullYear() === hoy.getFullYear();
+        try {
+            const fechaVoto = new Date(fechaConfirmacion);
+            const hoy = new Date();
+            
+            // Verificar que la fecha sea válida
+            if (isNaN(fechaVoto.getTime())) {
+                console.warn('⚠️ Fecha inválida:', fechaConfirmacion);
+                return false;
+            }
+            
+            // Comparar solo fecha (sin hora)
+            const fechaVotoDate = fechaVoto.toDateString();
+            const hoyDate = hoy.toDateString();
+            
+            return fechaVotoDate === hoyDate;
+        } catch (error) {
+            console.error('❌ Error verificando fecha del voto:', error, 'Fecha:', fechaConfirmacion);
+            return false;
+        }
     }
 
     // Función para verificar si es un nuevo día
@@ -2030,8 +2071,11 @@ class EstadisticasAvanzadas {
         };
 
         votos.forEach(voto => {
-            if (voto.fechaConfirmacion) {
-                const fecha = new Date(voto.fechaConfirmacion);
+            // Usar fechaConfirmacion o voteTimestamp como respaldo
+            const fechaConfirmacion = voto.fechaConfirmacion || voto.voteTimestamp;
+            
+            if (fechaConfirmacion) {
+                const fecha = new Date(fechaConfirmacion);
                 const hora = fecha.getHours();
                 
                 // Mapear horas a franjas horarias
@@ -2065,11 +2109,121 @@ class EstadisticasAvanzadas {
         document.getElementById('total-general').textContent = totalGeneral;
     }
 
+    // Función para migrar votos existentes que tienen voteTimestamp pero no fechaConfirmacion
+    migrarVotosExistentes() {
+        console.log('🔄 Migrando votos existentes...');
+        
+        let migrados = 0;
+        this.votes.forEach(vote => {
+            if (vote.voted && vote.voteTimestamp && !vote.fechaConfirmacion) {
+                vote.fechaConfirmacion = vote.voteTimestamp;
+                migrados++;
+            }
+        });
+        
+        if (migrados > 0) {
+            console.log(`✅ ${migrados} votos migrados exitosamente`);
+            // Guardar cambios en localStorage como respaldo
+            localStorage.setItem('votes', JSON.stringify(this.votes));
+        } else {
+            console.log('ℹ️ No hay votos que necesiten migración');
+        }
+        
+        return migrados;
+    }
+
+    // Función de debugging para diagnosticar problemas con votos confirmados
+    debugVotosConfirmados() {
+        console.log('🔍 DEBUG: Analizando votos confirmados...');
+        console.log(`📊 Total de votos cargados: ${this.votes.length}`);
+        
+        // Contar votos confirmados
+        const votosConfirmados = this.votes.filter(vote => vote.voted);
+        console.log(`✅ Votos confirmados (vote.voted = true): ${votosConfirmados.length}`);
+        
+        // Verificar campo fechaConfirmacion
+        const votosConFecha = this.votes.filter(vote => vote.fechaConfirmacion);
+        console.log(`📅 Votos con fechaConfirmacion: ${votosConFecha.length}`);
+        
+        // Verificar campo voteTimestamp como respaldo
+        const votosConTimestamp = this.votes.filter(vote => vote.voteTimestamp);
+        console.log(`⏰ Votos con voteTimestamp: ${votosConTimestamp.length}`);
+        
+        // Verificar votos del día actual usando fechaConfirmacion
+        const hoy = new Date();
+        console.log(`📅 Fecha actual: ${hoy.toLocaleDateString('es-VE')} ${hoy.toLocaleTimeString('es-VE')}`);
+        
+        const votosHoy = this.votes.filter(vote => 
+            vote.voted && 
+            vote.fechaConfirmacion && 
+            this.esVotoDelDiaActual(vote.fechaConfirmacion)
+        );
+        console.log(`🎯 Votos confirmados hoy (fechaConfirmacion): ${votosHoy.length}`);
+        
+        // Verificar votos del día actual usando voteTimestamp como respaldo
+        const votosHoyTimestamp = this.votes.filter(vote => 
+            vote.voted && 
+            vote.voteTimestamp && 
+            this.esVotoDelDiaActual(vote.voteTimestamp)
+        );
+        console.log(`🎯 Votos confirmados hoy (voteTimestamp): ${votosHoyTimestamp.length}`);
+        
+        // Mostrar algunos ejemplos de votos
+        if (votosHoy.length > 0) {
+            console.log('📋 Ejemplos de votos confirmados hoy (fechaConfirmacion):');
+            votosHoy.slice(0, 5).forEach((voto, index) => {
+                const fecha = new Date(voto.fechaConfirmacion);
+                console.log(`  ${index + 1}. ID: ${voto.id}, CV: ${voto.ubch}, Fecha: ${fecha.toLocaleString('es-VE')}, Hora: ${fecha.getHours()}:${fecha.getMinutes()}`);
+            });
+        } else if (votosHoyTimestamp.length > 0) {
+            console.log('📋 Ejemplos de votos confirmados hoy (voteTimestamp):');
+            votosHoyTimestamp.slice(0, 5).forEach((voto, index) => {
+                const fecha = new Date(voto.voteTimestamp);
+                console.log(`  ${index + 1}. ID: ${voto.id}, CV: ${voto.ubch}, Fecha: ${fecha.toLocaleString('es-VE')}, Hora: ${fecha.getHours()}:${fecha.getMinutes()}`);
+            });
+        } else {
+            console.log('⚠️ No se encontraron votos confirmados para hoy');
+            
+            // Mostrar algunos votos confirmados recientes para debugging
+            const votosConfirmadosRecientes = this.votes
+                .filter(vote => vote.voted && (vote.fechaConfirmacion || vote.voteTimestamp))
+                .sort((a, b) => {
+                    const fechaA = new Date(a.fechaConfirmacion || a.voteTimestamp);
+                    const fechaB = new Date(b.fechaConfirmacion || b.voteTimestamp);
+                    return fechaB - fechaA;
+                })
+                .slice(0, 5);
+            
+            if (votosConfirmadosRecientes.length > 0) {
+                console.log('📋 Votos confirmados más recientes:');
+                votosConfirmadosRecientes.forEach((voto, index) => {
+                    const fecha = new Date(voto.fechaConfirmacion || vote.voteTimestamp);
+                    console.log(`  ${index + 1}. ID: ${voto.id}, CV: ${voto.ubch}, Fecha: ${fecha.toLocaleString('es-VE')}, Campo usado: ${voto.fechaConfirmacion ? 'fechaConfirmacion' : 'voteTimestamp'}`);
+                });
+            }
+        }
+        
+        // Verificar estructura de datos
+        if (this.votes.length > 0) {
+            const primerVoto = this.votes[0];
+            console.log('🔍 Estructura del primer voto:', Object.keys(primerVoto));
+            console.log('📋 Campos relevantes del primer voto:', {
+                id: primerVoto.id,
+                ubch: primerVoto.ubch,
+                voted: primerVoto.voted,
+                fechaConfirmacion: primerVoto.fechaConfirmacion,
+                voteTimestamp: primerVoto.voteTimestamp,
+                fechaConfirmacionTipo: typeof primerVoto.fechaConfirmacion,
+                voteTimestampTipo: typeof primerVoto.voteTimestamp
+            });
+        }
+    }
+
     async exportarReporteHora() {
         try {
             console.log('📊 Exportando reporte por hora a Excel y PDF...');
             
-            // Obtener todos los 19 Centros de Votación
+            // Obtener todos los Centros de Votación del filtro
             const todosLosCV = this.obtenerTodosLosCV();
             todosLosCV.sort();
 
@@ -2087,11 +2241,11 @@ class EstadisticasAvanzadas {
 
             // Agregar datos de cada CV (todos los 19)
             todosLosCV.forEach((cv, index) => {
-                // Filtrar votos solo del día actual
+                // Filtrar votos solo del día actual (usar fechaConfirmacion o voteTimestamp como respaldo)
                 const votosCV = this.votes.filter(vote => 
                     vote.ubch === cv && 
                     vote.voted && 
-                    this.esVotoDelDiaActual(vote.fechaConfirmacion)
+                    this.esVotoDelDiaActual(vote.fechaConfirmacion || vote.voteTimestamp)
                 );
                 
                 const votosPorHora = this.contarVotosPorHora(votosCV);
@@ -2356,3 +2510,223 @@ window.actualizarReporteHora = function() {
 document.addEventListener('DOMContentLoaded', () => {
     new EstadisticasAvanzadas();
 }); 
+
+// Función para manejar el acordeón de la tabla de reportes
+function toggleAccordion() {
+    const content = document.getElementById('accordion-content');
+    const icon = document.getElementById('accordion-icon');
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        // Abrir acordeón
+        content.style.display = 'block';
+        content.style.animation = 'slideDown 0.3s ease-out';
+        icon.classList.add('rotated');
+        
+        // Cargar los filtros de CV cuando se abre el acordeón
+        setTimeout(() => {
+            cargarFiltrosCV();
+        }, 100);
+    } else {
+        // Cerrar acordeón
+        content.style.animation = 'slideUp 0.3s ease-out';
+        icon.classList.remove('rotated');
+        
+        // Esperar a que termine la animación antes de ocultar
+        setTimeout(() => {
+            content.style.display = 'none';
+        }, 300);
+    }
+}
+
+// Inicializar el acordeón cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    // El acordeón comienza cerrado por defecto
+    const content = document.getElementById('accordion-content');
+    const icon = document.getElementById('accordion-icon');
+    
+    if (content && icon) {
+        content.style.display = 'none';
+        icon.classList.remove('rotated');
+    }
+    
+    // Inicializar filtros de CV cuando los datos estén disponibles
+    setTimeout(() => {
+        if (window.estadisticasAvanzadas && window.estadisticasAvanzadas.ubchData) {
+            cargarFiltrosCV();
+        }
+    }, 2000);
+}); 
+
+// Variables globales para el filtro de CV
+let centrosVotacionSeleccionados = new Set();
+let todosLosCentrosVotacion = [];
+
+// Función para cargar los checkboxes de centros de votación
+function cargarFiltrosCV() {
+    const container = document.getElementById('cv-filtros-container');
+    if (!container) return;
+    
+    // Obtener todos los centros de votación disponibles
+    if (window.estadisticasAvanzadas && window.estadisticasAvanzadas.ubchData) {
+        todosLosCentrosVotacion = Object.keys(window.estadisticasAvanzadas.ubchData).sort();
+    } else {
+        // Lista de respaldo
+        todosLosCentrosVotacion = [
+            'CV 01 - Escuela Básica Nacional "Simón Bolívar"',
+            'CV 02 - Escuela Básica Nacional "Rómulo Gallegos"',
+            'CV 03 - Escuela Básica Nacional "Andrés Bello"',
+            'CV 04 - Escuela Básica Nacional "Juan Vicente González"',
+            'CV 05 - Escuela Básica Nacional "Rafael Urdaneta"',
+            'CV 06 - Escuela Básica Nacional "Antonio José de Sucre"',
+            'CV 07 - Escuela Básica Nacional "José Félix Ribas"',
+            'CV 08 - Escuela Básica Nacional "José Antonio Páez"',
+            'CV 09 - Escuela Básica Nacional "Francisco de Miranda"',
+            'CV 10 - Escuela Básica Nacional "José Gregorio Monagas"',
+            'CV 11 - Escuela Básica Nacional "Manuel Piar"',
+            'CV 12 - Escuela Básica Nacional "José Tadeo Monagas"',
+            'CV 13 - Escuela Básica Nacional "Ezequiel Zamora"',
+            'CV 14 - Escuela Básica Nacional "Juan Crisóstomo Falcón"',
+            'CV 15 - Escuela Básica Nacional "José María Vargas"',
+            'CV 16 - Escuela Básica Nacional "Carlos Soublette"',
+            'CV 17 - Escuela Básica Nacional "José Laurencio Silva"',
+            'CV 18 - Escuela Básica Nacional "Tomás Lander"',
+            'CV 19 - Escuela Básica Nacional "José Félix Blanco"'
+        ];
+    }
+    
+    // Limpiar contenedor
+    container.innerHTML = '';
+    
+    // Crear checkboxes para cada centro de votación de forma más compacta
+    todosLosCentrosVotacion.forEach(cv => {
+        const checkboxContainer = document.createElement('div');
+        checkboxContainer.className = 'cv-checkbox-container';
+        checkboxContainer.onclick = () => toggleCVSelection(cv, checkboxContainer);
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `cv-checkbox-${cv.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        checkbox.checked = centrosVotacionSeleccionados.has(cv);
+        
+        const label = document.createElement('label');
+        label.className = 'cv-checkbox-label';
+        label.htmlFor = checkbox.id;
+        
+        // Acortar el nombre del CV para mejor visualización
+        let cvCorto = cv;
+        if (cv.includes(' - ')) {
+            const partes = cv.split(' - ');
+            if (partes.length >= 2) {
+                cvCorto = partes[0] + ' - ' + partes[1].substring(0, 25) + (partes[1].length > 25 ? '...' : '');
+            }
+        }
+        label.textContent = cvCorto;
+        label.title = cv; // Tooltip con el nombre completo
+        
+        checkboxContainer.appendChild(checkbox);
+        checkboxContainer.appendChild(label);
+        
+        // Aplicar estilo si está seleccionado
+        if (centrosVotacionSeleccionados.has(cv)) {
+            checkboxContainer.classList.add('selected');
+        }
+        
+        container.appendChild(checkboxContainer);
+    });
+    
+    console.log('✅ Filtros de CV cargados:', todosLosCentrosVotacion.length, 'centros de votación');
+    actualizarContadorCV();
+}
+
+// Función para alternar selección de un CV
+function toggleCVSelection(cv, container) {
+    if (centrosVotacionSeleccionados.has(cv)) {
+        centrosVotacionSeleccionados.delete(cv);
+        container.classList.remove('selected');
+    } else {
+        centrosVotacionSeleccionados.add(cv);
+        container.classList.add('selected');
+    }
+    
+    // Actualizar checkbox
+    const checkbox = container.querySelector('input[type="checkbox"]');
+    if (checkbox) {
+        checkbox.checked = centrosVotacionSeleccionados.has(cv);
+    }
+    
+    // Actualizar contador
+    actualizarContadorCV();
+}
+
+// Función para actualizar el contador de CV seleccionados
+function actualizarContadorCV() {
+    const contador = document.getElementById('cv-seleccionados-count');
+    if (contador) {
+        const count = centrosVotacionSeleccionados.size;
+        const total = todosLosCentrosVotacion.length;
+        contador.textContent = `${count} de ${total} seleccionados`;
+        
+        // Cambiar color según la cantidad
+        if (count === 0) {
+            contador.style.background = '#95a5a6';
+        } else if (count === total) {
+            contador.style.background = '#2ecc71';
+        } else {
+            contador.style.background = '#667eea';
+        }
+    }
+}
+
+// Función para seleccionar todos los CV
+function seleccionarTodosCV() {
+    centrosVotacionSeleccionados = new Set(todosLosCentrosVotacion);
+    cargarFiltrosCV();
+    actualizarContadorCV();
+    console.log('✅ Todos los CV seleccionados');
+}
+
+// Función para deseleccionar todos los CV
+function deseleccionarTodosCV() {
+    centrosVotacionSeleccionados.clear();
+    cargarFiltrosCV();
+    actualizarContadorCV();
+    console.log('❌ Todos los CV deseleccionados');
+}
+
+// Función para aplicar el filtro
+function aplicarFiltroCV() {
+    if (centrosVotacionSeleccionados.size === 0) {
+        alert('⚠️ Por favor selecciona al menos un Centro de Votación');
+        return;
+    }
+    
+    console.log('🔍 Aplicando filtro de CV:', centrosVotacionSeleccionados.size, 'centros seleccionados');
+    
+    // Actualizar la tabla con el filtro aplicado
+    if (window.estadisticasAvanzadas) {
+        window.estadisticasAvanzadas.renderReportesHora();
+    }
+}
+
+// Función para limpiar el filtro
+function limpiarFiltroCV() {
+    centrosVotacionSeleccionados.clear();
+    cargarFiltrosCV();
+    
+    // Actualizar la tabla sin filtro
+    if (window.estadisticasAvanzadas) {
+        window.estadisticasAvanzadas.renderReportesHora();
+    }
+    
+    console.log('🗑️ Filtro de CV limpiado');
+}
+
+// Función para obtener los CV filtrados
+function obtenerCVFiltrados() {
+    if (centrosVotacionSeleccionados.size === 0) {
+        // Si no hay filtro, mostrar todos
+        return todosLosCentrosVotacion;
+    }
+    
+    return Array.from(centrosVotacionSeleccionados).sort();
+}

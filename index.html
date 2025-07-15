@@ -53,10 +53,11 @@
     <script src="auto-init.js"></script>
     <script src="test-automatico.js"></script>
     <script src="test-proyeccion.js"></script>
-    <script src="test-registro.js"></script>
     <script src="queue-manager.js"></script>
     <script src="notification-system.js"></script>
     <script src="realtime-notifications.js"></script>
+    <script src="pwa-installer.js"></script>
+    <script src="pwa-debug.js"></script>
     
     <!-- Agregar Choices.js para autocomplete -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
@@ -69,7 +70,7 @@
             <div class="header-content">
                 <div class="header-top">
                     <div class="logo-container">
-                        <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
+                        <img src="logo 2.png" alt="Logo Sistema de Votos" class="header-logo">
                     </div>
                     <h1 class="header-title">Registro de Votos y Estadísticas</h1>
                 </div>
@@ -83,6 +84,9 @@
                 </nav>
                 <div class="user-info">
                     <span class="user-id" id="userId"></span>
+                    <button class="btn btn-primary" onclick="installPWA()" id="manual-install-btn" style="display: none; margin-right: 10px;">
+                        📱 Instalar App
+                    </button>
                     <div class="sync-status">
                         <span class="sync-spinner" id="sync-spinner"></span>
                         <span class="sync-check" id="sync-check"></span>
@@ -93,7 +97,7 @@
                     <div class="offline-indicator" id="offline-indicator">
                         <span class="offline-icon">📴</span>
                         <span class="offline-text">Sin conexión</span>
-                                    </div>
+                    </div>
                     <!-- Eliminar panel y botones de migración -->
                 </div>
                 <!-- Menú desplegable móvil -->
@@ -2181,6 +2185,46 @@
         // Función global para verificar el estado del sistema
         window.checkSystemStatus = function() {
             return checkAndFixInitialization();
+        };
+
+        // Función para verificar estado PWA
+        window.checkPWAStatus = function() {
+            if (window.pwaInstaller) {
+                return window.pwaInstaller.showPWAInfo();
+            }
+            return null;
+        };
+
+        // Mostrar información PWA en consola al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (window.pwaInstaller) {
+                    console.log('📱 Estado PWA:');
+                    window.pwaInstaller.showPWAInfo();
+                }
+            }, 2000);
+        });
+
+        // Función global para instalación manual de PWA
+        window.installPWA = function() {
+            if (window.pwaInstaller) {
+                window.pwaInstaller.installPWA();
+            } else {
+                console.log('⚠️ PWA Installer no disponible');
+                alert('La instalación PWA no está disponible en este momento.');
+            }
+        };
+    </script>
+    
+    <!-- Función global para instalación manual de PWA -->
+    <script>
+        window.installPWA = function() {
+            if (window.pwaInstaller) {
+                window.pwaInstaller.installPWA();
+            } else {
+                console.log('⚠️ PWA Installer no disponible');
+                alert('La instalación PWA no está disponible en este momento.');
+            }
         };
     </script>
     

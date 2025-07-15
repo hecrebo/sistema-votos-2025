@@ -880,6 +880,7 @@ class VotingSystemFirebase extends VotingSystem {
             // Actualizar en Firebase
             await this.updateVoteInFirebase(personId, {
                 voted: true,
+                fechaConfirmacion: new Date().toISOString(),
                 voteTimestamp: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
@@ -888,6 +889,7 @@ class VotingSystemFirebase extends VotingSystem {
             const voteIndex = this.votes.findIndex(v => v.id === personId);
             if (voteIndex !== -1) {
                 this.votes[voteIndex].voted = true;
+                this.votes[voteIndex].fechaConfirmacion = new Date().toISOString();
                 this.votes[voteIndex].voteTimestamp = new Date().toISOString();
             }
             
