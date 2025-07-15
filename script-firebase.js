@@ -253,30 +253,30 @@ class VotingSystemFirebase extends VotingSystem {
 
     async init() {
         try {
-            console.log('🔄 Inicializando VotingSystemFirebase...');
-            // Verificar usuario actual y establecer página inicial según rol
-            const userForHeader = this.getCurrentUser();
-            if (!userForHeader || !userForHeader.username) {
-                window.location.href = 'login.html';
-                return;
-            }
-            if (userForHeader.rol === 'verificador') {
-                this.currentPage = 'check-in';
-            } else if (userForHeader.rol === 'registrador') {
-                this.currentPage = 'registration';
-            }
-            // Cargar datos desde Firebase
-            await this.loadDataFromFirebase();
-            // Configurar event listeners
-            this.setupEventListeners();
-            // Configurar navegación según rol
-            this.setupNavigationByRole();
-            // Renderizar página inicial
-            this.renderCurrentPage();
-            // Inicializar sistema offline
-            this.inicializarSistemaOffline();
-            console.log('✅ VotingSystemFirebase inicializado correctamente');
-            this.updateUserId();
+        console.log('🔄 Inicializando VotingSystemFirebase...');
+        // Verificar usuario actual y establecer página inicial según rol
+        const userForHeader = this.getCurrentUser();
+        if (!userForHeader || !userForHeader.username) {
+            window.location.href = 'login.html';
+            return;
+        }
+        if (userForHeader.rol === 'verificador') {
+            this.currentPage = 'check-in';
+        } else if (userForHeader.rol === 'registrador') {
+            this.currentPage = 'registration';
+        }
+        // Cargar datos desde Firebase
+        await this.loadDataFromFirebase();
+        // Configurar event listeners
+        this.setupEventListeners();
+        // Configurar navegación según rol
+        this.setupNavigationByRole();
+        // Renderizar página inicial
+        this.renderCurrentPage();
+        // Inicializar sistema offline
+        this.inicializarSistemaOffline();
+        console.log('✅ VotingSystemFirebase inicializado correctamente');
+        this.updateUserId();
         } catch (error) {
             this.handleInitError(error, 'VotingSystemFirebase');
         }
@@ -319,15 +319,15 @@ class VotingSystemFirebase extends VotingSystem {
                     await this.saveUBCHConfigToFirebase();
                 }
                     
-                // Calcular estadísticas claras
+                    // Calcular estadísticas claras
                 const totalUBCH = this.ubchToCommunityMap && Object.keys(this.ubchToCommunityMap).length || 0;
                 const todasLasComunidades = this.ubchToCommunityMap ? Object.values(this.ubchToCommunityMap).flat() : [];
-                const comunidadesUnicas = [...new Set(todasLasComunidades)];
-                
-                console.log(`📊 Configuración CV: ${totalUBCH} centros de votación, ${comunidadesUnicas.length} comunidades únicas`);
-                console.log(`📋 Lista única de comunidades: (${comunidadesUnicas.length}) [${comunidadesUnicas.join(', ')}]`);
-                
-                this.ubchConfigLoaded = true;
+                    const comunidadesUnicas = [...new Set(todasLasComunidades)];
+                    
+                    console.log(`📊 Configuración CV: ${totalUBCH} centros de votación, ${comunidadesUnicas.length} comunidades únicas`);
+                    console.log(`📋 Lista única de comunidades: (${comunidadesUnicas.length}) [${comunidadesUnicas.join(', ')}]`);
+                    
+                    this.ubchConfigLoaded = true;
                     
             } catch (error) {
                 console.error('❌ Error cargando configuración CV:', error);
@@ -420,30 +420,30 @@ class VotingSystemFirebase extends VotingSystem {
             if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
                 throw new Error('Firebase no está disponible');
             }
+        
+        // Escuchar cambios en tiempo real
+        const unsubscribe = window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
+            console.log('📡 Cambio detectado en Firebase:', snapshot.docs.length, 'registros');
             
-            // Escuchar cambios en tiempo real
-            const unsubscribe = window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
-                console.log('📡 Cambio detectado en Firebase:', snapshot.docs.length, 'registros');
-                
-                // Actualizar datos locales
-                this.votes = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                
-                console.log('✅ Datos actualizados localmente');
-                
-                // Actualizar TODAS las páginas que muestran datos
-                this.updateAllDataDisplays();
-                
-            }, (error) => {
-                console.error('❌ Error en listener de Firebase:', error);
-                this.showMessage('Error de sincronización. Reintentando...', 'error', 'registration');
-            });
+            // Actualizar datos locales
+            this.votes = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
             
-            // Guardar la función de unsubscribe para limpiar después
-            this.unsubscribeListener = unsubscribe;
-            console.log('✅ Listener en tiempo real configurado correctamente');
+            console.log('✅ Datos actualizados localmente');
+            
+            // Actualizar TODAS las páginas que muestran datos
+            this.updateAllDataDisplays();
+            
+        }, (error) => {
+            console.error('❌ Error en listener de Firebase:', error);
+            this.showMessage('Error de sincronización. Reintentando...', 'error', 'registration');
+        });
+        
+        // Guardar la función de unsubscribe para limpiar después
+        this.unsubscribeListener = unsubscribe;
+        console.log('✅ Listener en tiempo real configurado correctamente');
             
         } catch (error) {
             console.error('❌ Error configurando listener:', error);
@@ -1117,7 +1117,7 @@ class VotingSystemFirebase extends VotingSystem {
         console.log('🔍 DEBUG: this.ubchToCommunityMap:', this.ubchToCommunityMap);
         console.log('🔍 DEBUG: Tipo de ubchToCommunityMap:', typeof this.ubchToCommunityMap);
         console.log('🔍 DEBUG: Keys de ubchToCommunityMap:', Object.keys(this.ubchToCommunityMap));
-
+        
         const ubchSelect = document.getElementById('ubch');
         const communitySelect = document.getElementById('community');
         const form = document.getElementById('registration-form');
@@ -2449,7 +2449,7 @@ class VotingSystemFirebase extends VotingSystem {
         try {
             const messages = [
                             `¡Excelente ${name}! Tu registro en el Centro de Votación "${ubch}" y comunidad "${community}" es un paso importante para fortalecer nuestra democracia. Tu participación cuenta.`,
-            `${name}, gracias por registrarte en "${ubch}". Tu compromiso con la comunidad "${community}" es fundamental para el futuro de nuestro país.`,
+                `${name}, gracias por registrarte en "${ubch}". Tu compromiso con la comunidad "${community}" es fundamental para el futuro de nuestro país.`,
                 `¡Bienvenido ${name}! Tu registro en "${ubch}" demuestra tu compromiso con la participación ciudadana. Juntos construimos un mejor futuro.`
             ];
             
@@ -3342,7 +3342,7 @@ const username = (currentUser.username || '').trim().toLowerCase();
 
 // Verificar que Firebase esté disponible antes de usar votesCollection
 if (window.firebaseDB && window.firebaseDB.votesCollection) {
-    window.firebaseDB.votesCollection.where('registeredBy', '==', username).get().then(snap => console.log('Registros:', snap.size));
+window.firebaseDB.votesCollection.where('registeredBy', '==', username).get().then(snap => console.log('Registros:', snap.size));
 } else {
     console.log('⚠️ Firebase no está listo aún, verificando registros más tarde...');
 }

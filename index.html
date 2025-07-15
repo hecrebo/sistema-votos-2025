@@ -177,7 +177,7 @@
                             <h3 style="margin-bottom: 1.5rem; color: #2c3e50; font-size: 1.5rem;">📋 Registro Masivo</h3>
                             <div class="import-info" style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border-left: 4px solid #007bff;">
                                 <p style="margin-bottom: 1rem; color: #495057; line-height: 1.6;">Pega los datos copiados de Excel directamente en la tabla. Puedes editar los valores antes de cargar.</p>
-                                <p style="margin: 0; color: #6c757d; font-size: 0.95rem;"><strong>Columnas esperadas:</strong> <b>Centro de Votación, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</b></p>
+                                <p style="margin: 0; color: #6c757d; font-size: 0.95rem;"><strong>Columnas esperadas:</strong> <b>Centro de Votación, Comunidad, Nombre, Cédula, Teléfono (opcional), Sexo, Edad</b></p>
                             </div>
                             <div style="overflow-x:auto; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                                 <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false" style="min-width:800px; margin: 0;">
@@ -1077,13 +1077,6 @@
                 individualDiv.style.display = 'block';
                 bulkDiv.style.display = 'none';
                 myListadoDiv.style.display = 'none';
-                
-                // Reinicializar el formulario individual si es necesario
-                setTimeout(() => {
-                    if (window.votingSystem) {
-                        window.votingSystem.renderRegistrationPage();
-                    }
-                }, 100);
             } else if (mode === 'bulk') {
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'block';
@@ -1092,11 +1085,6 @@
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'none';
                 myListadoDiv.style.display = 'block';
-                setTimeout(() => {
-                    if (typeof cargarMiListado === 'function') {
-                        cargarMiListado();
-                    }
-                }, 100);
             }
             console.log(`✅ Modo de registro cambiado a: ${mode}`);
         }
@@ -1201,8 +1189,8 @@
             for (let tr of pasteTableBody.rows) {
                 const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
                 
-                // Validación básica
-                if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
+                // Validación básica (teléfono es opcional)
+                if (!ubch || !community || !name || !cedula || !sexo || !edad) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
@@ -1212,7 +1200,8 @@
                     tr.style.background = '#fff3cd';
                     continue;
                 }
-                if (!/^04\d{9}$/.test(telefono)) {
+                // Validar teléfono solo si está presente (es opcional)
+                if (telefono && !/^04\d{9}$/.test(telefono)) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
@@ -1234,7 +1223,7 @@
                     community,
                     name,
                     cedula: cedula.replace(/\D/g, ''),
-                    telefono: telefono.replace(/\D/g, ''),
+                    telefono: telefono ? telefono.replace(/\D/g, '') : '', // Teléfono opcional
                     sexo: sexo.toUpperCase(),
                     edad: parseInt(edad),
                     registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
@@ -1714,7 +1703,7 @@
             renderizarMiListado(datosFiltrados);
         }
         
-        // Función para exportar el listado
+        // Función para exportar el listado como Excel con formato de tabla
         function exportarMiListado() {
             if (miListadoData.length === 0) {
                 alert('❌ No hay datos para exportar');
@@ -1724,24 +1713,71 @@
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
             const username = currentUser.username || 'usuario';
             
-            let csv = 'Nombre,Cédula,Teléfono,Sexo,Edad,UBCH,Comunidad,Fecha,Fuente\n';
+            // Crear contenido HTML con formato de tabla
+            let html = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; font-weight: bold; }
+                        .header { background-color: #4CAF50; color: white; }
+                    </style>
+                </head>
+                <body>
+                    <table>
+                        <thead>
+                            <tr class="header">
+                                <th>Nombre</th>
+                                <th>Cédula</th>
+                                <th>Teléfono</th>
+                                <th>Sexo</th>
+                                <th>Edad</th>
+                                <th>Centro de Votación</th>
+                                <th>Comunidad</th>
+                                <th>Fecha</th>
+                                <th>Fuente</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
             
             miListadoData.forEach(persona => {
-                csv += `"${persona.nombre}","${persona.cedula}","${persona.telefono}","${persona.sexo}","${persona.edad}","${persona.ubch}","${persona.comunidad}","${persona.fecha}","${persona.fuente}"\n`;
+                html += `
+                    <tr>
+                        <td>${persona.nombre || ''}</td>
+                        <td>${persona.cedula || ''}</td>
+                        <td>${persona.telefono || ''}</td>
+                        <td>${persona.sexo || ''}</td>
+                        <td>${persona.edad || ''}</td>
+                        <td>${persona.ubch || ''}</td>
+                        <td>${persona.comunidad || ''}</td>
+                        <td>${persona.fecha || ''}</td>
+                        <td>${persona.fuente || ''}</td>
+                    </tr>
+                `;
             });
             
-            const BOM = '\uFEFF';
-            const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+            html += `
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            
+            // Crear blob con contenido HTML
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `mi_listado_${username}_${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = `mi_listado_${username}_${new Date().toISOString().split('T')[0]}.xls`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            console.log(`📊 Listado exportado: ${miListadoData.length} registros`);
+            console.log(`📊 Listado exportado como tabla Excel: ${miListadoData.length} registros`);
         }
         
         // Función para insertar registros de prueba
@@ -1919,8 +1955,15 @@
         window.switchRegistrationMode = function(mode) {
             const individualDiv = document.getElementById('individual-registration');
             const bulkDiv = document.getElementById('bulk-registration');
-            const myRecordsDiv = document.getElementById('myrecords-registration');
+            const myListadoDiv = document.getElementById('mylistado-registration');
             const modeButtons = document.querySelectorAll('.mode-btn');
+            
+            // Verificar que los elementos existen antes de usarlos
+            if (!individualDiv || !bulkDiv || !myListadoDiv) {
+                console.error('❌ Error: Elementos de registro no encontrados');
+                return;
+            }
+            
             // Actualizar botones
             modeButtons.forEach(btn => {
                 btn.classList.remove('active');
@@ -1928,19 +1971,20 @@
                     btn.classList.add('active');
                 }
             });
+            
             // Mostrar/ocultar secciones
             if (mode === 'individual') {
                 individualDiv.style.display = 'block';
                 bulkDiv.style.display = 'none';
-                myRecordsDiv.style.display = 'none';
+                myListadoDiv.style.display = 'none';
             } else if (mode === 'bulk') {
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'block';
-                myRecordsDiv.style.display = 'none';
+                myListadoDiv.style.display = 'none';
             } else if (mode === 'mylistado') {
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'none';
-                myRecordsDiv.style.display = 'block';
+                myListadoDiv.style.display = 'block';
             }
             console.log(`✅ Modo de registro cambiado a: ${mode}`);
         };
