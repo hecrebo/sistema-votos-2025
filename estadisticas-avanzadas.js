@@ -200,13 +200,38 @@ class EstadisticasAvanzadas {
 
     renderAllStatistics() {
         try {
-            // Limpiar completamente Chart.js antes de renderizar
-            this.forceCleanAllCharts();
+            // Reiniciar completamente Chart.js antes de renderizar
+            this.resetChartJS();
             
             this.renderGeneralStatistics();
             this.renderDashboardAdvanced();
         } catch (error) {
             console.error('❌ Error en renderAllStatistics:', error);
+        }
+    }
+    
+    // Método para reiniciar completamente Chart.js
+    resetChartJS() {
+        try {
+            // Limpiar todos los gráficos existentes
+            this.forceCleanAllCharts();
+            
+            // Limpiar el registro interno de Chart.js
+            this.clearChartRegistry();
+            
+            // Limpiar todos los canvas
+            const canvases = document.querySelectorAll('canvas');
+            canvases.forEach(canvas => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+            
+            // Resetear nuestro objeto de gráficos
+            this.charts = {};
+            
+            console.log('✅ Chart.js completamente reiniciado');
+        } catch (error) {
+            console.error('❌ Error reiniciando Chart.js:', error);
         }
     }
 
@@ -1743,6 +1768,9 @@ class EstadisticasAvanzadas {
                         }
                     });
                 }
+                
+                // Limpiar completamente el registro interno de Chart.js
+                this.clearChartRegistry();
             }
             
             // Limpiar nuestro objeto de gráficos
@@ -1758,6 +1786,38 @@ class EstadisticasAvanzadas {
             console.log('✅ Limpieza forzada de todos los gráficos completada');
         } catch (error) {
             console.error('❌ Error en limpieza forzada:', error);
+        }
+    }
+    
+    // Método para limpiar completamente el registro interno de Chart.js
+    clearChartRegistry() {
+        try {
+            if (typeof Chart !== 'undefined') {
+                // Limpiar el registro de instancias
+                Chart.instances = {};
+                
+                // Limpiar cualquier referencia interna
+                if (Chart.helpers && Chart.helpers.each) {
+                    Chart.helpers.each(Chart.instances, (instance) => {
+                        try {
+                            instance.destroy();
+                        } catch (e) {
+                            // Ignorar errores
+                        }
+                    });
+                }
+                
+                // Forzar la limpieza del registro
+                if (Chart.instances && typeof Chart.instances === 'object') {
+                    Object.keys(Chart.instances).forEach(key => {
+                        delete Chart.instances[key];
+                    });
+                }
+                
+                console.log('✅ Registro interno de Chart.js limpiado');
+            }
+        } catch (error) {
+            console.error('❌ Error limpiando registro de Chart.js:', error);
         }
     }
     
