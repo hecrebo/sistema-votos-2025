@@ -32,16 +32,26 @@
 
         <main class="main-content stats-container">
             <!-- DASHBOARD AVANZADO -->
-            <div class="dashboard-filtros" style="display:flex; gap:18px; align-items:center; margin-bottom:18px;">
+            <div class="dashboard-filtros" style="display:flex; justify-content:center; gap:18px; align-items:center; margin-bottom:18px;">
                 <label for="filtro-comunidad">Comunidad:</label>
-                <select id="filtro-comunidad" class="dashboard-select">
+                <select id="filtro-comunidad" class="dashboard-select filtro-verde">
                     <option value="">Todas</option>
                 </select>
-                <label for="filtro-ubch">Centro de Votación:</label>
-                <select id="filtro-ubch" class="dashboard-select">
+                <label for="filtro-cv">Centro de Votación:</label>
+                <select id="filtro-cv" class="dashboard-select filtro-verde">
                     <option value="">Todos</option>
                 </select>
             </div>
+            <style>
+                .filtro-verde option:checked, .filtro-verde:focus option:checked {
+                    background: #43e97b !important;
+                    color: #fff !important;
+                }
+                .dashboard-select:disabled {
+                    background: #eee;
+                    color: #aaa;
+                }
+            </style>
             <section class="dashboard-grid" style="margin-bottom:40px;">
                 <div class="dashboard-card">
                     <h3>👥 Registrados</h3>

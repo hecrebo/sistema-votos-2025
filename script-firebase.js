@@ -1291,6 +1291,7 @@ class VotingSystemFirebase extends VotingSystem {
                 </td>
                 <td>${vote.name || 'N/A'}</td>
                 <td>${vote.cedula || 'N/A'}</td>
+                <td>${vote.telefono || ''}</td>
                 <td class="${sexoClass}">${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A'}</td>
                 <td>${vote.edad || 'N/A'}</td>
                 <td>${vote.ubch || 'N/A'}</td>
@@ -2136,6 +2137,42 @@ class VotingSystemFirebase extends VotingSystem {
         this.renderStatsList('community-stats', communityStats, 'community');
         this.renderStatsList('sexo-stats', sexoStats, 'sexo');
         this.renderStatsList('edad-stats', edadStats, 'edad');
+
+        // --- NUEVO: Renderizar tarjetas de todas las CV abajo ---
+        const statsProjectionList = document.getElementById('stats-projection-list');
+        if (statsProjectionList) {
+            // Obtener todos los CV posibles (ordenados)
+            const allCVs = Object.keys(this.ubchToCommunityMap || {}).sort();
+            // Contar votos y registrados por CV
+            const votosPorCV = {};
+            const registradosPorCV = {};
+            allCVs.forEach(cv => { votosPorCV[cv] = 0; registradosPorCV[cv] = 0; });
+            this.votes.forEach(v => {
+                if (v.ubch && registradosPorCV.hasOwnProperty(v.ubch)) {
+                    registradosPorCV[v.ubch]++;
+                    if (v.voted) votosPorCV[v.ubch]++;
+                }
+            });
+            // Renderizar tarjetas
+            statsProjectionList.innerHTML = allCVs.map((cv, i) => {
+                const votos = votosPorCV[cv];
+                const registrados = registradosPorCV[cv];
+                const porcentajeCV = registrados ? ((votos / registrados) * 100).toFixed(1) : 0;
+                return `
+                <div class='projection-item' style="background:#232946; border-radius:1rem; padding:0.3rem 0.5rem; margin-bottom:0.7rem; box-shadow:0 2px 8px rgba(80,112,255,0.08);">
+                    <div class='projection-item-header' style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+                        <span class='projection-item-name' style="font-size:1em; font-weight:600; color:#fff;">${i+1}. ${cv}</span>
+                        <span class='projection-item-count' style="font-size:1.1em; font-weight:700; color:#43e97b;">${votos}</span>
+                    </div>
+                    <div style="font-size:0.93em; color:#bfc9d1; margin-bottom:0.2em;">Registrados: ${registrados}</div>
+                    <div class='projection-item-progress' style="width:100%; height:0.7rem; background:#374151; border-radius:0.5rem; overflow:hidden; margin-bottom:0.1em;">
+                        <div class='projection-item-progress-fill' style="height:100%; background:linear-gradient(90deg,#10b981,#34d399); width:${porcentajeCV}%; transition:width 0.5s; border-radius:0.5rem;"></div>
+                    </div>
+                    <div style="font-size:0.85em; color:#43e97b;">${porcentajeCV}% participación</div>
+                </div>
+                `;
+            }).join('');
+        }
     }
 
     renderStatsList(containerId, stats, type) {
@@ -2391,6 +2428,7 @@ class VotingSystemFirebase extends VotingSystem {
         const tableData = filteredVotes.map(vote => [
             vote.name,
             vote.cedula,
+            vote.telefono || '',
             vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A',
             vote.edad || 'N/A',
             vote.ubch,
@@ -2399,7 +2437,7 @@ class VotingSystemFirebase extends VotingSystem {
         ]);
 
         doc.autoTable({
-            head: [['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó']],
+            head: [['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó']],
             body: tableData,
             startY: filterInfo.hasFilters ? 65 : 50,
             styles: {
@@ -2464,10 +2502,11 @@ class VotingSystemFirebase extends VotingSystem {
 
     // Método para exportar registros específicos a CSV
     exportVotesToCSV(votesData, fileName) {
-        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
+        const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
         const rows = votesData.map(vote => [
             `"${(vote.name || '').replace(/"/g, '""')}"`,
             `"${(vote.cedula || '').replace(/"/g, '""')}"`,
+            `"${(vote.telefono || '').replace(/"/g, '""')}"`,
             `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
             `"${vote.edad || ''}"`,
             `"${(vote.ubch || '').replace(/"/g, '""')}"`,
@@ -2496,10 +2535,11 @@ class VotingSystemFirebase extends VotingSystem {
         const filteredVotes = this.getFilteredVotes();
         const filterInfo = this.getFilterInfo();
         
-        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
+        const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
         const rows = filteredVotes.map(vote => [
             `"${(vote.name || '').replace(/"/g, '""')}"`,
             `"${(vote.cedula || '').replace(/"/g, '""')}"`,
+            `"${(vote.telefono || '').replace(/"/g, '""')}"`,
             `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
             `"${vote.edad || ''}"`,
             `"${(vote.ubch || '').replace(/"/g, '""')}"`,

@@ -16,7 +16,7 @@ body, html {
     background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
     border-radius: 16px;
     padding: 6px;
-    margin-bottom: 36px;
+    margin: 20px 0 36px 0; /* Agregado margen superior */
     box-shadow: 0 4px 24px rgba(102,126,234,0.10);
     gap: 8px;
 }

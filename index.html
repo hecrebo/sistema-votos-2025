@@ -399,6 +399,7 @@
                                     <th><input type="checkbox" id="header-checkbox" class="row-checkbox"></th>
                                     <th class="sortable-header" data-sort="name">Nombre ↕</th>
                                     <th class="sortable-header" data-sort="cedula">Cédula ↕</th>
+                                    <th class="sortable-header" data-sort="telefono">Teléfono ↕</th>
                                     <th class="sortable-header" data-sort="sexo">Sexo ↕</th>
                                     <th class="sortable-header" data-sort="edad">Edad ↕</th>
                                     <th class="sortable-header" data-sort="ubch">CV ↕</th>
@@ -477,6 +478,11 @@
                             <h3>Votos por Rango de Edad</h3>
                             <div class="stats-list" id="edad-stats"></div>
                         </div>
+                    </div>
+                    <!-- Al final de la sección de estadísticas (antes de cerrar la page-container de statistics-page): -->
+                    <div class="stats-projection-section">
+                      <h3 style="margin-top:2em;">Resumen por CV</h3>
+                      <div id="stats-projection-list" class="projection-list"></div>
                     </div>
                 </div>
             </div>
@@ -1911,6 +1917,14 @@
                 });
             }
         });
+
+        if (window.firebaseDB && window.firebaseDB.ubchCollection) {
+            const configDoc = await window.firebaseDB.ubchCollection.doc('config').get();
+            if (configDoc.exists && configDoc.data().mapping) {
+                mapping = configDoc.data().mapping;
+                console.log('✅ Mapeo de CV/comunidades cargado desde Firebase (ubchCollection.config.mapping)');
+            }
+        }
     </script>
     
     <!-- Contenedor de Notificaciones -->

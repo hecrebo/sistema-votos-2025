@@ -7,26 +7,51 @@ class EstadisticasAvanzadas {
         this.charts = {};
         this.currentUser = this.getCurrentUser();
         this.projectionInterval = null;
+        this.isRendering = false;
+        this.isRenderingUBCHChart = false;
+        this.isRenderingCommunityChart = false;
+        this.isRenderingUBCHComparisonChart = false;
+        this.isRenderingCommunityComparisonChart = false;
         this.init();
     }
 
     async init() {
+        console.log('🚀 Iniciando EstadisticasAvanzadas...');
+        
+        // Limpiar cualquier gráfico existente al inicio
+        this.forceCleanAllCharts();
+        
         await this.loadData();
         this.setupEventListeners();
-        this.renderAllStatistics(); // Solo una vez aquí
-        this.updateUserInfo();
+        // Configurar filtros después de cargar datos
         this.setupDashboardFilters();
-        // Actualización automática cada 30 segundos, pero solo si no está ya en proceso
+        this.renderAllStatistics();
+        this.updateUserInfo();
         if (!this.updateInterval) {
             this.updateInterval = setInterval(async () => {
                 if (this.isRendering) return;
                 this.isRendering = true;
+                
+                // Guardar valores actuales de los filtros
+                const selCom = document.getElementById('filtro-comunidad');
+                const selCV = document.getElementById('filtro-cv');
+                const comunidadSeleccionada = selCom ? selCom.value : '';
+                const cvSeleccionado = selCV ? selCV.value : '';
+                
                 await this.loadData();
+                
+                // Restaurar valores de los filtros después de recargar datos
+                if (selCom && comunidadSeleccionada) {
+                    selCom.value = comunidadSeleccionada;
+                }
+                if (selCV && cvSeleccionado) {
+                    selCV.value = cvSeleccionado;
+                }
+                
                 this.renderAllStatistics();
                 this.isRendering = false;
             }, 30000);
         }
-        // Botón modo proyección
         document.getElementById('projection-mode-btn').onclick = () => this.enterProjectionMode();
         document.getElementById('exit-projection-btn').onclick = () => this.exitProjectionMode();
         document.addEventListener('keydown', (e) => {
@@ -54,22 +79,60 @@ class EstadisticasAvanzadas {
         try {
             console.log('🔄 Cargando datos de estadísticas avanzadas...');
             
-            // Cargar datos desde Firebase
+            // Cargar votos desde Firebase
             const db = firebase.firestore();
             const votesSnapshot = await db.collection('votes').get();
             this.votes = votesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log('📊 Votos cargados:', this.votes.length);
             
-            // Cargar configuración de UBCH
-            const ubchSnapshot = await db.collection('ubch_config').get();
-            this.ubchData = {};
-            ubchSnapshot.docs.forEach(doc => {
-                this.ubchData[doc.id] = doc.data();
-            });
+            // --- CARGAR CONFIGURACIÓN UBCH DESDE FIREBASE (igual que script-firebase.js) ---
+            console.log('🔧 Cargando configuración UBCH desde Firebase...');
             
-            console.log('✅ Datos cargados:', this.votes.length, 'votos,', Object.keys(this.ubchData).length, 'centros de votación');
+            // Intentar cargar desde ubchCollection/config (como en script-firebase.js)
+            let ubchConfig = null;
+            try {
+                const configDoc = await db.collection('ubchCollection').doc('config').get();
+                if (configDoc.exists && configDoc.data().mapping) {
+                    ubchConfig = configDoc.data().mapping;
+                    console.log('✅ Configuración UBCH cargada desde Firebase (ubchCollection/config):', Object.keys(ubchConfig).length, 'CV');
+                }
+            } catch (err) {
+                console.error('❌ Error cargando configuración desde ubchCollection/config:', err);
+            }
+            
+            // Si no se pudo cargar, intentar desde la variable global
+            if (!ubchConfig && window.ubchToCommunityMap && typeof window.ubchToCommunityMap === 'object') {
+                ubchConfig = window.ubchToCommunityMap;
+                console.log('✅ Configuración UBCH cargada desde variable global:', Object.keys(ubchConfig).length, 'CV');
+            }
+            
+            // Si aún no hay configuración, usar datos por defecto
+            if (!ubchConfig) {
+                console.log('⚠️ No se pudo cargar configuración UBCH, usando datos por defecto...');
+                // Aquí podrías agregar una configuración por defecto si es necesario
+                ubchConfig = {};
+            }
+            
+            this.ubchData = ubchConfig;
+            
+            // Contar comunidades totales (igual que en script-firebase.js)
+            const todasComunidades = new Set();
+            if (this.ubchData && typeof this.ubchData === 'object') {
+                Object.values(this.ubchData).forEach(comunidades => {
+                    if (Array.isArray(comunidades)) {
+                        comunidades.forEach(comunidad => todasComunidades.add(comunidad));
+                    }
+                });
+            }
+            
+            console.log('🔍 DEBUG - CV disponibles:', Object.keys(this.ubchData));
+            console.log('🔍 DEBUG - Comunidades totales:', todasComunidades.size);
+            console.log('🔍 DEBUG - Comunidades disponibles:', Array.from(todasComunidades).sort());
+            
+            this.populateSelectors();
+            console.log('✅ Datos cargados:', this.votes.length, 'votos,', Object.keys(this.ubchData).length, 'centros de votación,', todasComunidades.size, 'comunidades');
         } catch (error) {
             console.error('❌ Error cargando datos:', error);
-            // Cargar datos locales si Firebase falla
             this.loadLocalData();
         }
     }
@@ -81,10 +144,11 @@ class EstadisticasAvanzadas {
             this.votes = JSON.parse(localVotes);
         }
         
-        const localUBCH = localStorage.getItem('ubch_config');
-        if (localUBCH) {
-            this.ubchData = JSON.parse(localUBCH);
-        }
+        // Eliminar la carga local de ubch_config en loadLocalData()
+        // const localUBCH = localStorage.getItem('ubch_config');
+        // if (localUBCH) {
+        //     this.ubchData = JSON.parse(localUBCH);
+        // }
         
         console.log('✅ Datos locales cargados:', this.votes.length, 'votos');
     }
@@ -135,8 +199,15 @@ class EstadisticasAvanzadas {
     }
 
     renderAllStatistics() {
-        this.renderGeneralStatistics();
-        this.renderDashboardAdvanced();
+        try {
+            // Limpiar completamente Chart.js antes de renderizar
+            this.forceCleanAllCharts();
+            
+            this.renderGeneralStatistics();
+            this.renderDashboardAdvanced();
+        } catch (error) {
+            console.error('❌ Error en renderAllStatistics:', error);
+        }
     }
 
     renderGeneralStatistics() {
@@ -362,11 +433,9 @@ class EstadisticasAvanzadas {
         // Obtener lista completa de comunidades
         let allCommunities = [];
         if (this.ubchData) {
-            // Si en la config de UBCH hay comunidades, úsalas
-            Object.values(this.ubchData).forEach(ubch => {
-                if (ubch.comunidades && Array.isArray(ubch.comunidades)) {
-                    allCommunities.push(...ubch.comunidades);
-                }
+            // NUEVO: Recorrer el mapping actual (cada valor es un array de comunidades)
+            Object.values(this.ubchData).forEach(arr => {
+                if (Array.isArray(arr)) allCommunities.push(...arr);
             });
         }
         // Agregar las que aparecen en votos
@@ -505,142 +574,194 @@ class EstadisticasAvanzadas {
     }
 
     renderUBCHChart() {
-        const ctx = document.getElementById('ubch-chart').getContext('2d');
-        // Destruir y limpiar el gráfico anterior si existe
-        if (this.charts.ubch) {
-            this.charts.ubch.destroy();
-            this.charts.ubch = null;
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        }
-        const ubchStats = {};
-        this.votes.filter(v => v.voted).forEach(vote => {
-            ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
-        });
-        const sortedUBCH = Object.entries(ubchStats).sort(([,a], [,b]) => b - a);
-        this.charts.ubch = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: sortedUBCH.map(([ubch]) => ubch),
-                datasets: [{
-                    label: 'Votos',
-                    data: sortedUBCH.map(([,count]) => count),
-                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                    borderColor: 'rgba(102, 126, 234, 1)',
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    borderSkipped: false
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: 'white',
-                        bodyColor: 'white',
+        // Evitar renderizado múltiple simultáneo
+        if (this.isRenderingUBCHChart) return;
+        this.isRenderingUBCHChart = true;
+        
+        try {
+            const canvas = document.getElementById('ubch-chart');
+            if (!canvas) {
+                console.error('❌ Canvas ubch-chart no encontrado');
+                this.isRenderingUBCHChart = false;
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Destruir y limpiar el gráfico anterior si existe
+            if (this.charts.ubch) {
+                this.charts.ubch.destroy();
+                this.charts.ubch = null;
+            }
+            
+            // Limpiar el canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const ubchStats = {};
+            this.votes.filter(v => v.voted).forEach(vote => {
+                ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
+            });
+            const sortedUBCH = Object.entries(ubchStats).sort(([,a], [,b]) => b - a);
+            
+            // Crear nuevo gráfico directamente
+            this.charts.ubch = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedUBCH.map(([ubch]) => ubch),
+                    datasets: [{
+                        label: 'Votos',
+                        data: sortedUBCH.map(([,count]) => count),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
                         borderColor: 'rgba(102, 126, 234, 1)',
-                        borderWidth: 1,
-                        cornerRadius: 8,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return `Votos: ${context.parsed.y.toLocaleString()}`;
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Votos: ${context.parsed.y.toLocaleString()}`;
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0, 0, 0, 0.1)', drawBorder: false },
-                        ticks: { color: '#666', font: { size: 12 } }
                     },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#666', font: { size: 11 }, maxRotation: 45, minRotation: 45 }
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.1)', drawBorder: false },
+                            ticks: { color: '#666', font: { size: 12 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#666', font: { size: 11 }, maxRotation: 45, minRotation: 45 }
+                        }
                     }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error('❌ Error renderizando gráfico UBCH:', error);
+        } finally {
+            // Resetear bandera de renderizado
+            this.isRenderingUBCHChart = false;
+        }
     }
 
     renderCommunityChart() {
-        const ctx = document.getElementById('community-chart').getContext('2d');
-        // Destruir y limpiar el gráfico anterior si existe
-        if (this.charts.community) {
-            this.charts.community.destroy();
-            this.charts.community = null;
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        }
-        const communityStats = {};
-        this.votes.filter(v => v.voted).forEach(vote => {
-            communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
-        });
-        const sortedCommunities = Object.entries(communityStats).sort(([,a], [,b]) => b - a);
-        this.charts.community = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: sortedCommunities.map(([community]) => community),
-                datasets: [{
-                    data: sortedCommunities.map(([,count]) => count),
-                    backgroundColor: [
-                        'rgba(102, 126, 234, 0.9)',
-                        'rgba(118, 75, 162, 0.9)',
-                        'rgba(255, 99, 132, 0.9)',
-                        'rgba(54, 162, 235, 0.9)',
-                        'rgba(255, 206, 86, 0.9)',
-                        'rgba(75, 192, 192, 0.9)',
-                        'rgba(153, 102, 255, 0.9)',
-                        'rgba(255, 159, 64, 0.9)',
-                        'rgba(199, 199, 199, 0.9)',
-                        'rgba(83, 102, 255, 0.9)',
-                        'rgba(255, 99, 132, 0.9)',
-                        'rgba(54, 162, 235, 0.9)',
-                        'rgba(255, 206, 86, 0.9)',
-                        'rgba(75, 192, 192, 0.9)',
-                        'rgba(153, 102, 255, 0.9)'
-                    ],
-                    borderColor: 'white',
-                    borderWidth: 3,
-                    hoverBorderWidth: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            color: '#333',
-                            font: { size: 12 },
-                            padding: 20,
-                            usePointStyle: true
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: 'white',
-                        bodyColor: 'white',
-                        borderColor: 'rgba(118, 75, 162, 1)',
-                        borderWidth: 1,
-                        cornerRadius: 8,
-                        callbacks: {
-                            label: function(context) {
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                return `${context.label}: ${context.parsed.toLocaleString()} (${percentage}%)`;
+        // Evitar renderizado múltiple simultáneo
+        if (this.isRenderingCommunityChart) return;
+        this.isRenderingCommunityChart = true;
+        
+        try {
+            const canvas = document.getElementById('community-chart');
+            if (!canvas) {
+                console.error('❌ Canvas community-chart no encontrado');
+                this.isRenderingCommunityChart = false;
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Destruir y limpiar el gráfico anterior si existe
+            if (this.charts.community) {
+                this.charts.community.destroy();
+                this.charts.community = null;
+            }
+            
+            // Limpiar el canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const communityStats = {};
+            this.votes.filter(v => v.voted).forEach(vote => {
+                communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
+            });
+            const sortedCommunities = Object.entries(communityStats).sort(([,a], [,b]) => b - a);
+            
+            // Crear nuevo gráfico directamente
+            this.charts.community = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: sortedCommunities.map(([community]) => community),
+                    datasets: [{
+                        data: sortedCommunities.map(([,count]) => count),
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.9)',
+                            'rgba(118, 75, 162, 0.9)',
+                            'rgba(255, 99, 132, 0.9)',
+                            'rgba(54, 162, 235, 0.9)',
+                            'rgba(255, 206, 86, 0.9)',
+                            'rgba(75, 192, 192, 0.9)',
+                            'rgba(153, 102, 255, 0.9)',
+                            'rgba(255, 159, 64, 0.9)',
+                            'rgba(199, 199, 199, 0.9)',
+                            'rgba(83, 102, 255, 0.9)',
+                            'rgba(255, 99, 132, 0.9)',
+                            'rgba(54, 162, 235, 0.9)',
+                            'rgba(255, 206, 86, 0.9)',
+                            'rgba(75, 192, 192, 0.9)',
+                            'rgba(153, 102, 255, 0.9)'
+                        ],
+                        borderColor: 'white',
+                        borderWidth: 3,
+                        hoverBorderWidth: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#333',
+                                font: { size: 12 },
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: 'rgba(118, 75, 162, 1)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed.toLocaleString()} (${percentage}%)`;
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error('❌ Error renderizando gráfico Community:', error);
+        } finally {
+            // Resetear bandera de renderizado
+            this.isRenderingCommunityChart = false;
+        }
     }
 
     renderUBCHComparisonChart() {
+        // Evitar renderizado múltiple simultáneo
+        if (this.isRenderingUBCHComparisonChart) return;
+        this.isRenderingUBCHComparisonChart = true;
+        
         const ctx = document.getElementById('ubch-comparison-chart').getContext('2d');
         
         const ubchData = [];
@@ -731,9 +852,16 @@ class EstadisticasAvanzadas {
                 }
             }
         });
+        
+        // Resetear bandera de renderizado
+        this.isRenderingUBCHComparisonChart = false;
     }
 
     renderCommunityComparisonChart() {
+        // Evitar renderizado múltiple simultáneo
+        if (this.isRenderingCommunityComparisonChart) return;
+        this.isRenderingCommunityComparisonChart = true;
+        
         const ctx = document.getElementById('community-comparison-chart').getContext('2d');
         
         const communityData = [];
@@ -838,6 +966,9 @@ class EstadisticasAvanzadas {
                 }
             }
         });
+        
+        // Resetear bandera de renderizado
+        this.isRenderingCommunityComparisonChart = false;
     }
 
     async exportData(tab, format) {
@@ -1251,69 +1382,144 @@ class EstadisticasAvanzadas {
     }
 
     renderBarChart(canvasId, {labels, data, label, color}) {
-        if (this.charts[canvasId]) this.charts[canvasId].destroy();
-        const ctx = document.getElementById(canvasId).getContext('2d');
-        this.charts[canvasId] = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [{
-                    label,
-                    data,
-                    backgroundColor: color,
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
+        try {
+            // Verificar que el canvas existe
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) {
+                console.error(`❌ Canvas ${canvasId} no encontrado`);
+                return;
             }
-        });
+            
+            // Destruir gráfico existente si existe
+            if (this.charts[canvasId]) {
+                try {
+                    this.charts[canvasId].destroy();
+                } catch (e) {
+                    // Ignorar errores de gráficos ya destruidos
+                }
+                this.charts[canvasId] = null;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Limpiar el canvas antes de crear nuevo gráfico
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Crear nuevo gráfico directamente
+            this.charts[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label,
+                        data,
+                        backgroundColor: color,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
+                }
+            });
+        } catch (error) {
+            console.error(`❌ Error renderizando gráfico ${canvasId}:`, error);
+        }
     }
 
     renderLineChart(canvasId, {labels, data, label, color}) {
-        if (this.charts[canvasId]) this.charts[canvasId].destroy();
-        const ctx = document.getElementById(canvasId).getContext('2d');
-        this.charts[canvasId] = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [{
-                    label,
-                    data,
-                    fill: false,
-                    borderColor: color,
-                    backgroundColor: color,
-                    tension: 0.3,
-                    pointRadius: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
+        try {
+            // Verificar que el canvas existe
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) {
+                console.error(`❌ Canvas ${canvasId} no encontrado`);
+                return;
             }
-        });
+            
+            // Destruir gráfico existente si existe
+            if (this.charts[canvasId]) {
+                try {
+                    this.charts[canvasId].destroy();
+                } catch (e) {
+                    // Ignorar errores de gráficos ya destruidos
+                }
+                this.charts[canvasId] = null;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Limpiar el canvas antes de crear nuevo gráfico
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Crear nuevo gráfico directamente
+            this.charts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label,
+                        data,
+                        fill: false,
+                        borderColor: color,
+                        backgroundColor: color,
+                        tension: 0.3,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
+                }
+            });
+        } catch (error) {
+            console.error(`❌ Error renderizando gráfico ${canvasId}:`, error);
+        }
     }
 
     renderPieChart(canvasId, {labels, data, colors}) {
-        if (this.charts[canvasId]) this.charts[canvasId].destroy();
-        const ctx = document.getElementById(canvasId).getContext('2d');
-        this.charts[canvasId] = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels,
-                datasets: [{
-                    data,
-                    backgroundColor: colors
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'bottom', labels: { color: '#333' } } }
+        try {
+            // Verificar que el canvas existe
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) {
+                console.error(`❌ Canvas ${canvasId} no encontrado`);
+                return;
             }
-        });
+            
+            // Destruir gráfico existente si existe
+            if (this.charts[canvasId]) {
+                try {
+                    this.charts[canvasId].destroy();
+                } catch (e) {
+                    // Ignorar errores de gráficos ya destruidos
+                }
+                this.charts[canvasId] = null;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Limpiar el canvas antes de crear nuevo gráfico
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Crear nuevo gráfico directamente
+            this.charts[canvasId] = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor: colors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#333' } } }
+                }
+            });
+        } catch (error) {
+            console.error(`❌ Error renderizando gráfico ${canvasId}:`, error);
+        }
     }
 
     enterProjectionMode() {
@@ -1329,56 +1535,6 @@ class EstadisticasAvanzadas {
         overlay.style.display = 'none';
         document.body.style.overflow = '';
         if (this.projectionInterval) clearInterval(this.projectionInterval);
-    }
-
-    setupDashboardFilters() {
-        // Esperar hasta que los selects existan en el DOM
-        const selCom = document.getElementById('filtro-comunidad');
-        const selUbch = document.getElementById('filtro-ubch');
-        if (!selCom || !selUbch) {
-            setTimeout(() => this.setupDashboardFilters(), 100);
-            return;
-        }
-        // Usar mapping de UBCH igual que en index
-        let mapping = (this.ubchData && this.ubchData.mapping) ? this.ubchData.mapping : (window.firebaseDB && window.firebaseDB.defaultUBCHConfig ? window.firebaseDB.defaultUBCHConfig : {});
-        // Llenar filtro de CV/UBCH
-        const ubchList = Object.keys(mapping).sort();
-        selUbch.innerHTML = '<option value="">Todos</option>' + ubchList.map(u => `<option value="${u}">${u}</option>`).join('');
-        // Llenar filtro de comunidad
-        const comunidadesSet = new Set();
-        Object.values(mapping).forEach(arr => arr.forEach(com => comunidadesSet.add(com)));
-        const comunidades = Array.from(comunidadesSet).sort();
-        selCom.innerHTML = '<option value="">Todas</option>' + comunidades.map(c => `<option value="${c}">${c}</option>`).join('');
-        // Lógica: solo uno activo a la vez
-        selCom.onchange = () => {
-            if (selCom.value) {
-                selUbch.value = '';
-                selUbch.disabled = true;
-            } else {
-                selUbch.disabled = false;
-            }
-            this.renderAllStatistics();
-        };
-        selUbch.onchange = () => {
-            if (selUbch.value) {
-                selCom.value = '';
-                selCom.disabled = true;
-            } else {
-                selCom.disabled = false;
-            }
-            this.renderAllStatistics();
-        };
-    }
-
-    getFilteredVotes() {
-        const selCom = document.getElementById('filtro-comunidad');
-        const selUbch = document.getElementById('filtro-ubch');
-        if (selCom && selCom.value) {
-            return this.votes.filter(v => v.community === selCom.value);
-        } else if (selUbch && selUbch.value) {
-            return this.votes.filter(v => v.ubch === selUbch.value);
-        }
-        return this.votes;
     }
 
     renderProjection() {
@@ -1404,6 +1560,250 @@ class EstadisticasAvanzadas {
             .sort((a,b) => b[1]-a[1]).slice(0,5);
         const rankingList = document.getElementById('projection-ranking-list');
         rankingList.innerHTML = ranking.map(([com, count],i) => `<div class='projection-item'><span class='projection-item-name'>${i+1}. ${com}</span> <span class='projection-item-count'>${count}</span></div>`).join('');
+    }
+
+    setupDashboardFilters() {
+        const selCom = document.getElementById('filtro-comunidad');
+        const selCV = document.getElementById('filtro-cv');
+        
+        // Guardar valores actuales antes de repoblar
+        const comunidadSeleccionada = selCom ? selCom.value : '';
+        const cvSeleccionado = selCV ? selCV.value : '';
+        
+        console.log('🔧 Configurando filtros...');
+        console.log('🔧 this.ubchData:', this.ubchData);
+        console.log('🔧 this.votes.length:', this.votes.length);
+        
+        // Poblar comunidad (TODAS las comunidades del mapping, igual que en script-firebase.js)
+        const todasLasComunidades = new Set();
+        
+        // Usar la misma lógica que script-firebase.js
+        if (this.ubchData && typeof this.ubchData === 'object') {
+            Object.values(this.ubchData).forEach(comunidades => {
+                if (Array.isArray(comunidades)) {
+                    comunidades.forEach(comunidad => todasLasComunidades.add(comunidad));
+                }
+            });
+        }
+        
+        console.log('🔧 Comunidades del mapping:', todasLasComunidades.size);
+        console.log('🔍 DEBUG: Comunidades encontradas:', Array.from(todasLasComunidades));
+        
+        // Llenar select de comunidades (igual que en script-firebase.js)
+        console.log(`🔄 Cargando ${todasLasComunidades.size} comunidades en el formulario...`);
+        console.log('📋 Lista completa de comunidades:', Array.from(todasLasComunidades).sort());
+        
+        const comunidadesOrdenadas = Array.from(todasLasComunidades).sort();
+        selCom.innerHTML = '<option value="">Todas</option>' + comunidadesOrdenadas.map(c => `<option value="${c}">${c}</option>`).join('');
+        console.log('🔧 Comunidades en selector:', comunidadesOrdenadas.length);
+        
+        // Poblar CV (TODOS los CV del mapping, igual que en script-firebase.js)
+        console.log(`🔄 Cargando ${Object.keys(this.ubchData).length} Centros de Votación en el formulario...`);
+        
+        const cvOrdenados = Object.keys(this.ubchData).sort();
+        selCV.innerHTML = '<option value="">Todos</option>' + cvOrdenados.map(cv => `<option value="${cv}">${cv}</option>`).join('');
+        console.log('🔧 CV en selector:', cvOrdenados.length);
+        
+        // Restaurar valores seleccionados si existían
+        if (comunidadSeleccionada && selCom) {
+            selCom.value = comunidadSeleccionada;
+        }
+        if (cvSeleccionado && selCV) {
+            selCV.value = cvSeleccionado;
+        }
+        
+        // Evento de cambio - AMBOS filtros siempre activos
+        selCom.onchange = () => {
+            console.log('🔧 Filtro comunidad cambiado a:', selCom.value);
+            this.renderAllStatistics();
+        };
+        selCV.onchange = () => {
+            console.log('🔧 Filtro CV cambiado a:', selCV.value);
+            this.renderAllStatistics();
+        };
+        
+        console.log('✅ Filtros configurados - Comunidades:', comunidadesOrdenadas.length, 'CV:', cvOrdenados.length);
+        console.log(`📊 Resumen: ${todasLasComunidades.size} comunidades, ${Object.keys(this.ubchData).length} centros de votación`);
+    }
+    
+    getFilteredVotes() {
+        const selCom = document.getElementById('filtro-comunidad');
+        const selCV = document.getElementById('filtro-cv');
+        let filtered = this.votes;
+        
+        // Aplicar filtro de comunidad si está seleccionado
+        if (selCom && selCom.value) {
+            filtered = filtered.filter(v => v.community === selCom.value);
+        }
+        
+        // Aplicar filtro de CV si está seleccionado
+        if (selCV && selCV.value) {
+            filtered = filtered.filter(v => v.ubch === selCV.value);
+        }
+        
+        return filtered;
+    }
+    populateSelectors() {
+        this.setupDashboardFilters();
+    }
+    
+    // Método para limpiar gráficos de manera rápida y eficiente
+    quickCleanCharts() {
+        try {
+            // Lista de todos los gráficos que vamos a renderizar
+            const chartsToClean = [
+                'ubch', 'community',
+                'dashboard-registros-mes-chart',
+                'dashboard-votos-comunidad-chart',
+                'dashboard-crecimiento-chart',
+                'dashboard-sexo-chart',
+                'dashboard-edad-chart',
+                'dashboard-flujo-horas-chart'
+            ];
+            
+            // Destruir solo los gráficos que necesitamos
+            chartsToClean.forEach(chartId => {
+                if (this.charts[chartId]) {
+                    try {
+                        this.charts[chartId].destroy();
+                    } catch (e) {
+                        // Ignorar errores de gráficos ya destruidos
+                    }
+                    this.charts[chartId] = null;
+                }
+            });
+            
+            console.log('✅ Limpieza rápida de gráficos completada');
+        } catch (error) {
+            console.error('❌ Error en limpieza rápida:', error);
+        }
+    }
+    
+    // Método para limpiar gráficos específicos que se van a renderizar
+    clearSpecificCharts() {
+        try {
+            // Gráficos principales que siempre se renderizan
+            const mainCharts = ['ubch', 'community'];
+            mainCharts.forEach(chartKey => {
+                if (this.charts[chartKey]) {
+                    this.charts[chartKey].destroy();
+                    this.charts[chartKey] = null;
+                }
+            });
+            
+            // Gráficos del dashboard que se renderizan en renderDashboardAdvanced
+            const dashboardCharts = [
+                'dashboard-registros-mes-chart',
+                'dashboard-votos-comunidad-chart',
+                'dashboard-crecimiento-chart',
+                'dashboard-sexo-chart',
+                'dashboard-edad-chart',
+                'dashboard-flujo-horas-chart'
+            ];
+            
+            dashboardCharts.forEach(chartId => {
+                if (this.charts[chartId]) {
+                    this.charts[chartId].destroy();
+                    this.charts[chartId] = null;
+                }
+            });
+            
+            console.log('✅ Gráficos específicos limpiados');
+        } catch (error) {
+            console.error('❌ Error limpiando gráficos específicos:', error);
+        }
+    }
+    
+    // Método para forzar la limpieza de todos los gráficos de Chart.js
+    forceCleanAllCharts() {
+        try {
+            // Limpiar todos los gráficos de Chart.js de manera más agresiva
+            if (typeof Chart !== 'undefined') {
+                // Destruir todas las instancias de Chart.js
+                if (Chart.instances) {
+                    Object.keys(Chart.instances).forEach(key => {
+                        try {
+                            Chart.instances[key].destroy();
+                        } catch (e) {
+                            // Ignorar errores de gráficos ya destruidos
+                        }
+                    });
+                }
+                
+                // Limpiar el registro de instancias
+                Chart.instances = {};
+                
+                // Forzar la limpieza del registro interno de Chart.js
+                if (Chart.helpers && Chart.helpers.each) {
+                    Chart.helpers.each(Chart.instances, (instance) => {
+                        try {
+                            instance.destroy();
+                        } catch (e) {
+                            // Ignorar errores
+                        }
+                    });
+                }
+            }
+            
+            // Limpiar nuestro objeto de gráficos
+            this.charts = {};
+            
+            // Limpiar todos los canvas
+            const canvases = document.querySelectorAll('canvas');
+            canvases.forEach(canvas => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+            
+            console.log('✅ Limpieza forzada de todos los gráficos completada');
+        } catch (error) {
+            console.error('❌ Error en limpieza forzada:', error);
+        }
+    }
+    
+    // Método para limpiar todos los gráficos
+    destroyAllCharts() {
+        try {
+            // Destruir gráficos específicos que conocemos
+            const knownCharts = ['ubch', 'community', 'ubchComparison', 'communityComparison'];
+            knownCharts.forEach(chartKey => {
+                if (this.charts[chartKey]) {
+                    this.charts[chartKey].destroy();
+                    this.charts[chartKey] = null;
+                }
+            });
+            
+            // Destruir gráficos dinámicos del dashboard
+            const dashboardCharts = [
+                'dashboard-registros-mes-chart',
+                'dashboard-votos-comunidad-chart',
+                'dashboard-crecimiento-chart',
+                'dashboard-sexo-chart',
+                'dashboard-edad-chart',
+                'dashboard-flujo-horas-chart'
+            ];
+            
+            dashboardCharts.forEach(chartId => {
+                if (this.charts[chartId]) {
+                    this.charts[chartId].destroy();
+                    this.charts[chartId] = null;
+                }
+            });
+            
+            // Limpiar el objeto de gráficos
+            this.charts = {};
+            
+            // Forzar la limpieza de Chart.js
+            if (typeof Chart !== 'undefined') {
+                Chart.helpers.each(Chart.instances, (instance) => {
+                    instance.destroy();
+                });
+            }
+            
+            console.log('✅ Todos los gráficos destruidos');
+        } catch (error) {
+            console.error('❌ Error destruyendo gráficos:', error);
+        }
     }
 }
 
