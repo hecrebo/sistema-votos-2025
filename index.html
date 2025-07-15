@@ -1069,18 +1069,37 @@
                 individualDiv.style.display = 'block';
                 bulkDiv.style.display = 'none';
                 myListadoDiv.style.display = 'none';
+                
+                // Asegurar que el formulario esté habilitado
+                const form = document.getElementById('registration-form');
+                if (form) {
+                    form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
+                }
             } else if (mode === 'bulk') {
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'block';
                 myListadoDiv.style.display = 'none';
+                
+                // Mostrar placeholder en la tabla
+                setTimeout(() => {
+                    if (typeof showPastePlaceholder === 'function') {
+                        showPastePlaceholder();
+                    }
+                }, 100);
             } else if (mode === 'mylistado') {
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'none';
                 myListadoDiv.style.display = 'block';
                 setTimeout(() => {
-                    cargarMiListado();
+                    if (typeof cargarMiListado === 'function') {
+                        cargarMiListado();
+                    }
                 }, 100);
             }
+            
+            // Guardar el modo en localStorage
+            localStorage.setItem('registrationMode', mode);
+            
             console.log(`✅ Modo de registro cambiado a: ${mode}`);
         }
 
@@ -1150,6 +1169,10 @@
 
             // Mostrar placeholder al cargar
             setTimeout(showPastePlaceholder, 500);
+            
+            // Inicializar el modo de registro por defecto
+            const savedMode = localStorage.getItem('registrationMode') || 'individual';
+            switchRegistrationMode(savedMode);
         });
 
         // Limpiar tabla
@@ -1158,6 +1181,22 @@
                 pasteTableBody.innerHTML = '<tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>';
                 if (importStatus) {
                     importStatus.style.display = 'none';
+                }
+                setTimeout(showPastePlaceholder, 100);
+            }
+        }
+
+        // Sugerencia visual en la primera celda si la tabla está vacía
+        function showPastePlaceholder() {
+            if (pasteTableBody && pasteTableBody.rows.length === 1) {
+                const firstRow = pasteTableBody.rows[0];
+                let empty = true;
+                for (let td of firstRow.cells) {
+                    if (td.textContent.trim() !== '') empty = false;
+                }
+                if (empty) {
+                    firstRow.cells[0].classList.add('placeholder');
+                    firstRow.cells[0].textContent = 'Haz clic aquí y pega los datos de Excel';
                 }
             }
         }
@@ -1185,27 +1224,36 @@
                 const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
                 
                 // Validación básica
-                if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
+                if (!ubch || !community || !name || !cedula || !sexo || !edad) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
                 }
+                
+                // Validación de cédula
                 if (!/^\d{6,10}$/.test(cedula)) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
                 }
-                if (!/^04\d{9}$/.test(telefono)) {
+                
+                // Validación de teléfono (opcional pero si se proporciona debe ser válido)
+                if (telefono && !/^04\d{9}$/.test(telefono)) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
                 }
+                
+                // Validación de sexo
                 if (!['M','F','m','f'].includes(sexo)) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
                 }
-                if (isNaN(edad) || edad < 16 || edad > 120) {
+                
+                // Validación de edad
+                const edadNum = parseInt(edad);
+                if (isNaN(edadNum) || edadNum < 16 || edadNum > 120) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
@@ -1217,9 +1265,9 @@
                     community,
                     name,
                     cedula: cedula.replace(/\D/g, ''),
-                    telefono: telefono.replace(/\D/g, ''),
+                    telefono: telefono ? telefono.replace(/\D/g, '') : '',
                     sexo: sexo.toUpperCase(),
-                    edad: parseInt(edad),
+                    edad: edadNum,
                     registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
                     voted: false,
                     registeredAt: new Date().toISOString(),
@@ -1237,18 +1285,22 @@
                     await window.firebaseDB.votesCollection.add(data);
                     tr.style.background = '#d4edda'; // Verde: éxito
                     count++;
-                    // Aquí pegas el fragmento:
-                    guardarRegistroLocal({
-                        nombre: data.name,
-                        cedula: data.cedula,
-                        telefono: data.telefono,
-                        sexo: data.sexo,
-                        edad: data.edad,
-                        ubch: data.ubch,
-                        comunidad: data.community,
-                        fecha: new Date().toLocaleString()
-                    });
+                    
+                    // Guardar en registros locales
+                    if (typeof guardarRegistroLocal === 'function') {
+                        guardarRegistroLocal({
+                            nombre: data.name,
+                            cedula: data.cedula,
+                            telefono: data.telefono,
+                            sexo: data.sexo,
+                            edad: data.edad,
+                            ubch: data.ubch,
+                            comunidad: data.community,
+                            fecha: new Date().toLocaleString()
+                        });
+                    }
                 } catch (err) {
+                    console.error('Error al guardar registro:', err);
                     tr.style.background = '#f8d7da'; // Rojo: error
                     errors++;
                 }
@@ -1260,33 +1312,11 @@
             } else if (count > 0 && errors > 0) {
                 importStatus.className = 'import-status warning';
                 importStatus.textContent = `⚠️ ${count} registros cargados. ${errors} filas con errores o duplicados.`;
-                } else {
+            } else {
                 importStatus.className = 'import-status error';
                 importStatus.textContent = `❌ No se cargaron registros. Verifica los datos.`;
             }
         }
-
-        // Sugerencia visual en la primera celda si la tabla está vacía
-        function showPastePlaceholder() {
-            if (pasteTableBody && pasteTableBody.rows.length === 1) {
-                const firstRow = pasteTableBody.rows[0];
-                let empty = true;
-                for (let td of firstRow.cells) {
-                    if (td.textContent.trim() !== '') empty = false;
-                }
-                if (empty) {
-                    firstRow.cells[0].classList.add('placeholder');
-                    firstRow.cells[0].textContent = 'Haz clic aquí y pega los datos de Excel';
-                }
-            }
-        }
-        
-        // También después de limpiar la tabla
-        const oldClearPasteTable = clearPasteTable;
-        clearPasteTable = function() {
-            oldClearPasteTable();
-            setTimeout(showPastePlaceholder, 100);
-        };
 
         // Función para limpiar la cola y forzar sincronización
         async function limpiarColaYForzarSync() {

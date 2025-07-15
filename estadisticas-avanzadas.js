@@ -203,8 +203,8 @@ class EstadisticasAvanzadas {
             // Reiniciar completamente Chart.js antes de renderizar
             this.resetChartJS();
             
-            this.renderGeneralStatistics();
-            this.renderDashboardAdvanced();
+        this.renderGeneralStatistics();
+        this.renderDashboardAdvanced();
         } catch (error) {
             console.error('❌ Error en renderAllStatistics:', error);
         }
@@ -613,69 +613,69 @@ class EstadisticasAvanzadas {
             
             const ctx = canvas.getContext('2d');
             
-            // Destruir y limpiar el gráfico anterior si existe
-            if (this.charts.ubch) {
-                this.charts.ubch.destroy();
-                this.charts.ubch = null;
-            }
+        // Destruir y limpiar el gráfico anterior si existe
+        if (this.charts.ubch) {
+            this.charts.ubch.destroy();
+            this.charts.ubch = null;
+        }
             
             // Limpiar el canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            const ubchStats = {};
-            this.votes.filter(v => v.voted).forEach(vote => {
-                ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
-            });
-            const sortedUBCH = Object.entries(ubchStats).sort(([,a], [,b]) => b - a);
+        const ubchStats = {};
+        this.votes.filter(v => v.voted).forEach(vote => {
+            ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
+        });
+        const sortedUBCH = Object.entries(ubchStats).sort(([,a], [,b]) => b - a);
             
             // Crear nuevo gráfico directamente
-            this.charts.ubch = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: sortedUBCH.map(([ubch]) => ubch),
-                    datasets: [{
-                        label: 'Votos',
-                        data: sortedUBCH.map(([,count]) => count),
-                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+        this.charts.ubch = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedUBCH.map(([ubch]) => ubch),
+                datasets: [{
+                    label: 'Votos',
+                    data: sortedUBCH.map(([,count]) => count),
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
                         borderColor: 'rgba(102, 126, 234, 1)',
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: 'white',
-                            bodyColor: 'white',
-                            borderColor: 'rgba(102, 126, 234, 1)',
-                            borderWidth: 1,
-                            cornerRadius: 8,
-                            displayColors: false,
-                            callbacks: {
-                                label: function(context) {
-                                    return `Votos: ${context.parsed.y.toLocaleString()}`;
-                                }
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `Votos: ${context.parsed.y.toLocaleString()}`;
                             }
                         }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0, 0, 0, 0.1)', drawBorder: false },
+                        ticks: { color: '#666', font: { size: 12 } }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(0, 0, 0, 0.1)', drawBorder: false },
-                            ticks: { color: '#666', font: { size: 12 } }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#666', font: { size: 11 }, maxRotation: 45, minRotation: 45 }
-                        }
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#666', font: { size: 11 }, maxRotation: 45, minRotation: 45 }
                     }
                 }
-            });
+            }
+        });
         } catch (error) {
             console.error('❌ Error renderizando gráfico UBCH:', error);
         } finally {
@@ -699,81 +699,81 @@ class EstadisticasAvanzadas {
             
             const ctx = canvas.getContext('2d');
             
-            // Destruir y limpiar el gráfico anterior si existe
-            if (this.charts.community) {
-                this.charts.community.destroy();
-                this.charts.community = null;
-            }
+        // Destruir y limpiar el gráfico anterior si existe
+        if (this.charts.community) {
+            this.charts.community.destroy();
+            this.charts.community = null;
+        }
             
             // Limpiar el canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            const communityStats = {};
-            this.votes.filter(v => v.voted).forEach(vote => {
-                communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
-            });
-            const sortedCommunities = Object.entries(communityStats).sort(([,a], [,b]) => b - a);
+        const communityStats = {};
+        this.votes.filter(v => v.voted).forEach(vote => {
+            communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
+        });
+        const sortedCommunities = Object.entries(communityStats).sort(([,a], [,b]) => b - a);
             
             // Crear nuevo gráfico directamente
-            this.charts.community = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: sortedCommunities.map(([community]) => community),
-                    datasets: [{
-                        data: sortedCommunities.map(([,count]) => count),
-                        backgroundColor: [
-                            'rgba(102, 126, 234, 0.9)',
-                            'rgba(118, 75, 162, 0.9)',
-                            'rgba(255, 99, 132, 0.9)',
-                            'rgba(54, 162, 235, 0.9)',
-                            'rgba(255, 206, 86, 0.9)',
-                            'rgba(75, 192, 192, 0.9)',
-                            'rgba(153, 102, 255, 0.9)',
-                            'rgba(255, 159, 64, 0.9)',
-                            'rgba(199, 199, 199, 0.9)',
-                            'rgba(83, 102, 255, 0.9)',
-                            'rgba(255, 99, 132, 0.9)',
-                            'rgba(54, 162, 235, 0.9)',
-                            'rgba(255, 206, 86, 0.9)',
-                            'rgba(75, 192, 192, 0.9)',
-                            'rgba(153, 102, 255, 0.9)'
-                        ],
-                        borderColor: 'white',
-                        borderWidth: 3,
-                        hoverBorderWidth: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                color: '#333',
-                                font: { size: 12 },
-                                padding: 20,
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: 'white',
-                            bodyColor: 'white',
-                            borderColor: 'rgba(118, 75, 162, 1)',
-                            borderWidth: 1,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                    return `${context.label}: ${context.parsed.toLocaleString()} (${percentage}%)`;
-                                }
+        this.charts.community = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: sortedCommunities.map(([community]) => community),
+                datasets: [{
+                    data: sortedCommunities.map(([,count]) => count),
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.9)',
+                        'rgba(118, 75, 162, 0.9)',
+                        'rgba(255, 99, 132, 0.9)',
+                        'rgba(54, 162, 235, 0.9)',
+                        'rgba(255, 206, 86, 0.9)',
+                        'rgba(75, 192, 192, 0.9)',
+                        'rgba(153, 102, 255, 0.9)',
+                        'rgba(255, 159, 64, 0.9)',
+                        'rgba(199, 199, 199, 0.9)',
+                        'rgba(83, 102, 255, 0.9)',
+                        'rgba(255, 99, 132, 0.9)',
+                        'rgba(54, 162, 235, 0.9)',
+                        'rgba(255, 206, 86, 0.9)',
+                        'rgba(75, 192, 192, 0.9)',
+                        'rgba(153, 102, 255, 0.9)'
+                    ],
+                    borderColor: 'white',
+                    borderWidth: 3,
+                    hoverBorderWidth: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#333',
+                            font: { size: 12 },
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: 'rgba(118, 75, 162, 1)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${context.label}: ${context.parsed.toLocaleString()} (${percentage}%)`;
                             }
                         }
                     }
                 }
-            });
+            }
+        });
         } catch (error) {
             console.error('❌ Error renderizando gráfico Community:', error);
         } finally {
@@ -1431,23 +1431,23 @@ class EstadisticasAvanzadas {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Crear nuevo gráfico directamente
-            this.charts[canvasId] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels,
-                    datasets: [{
-                        label,
-                        data,
-                        backgroundColor: color,
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
-                }
-            });
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label,
+                    data,
+                    backgroundColor: color,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
+            }
+        });
         } catch (error) {
             console.error(`❌ Error renderizando gráfico ${canvasId}:`, error);
         }
@@ -1478,26 +1478,26 @@ class EstadisticasAvanzadas {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Crear nuevo gráfico directamente
-            this.charts[canvasId] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        label,
-                        data,
-                        fill: false,
-                        borderColor: color,
-                        backgroundColor: color,
-                        tension: 0.3,
-                        pointRadius: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
-                }
-            });
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label,
+                    data,
+                    fill: false,
+                    borderColor: color,
+                    backgroundColor: color,
+                    tension: 0.3,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
+            }
+        });
         } catch (error) {
             console.error(`❌ Error renderizando gráfico ${canvasId}:`, error);
         }
@@ -1528,20 +1528,20 @@ class EstadisticasAvanzadas {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Crear nuevo gráfico directamente
-            this.charts[canvasId] = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels,
-                    datasets: [{
-                        data,
-                        backgroundColor: colors
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#333' } } }
-                }
-            });
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels,
+                datasets: [{
+                    data,
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom', labels: { color: '#333' } } }
+            }
+        });
         } catch (error) {
             console.error(`❌ Error renderizando gráfico ${canvasId}:`, error);
         }

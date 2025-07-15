@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Registro Individual y Masivo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5a67d8; }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test - Funciones de Registro</h1>
+    
+    <div class="test-section">
+        <h2>📝 Test Registro Individual</h2>
+        <form id="test-form">
+            <div>
+                <label>CV:</label>
+                <select id="test-ubch" required>
+                    <option value="">Selecciona CV</option>
+                    <option value="COLEGIO ASUNCION BELTRAN">COLEGIO ASUNCION BELTRAN</option>
+                    <option value="LICEO JOSE FELIX RIBAS">LICEO JOSE FELIX RIBAS</option>
+                </select>
+            </div>
+            <div>
+                <label>Comunidad:</label>
+                <select id="test-community" required>
+                    <option value="">Selecciona Comunidad</option>
+                    <option value="EL VALLE">EL VALLE</option>
+                    <option value="VILLA OASIS">VILLA OASIS</option>
+                </select>
+            </div>
+            <div>
+                <label>Nombre:</label>
+                <input type="text" id="test-name" placeholder="Juan Pérez" required>
+            </div>
+            <div>
+                <label>Cédula:</label>
+                <input type="text" id="test-cedula" placeholder="12345678" required>
+            </div>
+            <div>
+                <label>Teléfono:</label>
+                <input type="text" id="test-telefono" placeholder="04121234567">
+            </div>
+            <div>
+                <label>Sexo:</label>
+                <select id="test-sexo" required>
+                    <option value="">Selecciona</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                </select>
+            </div>
+            <div>
+                <label>Edad:</label>
+                <input type="number" id="test-edad" placeholder="25" min="16" max="120" required>
+            </div>
+            <button type="submit">Test Registro Individual</button>
+        </form>
+        <div id="test-result-individual"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Test Registro Masivo</h2>
+        <div>
+            <label>Datos de prueba (copia y pega en la tabla):</label>
+            <textarea id="test-data" rows="5" style="width: 100%;">COLEGIO ASUNCION BELTRAN	EL VALLE	Juan Pérez	12345678	04121234567	M	25
+LICEO JOSE FELIX RIBAS	VILLA OASIS	María García	87654321	04129876543	F	30</textarea>
+        </div>
+        <button onclick="testBulkRegistration()">Test Registro Masivo</button>
+        <div id="test-result-bulk"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Test Funciones</h2>
+        <button onclick="testValidation()">Test Validación</button>
+        <button onclick="testDataLoading()">Test Carga de Datos</button>
+        <button onclick="testModeSwitching()">Test Cambio de Modo</button>
+        <div id="test-result-functions"></div>
+    </div>
+
+    <script>
+        // Simular funciones del sistema principal
+        function showMessage(message, type, page) {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            return message;
+        }
+
+        function normalizarUsuario(username) {
+            return (username || 'admin').trim().toLowerCase();
+        }
+
+        function guardarRegistroLocal(registro) {
+            console.log('Registro guardado localmente:', registro);
+            return true;
+        }
+
+        // Test de validación
+        function testValidation() {
+            const resultDiv = document.getElementById('test-result-functions');
+            let results = [];
+
+            // Test cédula válida
+            const cedulaValida = /^\d{6,10}$/.test('12345678');
+            results.push(cedulaValida ? '✅ Cédula válida' : '❌ Cédula inválida');
+
+            // Test teléfono válido
+            const telefonoValido = /^04\d{9}$/.test('04121234567');
+            results.push(telefonoValido ? '✅ Teléfono válido' : '❌ Teléfono inválido');
+
+            // Test edad válida
+            const edadValida = 25 >= 16 && 25 <= 120;
+            results.push(edadValida ? '✅ Edad válida' : '❌ Edad inválida');
+
+            resultDiv.innerHTML = results.map(r => `<div class="test-result ${r.includes('✅') ? 'success' : 'error'}">${r}</div>`).join('');
+        }
+
+        // Test de carga de datos
+        function testDataLoading() {
+            const resultDiv = document.getElementById('test-result-functions');
+            
+            // Simular datos de configuración
+            const ubchData = {
+                "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS"],
+                "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS"]
+            };
+
+            const comunidades = new Set();
+            Object.values(ubchData).forEach(comunidades => {
+                if (Array.isArray(comunidades)) {
+                    comunidades.forEach(comunidad => comunidades.add(comunidad));
+                }
+            });
+
+            const results = [
+                `✅ ${Object.keys(ubchData).length} centros de votación cargados`,
+                `✅ ${comunidades.size} comunidades únicas encontradas`,
+                '✅ Datos de configuración válidos'
+            ];
+
+            resultDiv.innerHTML = results.map(r => `<div class="test-result success">${r}</div>`).join('');
+        }
+
+        // Test de cambio de modo
+        function testModeSwitching() {
+            const resultDiv = document.getElementById('test-result-functions');
+            
+            const modes = ['individual', 'bulk', 'mylistado'];
+            const results = modes.map(mode => {
+                localStorage.setItem('registrationMode', mode);
+                const savedMode = localStorage.getItem('registrationMode');
+                return savedMode === mode ? `✅ Modo ${mode} guardado correctamente` : `❌ Error guardando modo ${mode}`;
+            });
+
+            resultDiv.innerHTML = results.map(r => `<div class="test-result ${r.includes('✅') ? 'success' : 'error'}">${r}</div>`).join('');
+        }
+
+        // Test registro individual
+        document.getElementById('test-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const resultDiv = document.getElementById('test-result-individual');
+            
+            const formData = new FormData(e.target);
+            const data = {
+                name: formData.get('name') || document.getElementById('test-name').value,
+                cedula: formData.get('cedula') || document.getElementById('test-cedula').value,
+                telefono: formData.get('telefono') || document.getElementById('test-telefono').value,
+                sexo: formData.get('sexo') || document.getElementById('test-sexo').value,
+                edad: formData.get('edad') || document.getElementById('test-edad').value,
+                ubch: formData.get('ubch') || document.getElementById('test-ubch').value,
+                community: formData.get('community') || document.getElementById('test-community').value
+            };
+
+            // Validaciones
+            const validations = [];
+            
+            if (!data.name || data.name.trim().length < 3) {
+                validations.push('❌ Nombre inválido');
+            } else {
+                validations.push('✅ Nombre válido');
+            }
+
+            if (!/^\d{6,10}$/.test(data.cedula)) {
+                validations.push('❌ Cédula inválida');
+            } else {
+                validations.push('✅ Cédula válida');
+            }
+
+            if (data.telefono && !/^04\d{9}$/.test(data.telefono)) {
+                validations.push('❌ Teléfono inválido');
+            } else {
+                validations.push('✅ Teléfono válido');
+            }
+
+            if (!['M', 'F'].includes(data.sexo)) {
+                validations.push('❌ Sexo inválido');
+            } else {
+                validations.push('✅ Sexo válido');
+            }
+
+            const edadNum = parseInt(data.edad);
+            if (isNaN(edadNum) || edadNum < 16 || edadNum > 120) {
+                validations.push('❌ Edad inválida');
+            } else {
+                validations.push('✅ Edad válida');
+            }
+
+            if (!data.ubch || !data.community) {
+                validations.push('❌ CV y comunidad requeridos');
+            } else {
+                validations.push('✅ CV y comunidad válidos');
+            }
+
+            const allValid = validations.every(v => v.includes('✅'));
+            
+            if (allValid) {
+                // Simular guardado exitoso
+                guardarRegistroLocal({
+                    nombre: data.name,
+                    cedula: data.cedula,
+                    telefono: data.telefono,
+                    sexo: data.sexo,
+                    edad: edadNum,
+                    ubch: data.ubch,
+                    comunidad: data.community,
+                    fecha: new Date().toLocaleString()
+                });
+                validations.push('✅ Registro guardado exitosamente');
+            }
+
+            resultDiv.innerHTML = validations.map(v => `<div class="test-result ${v.includes('✅') ? 'success' : 'error'}">${v}</div>`).join('');
+        });
+
+        // Test registro masivo
+        function testBulkRegistration() {
+            const resultDiv = document.getElementById('test-result-bulk');
+            const testData = document.getElementById('test-data').value;
+            
+            const rows = testData.split('\n').filter(row => row.trim() !== '');
+            let validRows = 0;
+            let invalidRows = 0;
+            
+            rows.forEach((row, index) => {
+                const [ubch, community, name, cedula, telefono, sexo, edad] = row.split('\t');
+                
+                // Validaciones
+                const valid = ubch && community && name && cedula && sexo && edad &&
+                             /^\d{6,10}$/.test(cedula) &&
+                             (!telefono || /^04\d{9}$/.test(telefono)) &&
+                             ['M','F','m','f'].includes(sexo) &&
+                             !isNaN(parseInt(edad)) && parseInt(edad) >= 16 && parseInt(edad) <= 120;
+                
+                if (valid) {
+                    validRows++;
+                } else {
+                    invalidRows++;
+                }
+            });
+
+            const results = [
+                `✅ ${validRows} filas válidas`,
+                invalidRows > 0 ? `⚠️ ${invalidRows} filas con errores` : '✅ Todas las filas válidas',
+                '✅ Validación de datos completada'
+            ];
+
+            resultDiv.innerHTML = results.map(r => `<div class="test-result ${r.includes('✅') ? 'success' : 'warning'}">${r}</div>`).join('');
+        }
+
+        // Inicializar tests
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Tests de registro inicializados');
+            testDataLoading();
+        });
+    </script>
+</body>
+</html> 

@@ -127,12 +127,14 @@ class AutoInitSystem {
     }
 
     async checkPermissions() {
-        // Solicitar permisos de notificación
-        if ('Notification' in window && Notification.permission === 'default') {
-            try {
-                await Notification.requestPermission();
-            } catch (error) {
-                console.warn('⚠️ No se pudieron solicitar permisos de notificación');
+        // Verificar permisos de notificación (sin solicitar)
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                console.log('✅ Permisos de notificación ya concedidos');
+            } else if (Notification.permission === 'denied') {
+                console.log('❌ Permisos de notificación denegados');
+            } else {
+                console.log('ℹ️ Permisos de notificación no solicitados (se solicitan en el login)');
             }
         }
     }
