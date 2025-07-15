@@ -21,6 +21,9 @@ class EstadisticasAvanzadas {
         // Limpiar cualquier gráfico existente al inicio
         this.forceCleanAllCharts();
         
+        // Establecer el día actual para el reinicio diario
+        localStorage.setItem('ultimoDiaReporte', new Date().toDateString());
+        
         await this.loadData();
         this.setupEventListeners();
         // Configurar filtros después de cargar datos
@@ -31,6 +34,9 @@ class EstadisticasAvanzadas {
             this.updateInterval = setInterval(async () => {
                 if (this.isRendering) return;
                 this.isRendering = true;
+                
+                // Verificar si es un nuevo día
+                this.reiniciarTablaDiaria();
                 
                 // Guardar valores actuales de los filtros
                 const selCom = document.getElementById('filtro-comunidad');
@@ -205,6 +211,7 @@ class EstadisticasAvanzadas {
             
         this.renderGeneralStatistics();
         this.renderDashboardAdvanced();
+        this.renderReportesHora();
         } catch (error) {
             console.error('❌ Error en renderAllStatistics:', error);
         }
@@ -1865,7 +1872,485 @@ class EstadisticasAvanzadas {
             console.error('❌ Error destruyendo gráficos:', error);
         }
     }
+
+    // ===== FUNCIONES PARA REPORTES POR HORA =====
+    
+    async renderReportesHora() {
+        try {
+            console.log('📊 Renderizando tabla de reportes por hora...');
+            
+            // Actualizar fecha en la tabla
+            this.actualizarFechaReporte();
+            
+            const tbody = document.getElementById('reportes-hora-tbody');
+            if (!tbody) {
+                console.warn('⚠️ No se encontró el tbody para reportes por hora');
+                return;
+            }
+
+            // Obtener todos los 19 Centros de Votación (incluyendo los que no tienen votos)
+            const todosLosCV = this.obtenerTodosLosCV();
+            todosLosCV.sort();
+
+            // Limpiar tabla
+            tbody.innerHTML = '';
+
+            // Inicializar totales
+            const totales = {
+                '08:00': 0, '10:00': 0, '12:00': 0, '14:00': 0, 
+                '16:00': 0, '18:00': 0, '19:00': 0, '20:00': 0, '21:00': 0
+            };
+
+            // Procesar cada centro de votación (todos los 19)
+            todosLosCV.forEach((cv, index) => {
+                // Filtrar votos solo del día actual
+                const votosCV = this.votes.filter(vote => 
+                    vote.ubch === cv && 
+                    vote.voted && 
+                    this.esVotoDelDiaActual(vote.fechaConfirmacion)
+                );
+                
+                // Contar votos por hora
+                const votosPorHora = this.contarVotosPorHora(votosCV);
+                
+                // Crear fila
+                const row = document.createElement('tr');
+                row.style.backgroundColor = index % 2 === 0 ? '#f8f9fa' : '#ffffff';
+                
+                row.innerHTML = `
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold;">${index + 1}</td>
+                    <td style="padding: 8px; text-align: left; border: 1px solid #ddd; font-weight: 500;">${cv}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['08:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['10:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['12:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['14:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['16:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['18:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['19:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['20:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${votosPorHora['21:00'] || 0}</td>
+                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; background: #e8f5e8; color: #2e7d32;">${Object.values(votosPorHora).reduce((sum, count) => sum + count, 0)}</td>
+                `;
+
+                tbody.appendChild(row);
+
+                // Sumar a totales
+                Object.keys(votosPorHora).forEach(hora => {
+                    totales[hora] += votosPorHora[hora] || 0;
+                });
+            });
+
+            // Actualizar totales en el pie de tabla
+            this.actualizarTotalesReporte(totales);
+
+            console.log('✅ Tabla de reportes por hora renderizada con todos los 19 CV');
+        } catch (error) {
+            console.error('❌ Error renderizando reportes por hora:', error);
+        }
+    }
+
+    // Función para obtener todos los 19 Centros de Votación
+    obtenerTodosLosCV() {
+        // Lista completa de los 19 Centros de Votación
+        const todosLosCV = [
+            'CV 01 - Escuela Básica Nacional "Simón Bolívar"',
+            'CV 02 - Escuela Básica Nacional "Rómulo Gallegos"',
+            'CV 03 - Escuela Básica Nacional "Andrés Bello"',
+            'CV 04 - Escuela Básica Nacional "Juan Vicente González"',
+            'CV 05 - Escuela Básica Nacional "Rafael Urdaneta"',
+            'CV 06 - Escuela Básica Nacional "Antonio José de Sucre"',
+            'CV 07 - Escuela Básica Nacional "José Félix Ribas"',
+            'CV 08 - Escuela Básica Nacional "José Antonio Páez"',
+            'CV 09 - Escuela Básica Nacional "Francisco de Miranda"',
+            'CV 10 - Escuela Básica Nacional "José Gregorio Monagas"',
+            'CV 11 - Escuela Básica Nacional "Manuel Piar"',
+            'CV 12 - Escuela Básica Nacional "José Tadeo Monagas"',
+            'CV 13 - Escuela Básica Nacional "Ezequiel Zamora"',
+            'CV 14 - Escuela Básica Nacional "Juan Crisóstomo Falcón"',
+            'CV 15 - Escuela Básica Nacional "José María Vargas"',
+            'CV 16 - Escuela Básica Nacional "Carlos Soublette"',
+            'CV 17 - Escuela Básica Nacional "José Laurencio Silva"',
+            'CV 18 - Escuela Básica Nacional "Tomás Lander"',
+            'CV 19 - Escuela Básica Nacional "José Félix Blanco"'
+        ];
+        
+        return todosLosCV;
+    }
+
+    // Función para verificar si un voto es del día actual
+    esVotoDelDiaActual(fechaConfirmacion) {
+        if (!fechaConfirmacion) return false;
+        
+        const fechaVoto = new Date(fechaConfirmacion);
+        const hoy = new Date();
+        
+        return fechaVoto.getDate() === hoy.getDate() &&
+               fechaVoto.getMonth() === hoy.getMonth() &&
+               fechaVoto.getFullYear() === hoy.getFullYear();
+    }
+
+    // Función para verificar si es un nuevo día
+    esNuevoDia() {
+        const hoy = new Date().toDateString();
+        const ultimoDia = localStorage.getItem('ultimoDiaReporte');
+        
+        if (ultimoDia !== hoy) {
+            localStorage.setItem('ultimoDiaReporte', hoy);
+            return true;
+        }
+        return false;
+    }
+
+    // Función para reiniciar tabla al inicio del día
+    reiniciarTablaDiaria() {
+        if (this.esNuevoDia()) {
+            console.log('🔄 Nuevo día detectado, reiniciando tabla de reportes...');
+            this.renderReportesHora();
+        }
+    }
+
+    // Función para actualizar la fecha en la tabla
+    actualizarFechaReporte() {
+        const fechaElement = document.getElementById('fecha-actual-reporte');
+        if (fechaElement) {
+            const fechaActual = new Date().toLocaleDateString('es-VE', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            fechaElement.textContent = fechaActual;
+        }
+    }
+
+    contarVotosPorHora(votos) {
+        const votosPorHora = {
+            '08:00': 0, '10:00': 0, '12:00': 0, '14:00': 0, 
+            '16:00': 0, '18:00': 0, '19:00': 0, '20:00': 0, '21:00': 0
+        };
+
+        votos.forEach(voto => {
+            if (voto.fechaConfirmacion) {
+                const fecha = new Date(voto.fechaConfirmacion);
+                const hora = fecha.getHours();
+                
+                // Mapear horas a franjas horarias
+                if (hora >= 8 && hora < 10) votosPorHora['08:00']++;
+                else if (hora >= 10 && hora < 12) votosPorHora['10:00']++;
+                else if (hora >= 12 && hora < 14) votosPorHora['12:00']++;
+                else if (hora >= 14 && hora < 16) votosPorHora['14:00']++;
+                else if (hora >= 16 && hora < 18) votosPorHora['16:00']++;
+                else if (hora >= 18 && hora < 19) votosPorHora['18:00']++;
+                else if (hora >= 19 && hora < 20) votosPorHora['19:00']++;
+                else if (hora >= 20 && hora < 21) votosPorHora['20:00']++;
+                else if (hora >= 21 && hora < 22) votosPorHora['21:00']++;
+            }
+        });
+
+        return votosPorHora;
+    }
+
+    actualizarTotalesReporte(totales) {
+        document.getElementById('total-08am').textContent = totales['08:00'] || 0;
+        document.getElementById('total-10am').textContent = totales['10:00'] || 0;
+        document.getElementById('total-12pm').textContent = totales['12:00'] || 0;
+        document.getElementById('total-02pm').textContent = totales['14:00'] || 0;
+        document.getElementById('total-04pm').textContent = totales['16:00'] || 0;
+        document.getElementById('total-06pm').textContent = totales['18:00'] || 0;
+        document.getElementById('total-07pm').textContent = totales['19:00'] || 0;
+        document.getElementById('total-08pm').textContent = totales['20:00'] || 0;
+        document.getElementById('total-09pm').textContent = totales['21:00'] || 0;
+        
+        const totalGeneral = Object.values(totales).reduce((sum, count) => sum + count, 0);
+        document.getElementById('total-general').textContent = totalGeneral;
+    }
+
+    async exportarReporteHora() {
+        try {
+            console.log('📊 Exportando reporte por hora a Excel y PDF...');
+            
+            // Obtener todos los 19 Centros de Votación
+            const todosLosCV = this.obtenerTodosLosCV();
+            todosLosCV.sort();
+
+            // Crear datos para Excel
+            const excelData = [
+                ['N°', 'Centro de Votación', 'Reporte 08:00 AM', 'Reporte 10:00 AM', 'Reporte 12:00 M', 
+                 'Reporte 02:00 PM', 'Reporte 04:00 PM', 'Reporte 06:00 PM', 'Reporte 07:00 PM', 
+                 'Reporte 08:00 PM', 'Reporte 09:00 PM', 'TOTAL']
+            ];
+
+            const totales = {
+                '08:00': 0, '10:00': 0, '12:00': 0, '14:00': 0, 
+                '16:00': 0, '18:00': 0, '19:00': 0, '20:00': 0, '21:00': 0
+            };
+
+            // Agregar datos de cada CV (todos los 19)
+            todosLosCV.forEach((cv, index) => {
+                // Filtrar votos solo del día actual
+                const votosCV = this.votes.filter(vote => 
+                    vote.ubch === cv && 
+                    vote.voted && 
+                    this.esVotoDelDiaActual(vote.fechaConfirmacion)
+                );
+                
+                const votosPorHora = this.contarVotosPorHora(votosCV);
+                const totalCV = Object.values(votosPorHora).reduce((sum, count) => sum + count, 0);
+
+                excelData.push([
+                    index + 1,
+                    cv,
+                    votosPorHora['08:00'] || 0,
+                    votosPorHora['10:00'] || 0,
+                    votosPorHora['12:00'] || 0,
+                    votosPorHora['14:00'] || 0,
+                    votosPorHora['16:00'] || 0,
+                    votosPorHora['18:00'] || 0,
+                    votosPorHora['19:00'] || 0,
+                    votosPorHora['20:00'] || 0,
+                    votosPorHora['21:00'] || 0,
+                    totalCV
+                ]);
+
+                // Sumar a totales
+                Object.keys(votosPorHora).forEach(hora => {
+                    totales[hora] += votosPorHora[hora] || 0;
+                });
+            });
+
+            // Agregar fila de totales
+            const totalGeneral = Object.values(totales).reduce((sum, count) => sum + count, 0);
+            excelData.push([
+                '-',
+                'TOTALES',
+                totales['08:00'] || 0,
+                totales['10:00'] || 0,
+                totales['12:00'] || 0,
+                totales['14:00'] || 0,
+                totales['16:00'] || 0,
+                totales['18:00'] || 0,
+                totales['19:00'] || 0,
+                totales['20:00'] || 0,
+                totales['21:00'] || 0,
+                totalGeneral
+            ]);
+
+            // Generar Excel usando SheetJS
+            await this.generarExcelReporte(excelData);
+            
+            // Generar PDF
+            await this.generarPDFReporte(todosLosCV, totales, totalGeneral);
+
+            console.log('✅ Reporte por hora exportado exitosamente como Excel y PDF');
+            alert('✅ Reporte por hora exportado exitosamente como Excel y PDF');
+        } catch (error) {
+            console.error('❌ Error exportando reporte por hora:', error);
+            alert('❌ Error exportando reporte por hora');
+        }
+    }
+
+    // Función para generar Excel
+    async generarExcelReporte(excelData) {
+        try {
+            // Verificar si SheetJS está disponible
+            if (typeof XLSX === 'undefined') {
+                console.warn('⚠️ SheetJS no está disponible, generando CSV como respaldo');
+                this.generarCSVRespaldo(excelData);
+                return;
+            }
+
+            // Crear workbook
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+            // Aplicar estilos y formato
+            ws['!cols'] = [
+                { width: 5 },   // N°
+                { width: 50 },  // Centro de Votación
+                { width: 15 },  // 08:00 AM
+                { width: 15 },  // 10:00 AM
+                { width: 15 },  // 12:00 M
+                { width: 15 },  // 02:00 PM
+                { width: 15 },  // 04:00 PM
+                { width: 15 },  // 06:00 PM
+                { width: 15 },  // 07:00 PM
+                { width: 15 },  // 08:00 PM
+                { width: 15 },  // 09:00 PM
+                { width: 15 }   // TOTAL
+            ];
+
+            // Agregar hoja al workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Reporte por Hora');
+
+            // Generar archivo
+            const fecha = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `reporte_por_hora_${fecha}.xlsx`);
+
+            console.log('✅ Archivo Excel generado exitosamente');
+        } catch (error) {
+            console.error('❌ Error generando Excel:', error);
+            this.generarCSVRespaldo(excelData);
+        }
+    }
+
+    // Función de respaldo para generar CSV
+    generarCSVRespaldo(excelData) {
+        const csvContent = excelData.map(row => 
+            row.map(cell => `"${cell}"`).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `reporte_por_hora_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Función para generar PDF
+    async generarPDFReporte(todosLosCV, totales, totalGeneral) {
+        try {
+            // Verificar si jsPDF está disponible
+            if (typeof window.jspdf === 'undefined') {
+                console.warn('⚠️ jsPDF no está disponible');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('l', 'mm', 'a4'); // Orientación horizontal para mejor ajuste
+
+            const fechaActual = new Date().toLocaleDateString('es-VE', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            // Configurar fuente
+            pdf.setFont('helvetica');
+            pdf.setFontSize(16);
+
+            // Título
+            pdf.text('📊 Reporte de Confirmación de Votos por Centro de Votación y Hora', 20, 20);
+            pdf.setFontSize(12);
+            pdf.text(`📅 Fecha: ${fechaActual}`, 20, 30);
+
+            // Crear tabla para PDF
+            const headers = ['N°', 'Centro de Votación', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '19:00', '20:00', '21:00', 'TOTAL'];
+            
+            const tableData = [];
+            
+            // Agregar datos de cada CV
+            todosLosCV.forEach((cv, index) => {
+                const votosCV = this.votes.filter(vote => 
+                    vote.ubch === cv && 
+                    vote.voted && 
+                    this.esVotoDelDiaActual(vote.fechaConfirmacion)
+                );
+                
+                const votosPorHora = this.contarVotosPorHora(votosCV);
+                const totalCV = Object.values(votosPorHora).reduce((sum, count) => sum + count, 0);
+
+                tableData.push([
+                    index + 1,
+                    cv,
+                    votosPorHora['08:00'] || 0,
+                    votosPorHora['10:00'] || 0,
+                    votosPorHora['12:00'] || 0,
+                    votosPorHora['14:00'] || 0,
+                    votosPorHora['16:00'] || 0,
+                    votosPorHora['18:00'] || 0,
+                    votosPorHora['19:00'] || 0,
+                    votosPorHora['20:00'] || 0,
+                    votosPorHora['21:00'] || 0,
+                    totalCV
+                ]);
+            });
+
+            // Agregar fila de totales
+            tableData.push([
+                '-',
+                'TOTALES',
+                totales['08:00'] || 0,
+                totales['10:00'] || 0,
+                totales['12:00'] || 0,
+                totales['14:00'] || 0,
+                totales['16:00'] || 0,
+                totales['18:00'] || 0,
+                totales['19:00'] || 0,
+                totales['20:00'] || 0,
+                totales['21:00'] || 0,
+                totalGeneral
+            ]);
+
+            // Generar tabla usando autoTable
+            pdf.autoTable({
+                head: [headers],
+                body: tableData,
+                startY: 40,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 2
+                },
+                headStyles: {
+                    fillColor: [102, 126, 234],
+                    textColor: 255
+                },
+                alternateRowStyles: {
+                    fillColor: [248, 249, 250]
+                },
+                columnStyles: {
+                    0: { cellWidth: 10 },  // N°
+                    1: { cellWidth: 60 },  // Centro de Votación
+                    11: { fillColor: [232, 245, 232] } // TOTAL
+                }
+            });
+
+            // Agregar información adicional
+            const finalY = pdf.lastAutoTable.finalY + 10;
+            pdf.setFontSize(10);
+            pdf.text('📊 Reporte generado automáticamente por el Sistema de Registro de Votos 2025', 20, finalY);
+            pdf.text('🔄 La tabla se reinicia automáticamente cada día a las 00:00 horas', 20, finalY + 8);
+
+            // Guardar PDF
+            const fecha = new Date().toISOString().split('T')[0];
+            pdf.save(`reporte_por_hora_${fecha}.pdf`);
+
+            console.log('✅ Archivo PDF generado exitosamente');
+        } catch (error) {
+            console.error('❌ Error generando PDF:', error);
+        }
+    }
+
+    async actualizarReporteHora() {
+        try {
+            console.log('🔄 Actualizando reporte por hora...');
+            await this.loadData();
+            await this.renderReportesHora();
+            console.log('✅ Reporte por hora actualizado');
+            alert('✅ Reporte por hora actualizado');
+        } catch (error) {
+            console.error('❌ Error actualizando reporte por hora:', error);
+            alert('❌ Error actualizando reporte por hora');
+        }
+    }
 }
+
+// Funciones globales para los botones
+window.exportarReporteHora = function() {
+    if (window.estadisticasAvanzadas) {
+        window.estadisticasAvanzadas.exportarReporteHora();
+    }
+};
+
+window.actualizarReporteHora = function() {
+    if (window.estadisticasAvanzadas) {
+        window.estadisticasAvanzadas.actualizarReporteHora();
+    }
+};
 
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
