@@ -12,6 +12,169 @@ if (window.votingSystem) {
     window.votingSystem = null;
 }
 
+// === FUNCIONES GLOBALES PARA REGISTRO ===
+
+// Función global para cambiar modo de registro
+window.switchRegistrationMode = function(mode) {
+    const individualDiv = document.getElementById('individual-registration');
+    const bulkDiv = document.getElementById('bulk-registration');
+    const myListadoDiv = document.getElementById('mylistado-registration');
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    
+    if (!individualDiv || !bulkDiv || !myListadoDiv) {
+        console.warn('⚠️ Elementos de modo de registro no encontrados');
+        return;
+    }
+    
+    // Actualizar botones
+    modeButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.mode === mode) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Mostrar/ocultar secciones
+    if (mode === 'individual') {
+        individualDiv.style.display = 'block';
+        bulkDiv.style.display = 'none';
+        myListadoDiv.style.display = 'none';
+        
+        // Reinicializar el formulario individual si es necesario
+        setTimeout(() => {
+            if (window.votingSystem) {
+                window.votingSystem.renderRegistrationPage();
+            }
+        }, 100);
+    } else if (mode === 'bulk') {
+        individualDiv.style.display = 'none';
+        bulkDiv.style.display = 'block';
+        myListadoDiv.style.display = 'none';
+    } else if (mode === 'mylistado') {
+        individualDiv.style.display = 'none';
+        bulkDiv.style.display = 'none';
+        myListadoDiv.style.display = 'block';
+        setTimeout(() => {
+            if (typeof cargarMiListado === 'function') {
+                cargarMiListado();
+            }
+        }, 100);
+    }
+    console.log(`✅ Modo de registro cambiado a: ${mode}`);
+};
+
+// Función global para importar tabla pegada
+window.importPasteTable = async function() {
+    const pasteTableBody = document.getElementById('paste-table-body');
+    const importStatus = document.getElementById('import-massive-status');
+    
+    if (!pasteTableBody || !importStatus) {
+        alert('Error: Elementos de la tabla no encontrados');
+        return;
+    }
+
+    // Verificar que Firebase esté disponible
+    if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+        alert('Error: Firebase no está disponible. Intenta recargar la página.');
+        return;
+    }
+
+    importStatus.style.display = 'block';
+    importStatus.className = 'import-status info';
+    importStatus.textContent = 'Validando y cargando datos...';
+    
+    let count = 0, errors = 0;
+    
+    for (let tr of pasteTableBody.rows) {
+        const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
+        
+        // Validación básica
+        if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
+            errors++;
+            tr.style.background = '#fff3cd';
+            continue;
+        }
+        if (!/^\d{6,10}$/.test(cedula)) {
+            errors++;
+            tr.style.background = '#fff3cd';
+            continue;
+        }
+        if (!/^04\d{9}$/.test(telefono)) {
+            errors++;
+            tr.style.background = '#fff3cd';
+            continue;
+        }
+        if (!['M','F','m','f'].includes(sexo)) {
+            errors++;
+            tr.style.background = '#fff3cd';
+            continue;
+        }
+        if (isNaN(edad) || edad < 16 || edad > 120) {
+            errors++;
+            tr.style.background = '#fff3cd';
+            continue;
+        }
+        
+        // Preparar datos
+        const data = {
+            ubch,
+            community,
+            name,
+            cedula: cedula.replace(/\D/g, ''),
+            telefono: telefono.replace(/\D/g, ''),
+            sexo: sexo.toUpperCase(),
+            edad: parseInt(edad),
+            registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
+            voted: false,
+            registeredAt: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+        };
+        
+        try {
+            // Verificar duplicados por cédula
+            const existing = await window.firebaseDB.votesCollection.where('cedula','==',data.cedula).get();
+            if (!existing.empty) {
+                tr.style.background = '#ffeaa7'; // Amarillo: duplicado
+                continue;
+            }
+            
+            // Guardar en Firebase
+            await window.firebaseDB.votesCollection.add(data);
+            count++;
+            tr.style.background = '#d4edda'; // Verde: éxito
+        } catch (error) {
+            errors++;
+            tr.style.background = '#f8d7da'; // Rojo: error
+            console.error('Error guardando registro:', error);
+        }
+    }
+    
+    importStatus.className = `import-status ${errors > 0 ? 'warning' : 'success'}`;
+    importStatus.textContent = `Proceso completado: ${count} registros guardados, ${errors} errores`;
+    
+    if (count > 0) {
+        // Actualizar la interfaz si el sistema de votos está disponible
+        if (window.votingSystem) {
+            setTimeout(() => {
+                window.votingSystem.loadDataFromFirebase();
+            }, 1000);
+        }
+    }
+};
+
+// Función global para limpiar tabla
+window.clearPasteTable = function() {
+    const pasteTableBody = document.getElementById('paste-table-body');
+    const importStatus = document.getElementById('import-massive-status');
+    
+    if (pasteTableBody) {
+        pasteTableBody.innerHTML = '<tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>';
+        if (importStatus) {
+            importStatus.style.display = 'none';
+        }
+    }
+};
+
 // Clase base para el sistema de votos
 class VotingSystem {
     constructor() {
@@ -89,66 +252,97 @@ class VotingSystemFirebase extends VotingSystem {
     }
 
     async init() {
-        console.log('🔄 Inicializando VotingSystemFirebase...');
-        // Verificar usuario actual y establecer página inicial según rol
-        const userForHeader = this.getCurrentUser();
-        if (!userForHeader || !userForHeader.username) {
-            window.location.href = 'login.html';
-            return;
+        try {
+            console.log('🔄 Inicializando VotingSystemFirebase...');
+            // Verificar usuario actual y establecer página inicial según rol
+            const userForHeader = this.getCurrentUser();
+            if (!userForHeader || !userForHeader.username) {
+                window.location.href = 'login.html';
+                return;
+            }
+            if (userForHeader.rol === 'verificador') {
+                this.currentPage = 'check-in';
+            } else if (userForHeader.rol === 'registrador') {
+                this.currentPage = 'registration';
+            }
+            // Cargar datos desde Firebase
+            await this.loadDataFromFirebase();
+            // Configurar event listeners
+            this.setupEventListeners();
+            // Configurar navegación según rol
+            this.setupNavigationByRole();
+            // Renderizar página inicial
+            this.renderCurrentPage();
+            // Inicializar sistema offline
+            this.inicializarSistemaOffline();
+            console.log('✅ VotingSystemFirebase inicializado correctamente');
+            this.updateUserId();
+        } catch (error) {
+            this.handleInitError(error, 'VotingSystemFirebase');
         }
-        if (userForHeader.rol === 'verificador') {
-            this.currentPage = 'check-in';
-        } else if (userForHeader.rol === 'registrador') {
-            this.currentPage = 'registration';
-        }
-        // Cargar datos desde Firebase
-        await this.loadDataFromFirebase();
-        // Configurar event listeners
-        this.setupEventListeners();
-        // Configurar navegación según rol
-        this.setupNavigationByRole();
-        // Renderizar página inicial
-        this.renderCurrentPage();
-        // Inicializar sistema offline
-        this.inicializarSistemaOffline();
-        console.log('✅ VotingSystemFirebase inicializado correctamente');
-        this.updateUserId();
     }
 
     async loadDataFromFirebase() {
         try {
-            console.log('🔄 Cargando datos desde Firebase...');
+            // Evitar múltiples cargas simultáneas
+            if (this.isLoadingData) {
+                console.log('⚠️ Carga de datos en progreso, evitando duplicación');
+                return;
+            }
             
-            // Cargar votos
-            const votesSnapshot = await this.db.collection('votes').get();
+            this.isLoadingData = true;
+            console.log('📥 Cargando datos desde Firebase...');
+            
+            // Verificar si Firebase está disponible
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                console.log('⚠️ Firebase no disponible, cargando datos locales');
+                this.isLoadingData = false;
+                return this.loadDataLocally();
+            }
+            
+            // Cargar votos desde Firebase
+            const votesSnapshot = await window.firebaseDB.votesCollection.get();
             this.votes = votesSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            console.log(`📊 ${this.votes.length} votos cargados`);
+            console.log(`✅ ${this.votes.length} votos cargados desde Firebase`);
 
-            // Cargar configuración UBCH
-            const configDoc = await this.db.collection('ubchCollection').doc('config').get();
-            if (configDoc.exists && configDoc.data().mapping) {
-                this.ubchToCommunityMap = configDoc.data().mapping;
-                console.log(`🏛️ ${Object.keys(this.ubchToCommunityMap).length} centros de votación cargados`);
-            } else {
-                console.warn('⚠️ No se encontró configuración UBCH en Firebase');
-                this.ubchToCommunityMap = {};
+            // Cargar configuración UBCH desde Firebase
+            try {
+                const ubchDoc = await window.firebaseDB.ubchCollection.doc('config').get();
+                if (ubchDoc.exists && ubchDoc.data().mapping) {
+                    this.ubchToCommunityMap = ubchDoc.data().mapping;
+                    console.log('✅ Configuración CV cargada desde Firebase');
+                } else {
+                    console.log('⚠️ Configuración CV no encontrada en Firebase, usando configuración por defecto');
+                    await this.saveUBCHConfigToFirebase();
+                }
+                    
+                // Calcular estadísticas claras
+                const totalUBCH = this.ubchToCommunityMap && Object.keys(this.ubchToCommunityMap).length || 0;
+                const todasLasComunidades = this.ubchToCommunityMap ? Object.values(this.ubchToCommunityMap).flat() : [];
+                const comunidadesUnicas = [...new Set(todasLasComunidades)];
+                
+                console.log(`📊 Configuración CV: ${totalUBCH} centros de votación, ${comunidadesUnicas.length} comunidades únicas`);
+                console.log(`📋 Lista única de comunidades: (${comunidadesUnicas.length}) [${comunidadesUnicas.join(', ')}]`);
+                
+                this.ubchConfigLoaded = true;
+                    
+            } catch (error) {
+                console.error('❌ Error cargando configuración CV:', error);
+                // Usar configuración por defecto en caso de error
+                this._useDefaultConfig();
             }
 
-            // Actualizar todas las pantallas
-            this.updateAllDataDisplays();
-            
-            // Configurar listener en tiempo real
-            this.setupRealtimeListener();
-            
-            console.log('✅ Datos cargados exitosamente');
-            return true;
+            this.isLoadingData = false;
+            console.log('✅ Datos cargados desde Firebase:', this.votes.length, 'registros');
+
         } catch (error) {
-            console.error('❌ Error cargando datos desde Firebase:', error);
-            this.showMessage('Error cargando datos. Verificando conexión...', 'error');
-            return false;
+            console.error('❌ Error cargando datos de Firebase:', error);
+            console.log('🔄 Intentando cargar datos locales como fallback');
+            this.isLoadingData = false;
+            return this.loadDataLocally();
         }
     }
 
@@ -215,29 +409,70 @@ class VotingSystemFirebase extends VotingSystem {
     setupRealtimeListener() {
         console.log('🔄 Configurando listener en tiempo real...');
         
-        // Escuchar cambios en tiempo real
-        const unsubscribe = window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
-            console.log('📡 Cambio detectado en Firebase:', snapshot.docs.length, 'registros');
+        try {
+            // Limpiar listener anterior si existe
+            if (this.unsubscribeListener && typeof this.unsubscribeListener === 'function') {
+                console.log('🧹 Limpiando listener anterior...');
+                this.unsubscribeListener();
+            }
             
-            // Actualizar datos locales
-            this.votes = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            // Verificar que Firebase esté disponible
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                throw new Error('Firebase no está disponible');
+            }
             
-            console.log('✅ Datos actualizados localmente');
+            // Escuchar cambios en tiempo real
+            const unsubscribe = window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
+                console.log('📡 Cambio detectado en Firebase:', snapshot.docs.length, 'registros');
+                
+                // Actualizar datos locales
+                this.votes = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                console.log('✅ Datos actualizados localmente');
+                
+                // Actualizar TODAS las páginas que muestran datos
+                this.updateAllDataDisplays();
+                
+            }, (error) => {
+                console.error('❌ Error en listener de Firebase:', error);
+                this.showMessage('Error de sincronización. Reintentando...', 'error', 'registration');
+            });
             
-            // Actualizar TODAS las páginas que muestran datos
-            this.updateAllDataDisplays();
+            // Guardar la función de unsubscribe para limpiar después
+            this.unsubscribeListener = unsubscribe;
+            console.log('✅ Listener en tiempo real configurado correctamente');
             
-        }, (error) => {
-            console.error('❌ Error en listener de Firebase:', error);
-            this.showMessage('Error de sincronización. Reintentando...', 'error', 'registration');
-        });
+        } catch (error) {
+            console.error('❌ Error configurando listener:', error);
+            this.unsubscribeListener = null;
+        }
+    }
+
+    // Función para reinicializar el listener de sincronización
+    async reinitializeSyncListener() {
+        console.log('🔄 Reinicializando listener de sincronización...');
         
-        // Guardar la función de unsubscribe para limpiar después
-        this.unsubscribeListener = unsubscribe;
-        console.log('✅ Listener en tiempo real configurado correctamente');
+        try {
+            // Limpiar listener anterior
+            if (this.unsubscribeListener && typeof this.unsubscribeListener === 'function') {
+                this.unsubscribeListener();
+                this.unsubscribeListener = null;
+            }
+            
+            // Esperar un momento antes de reconfigurar
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Reconfigurar listener
+            this.setupRealtimeListener();
+            
+            console.log('✅ Listener de sincronización reinicializado correctamente');
+            
+        } catch (error) {
+            console.error('❌ Error reinicializando listener:', error);
+        }
     }
 
     // Función para actualizar todas las pantallas de datos
@@ -453,8 +688,8 @@ class VotingSystemFirebase extends VotingSystem {
             return { isValid: false, message: 'Nombre inválido. Debe tener al menos 3 caracteres' };
         }
 
-        // Validar teléfono (opcional pero si se proporciona debe ser válido)
-        if (data.telefono && !/^04\d{9}$/.test(data.telefono)) {
+        // Validar teléfono
+        if (!data.telefono || !/^04\d{9}$/.test(data.telefono)) {
             return { isValid: false, message: 'Teléfono inválido. Debe tener formato: 04xxxxxxxxx' };
         }
 
@@ -468,9 +703,9 @@ class VotingSystemFirebase extends VotingSystem {
             return { isValid: false, message: 'Edad inválida. Debe estar entre 16 y 120 años' };
         }
 
-        // Validar UBCH y comunidad
+        // Validar Centro de Votación y comunidad
         if (!data.ubch || !data.community) {
-            return { isValid: false, message: 'Debe seleccionar CV y comunidad' };
+            return { isValid: false, message: 'Debe seleccionar Centro de Votación y comunidad' };
         }
 
         return { isValid: true, message: 'Datos válidos' };
@@ -478,15 +713,23 @@ class VotingSystemFirebase extends VotingSystem {
 
     async handleRegistration() {
         const form = document.getElementById('registration-form');
+        if (!form) {
+            console.error('❌ Formulario de registro no encontrado');
+            this.showMessage('Error: Formulario no encontrado.', 'error', 'registration');
+            return;
+        }
+        
         const formData = new FormData(form);
         
-        const name = formData.get('name').trim();
-        const cedula = formData.get('cedula').trim();
-        const telefono = formData.get('telefono').trim();
+        const name = formData.get('name')?.trim();
+        const cedula = formData.get('cedula')?.trim();
+        const telefono = formData.get('telefono')?.trim();
         const sexo = formData.get('sexo');
         const edad = formData.get('edad');
         const ubch = formData.get('ubch');
         const community = formData.get('community');
+
+        console.log('📝 Datos del formulario:', { name, cedula, telefono, sexo, edad, ubch, community });
 
         // Validación inicial (teléfono es opcional)
         if (!name || !cedula || !sexo || !edad || !ubch || !community) {
@@ -496,20 +739,20 @@ class VotingSystemFirebase extends VotingSystem {
 
         // Validación de cédula
         if (!/^\d{6,10}$/.test(cedula)) {
-            this.showMessage('Cédula inválida. Debe tener entre 6 y 10 dígitos.', 'error', 'registration');
-            return;
-        }
-
-        // Validación de teléfono (opcional pero si se proporciona debe ser válido)
-        if (telefono && !/^04\d{9}$/.test(telefono)) {
-            this.showMessage('Teléfono inválido. Debe tener formato: 04xxxxxxxxx', 'error', 'registration');
+            this.showMessage('La cédula debe tener entre 6 y 10 dígitos numéricos.', 'error', 'registration');
             return;
         }
 
         // Validación de edad
         const edadNum = parseInt(edad);
         if (isNaN(edadNum) || edadNum < 16 || edadNum > 120) {
-            this.showMessage('Edad inválida. Debe estar entre 16 y 120 años.', 'error', 'registration');
+            this.showMessage('La edad debe estar entre 16 y 120 años.', 'error', 'registration');
+            return;
+        }
+
+        // Validación de teléfono (opcional pero si se proporciona debe ser válido)
+        if (telefono && !/^04\d{9}$/.test(telefono)) {
+            this.showMessage('El teléfono debe tener el formato 04xxxxxxxxx.', 'error', 'registration');
             return;
         }
 
@@ -517,7 +760,7 @@ class VotingSystemFirebase extends VotingSystem {
         const registrationData = {
             name,
             cedula: cedula.replace(/\D/g, ''),
-            telefono: telefono.replace(/\D/g, ''),
+            telefono: telefono ? telefono.replace(/\D/g, '') : '',
             sexo,
             edad: edadNum,
             ubch,
@@ -527,6 +770,8 @@ class VotingSystemFirebase extends VotingSystem {
             registeredAt: new Date().toISOString(),
             createdAt: new Date().toISOString()
         };
+
+        console.log('📋 Datos preparados para registro:', registrationData);
 
         this.setLoadingState('registration', true);
 
@@ -872,7 +1117,7 @@ class VotingSystemFirebase extends VotingSystem {
         console.log('🔍 DEBUG: this.ubchToCommunityMap:', this.ubchToCommunityMap);
         console.log('🔍 DEBUG: Tipo de ubchToCommunityMap:', typeof this.ubchToCommunityMap);
         console.log('🔍 DEBUG: Keys de ubchToCommunityMap:', Object.keys(this.ubchToCommunityMap));
-        
+
         const ubchSelect = document.getElementById('ubch');
         const communitySelect = document.getElementById('community');
         const form = document.getElementById('registration-form');
@@ -883,7 +1128,12 @@ class VotingSystemFirebase extends VotingSystem {
             form: !!form
         });
 
-        // Limpiar opciones
+        if (!ubchSelect || !communitySelect || !form) {
+            console.error('❌ Elementos del formulario no encontrados');
+            return;
+        }
+
+        // Limpiar selects
         ubchSelect.innerHTML = '<option value="">Selecciona un Centro de Votación (CV)</option>';
         communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
 
@@ -891,6 +1141,15 @@ class VotingSystemFirebase extends VotingSystem {
         if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
             console.log('⚠️ No hay datos disponibles, intentando recargar...');
             console.log('🔍 DEBUG: ubchToCommunityMap está vacío o no definido');
+            
+            // Evitar bucle infinito - solo intentar recargar una vez
+            if (this._reloadAttempted) {
+                console.log('⚠️ Ya se intentó recargar una vez, usando configuración por defecto');
+                this._useDefaultConfig();
+                return;
+            }
+            
+            this._reloadAttempted = true;
             form.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
             this.showMessage('Cargando datos...', 'info', 'registration');
             
@@ -901,9 +1160,13 @@ class VotingSystemFirebase extends VotingSystem {
             }).catch(error => {
                 console.error('❌ Error recargando datos:', error);
                 this.showMessage('Error cargando datos. Contacte al administrador.', 'error', 'registration');
+                this._useDefaultConfig();
             });
             return;
         }
+
+        // Resetear flag de recarga
+        this._reloadAttempted = false;
 
         console.log('🔍 DEBUG: Datos disponibles, procediendo a cargar formulario...');
 
@@ -914,7 +1177,7 @@ class VotingSystemFirebase extends VotingSystem {
         const todasLasComunidades = new Set();
         Object.values(this.ubchToCommunityMap).forEach(comunidades => {
             if (Array.isArray(comunidades)) {
-                comunidades.forEach(comunidad => todasLasComunidades.add(comunidad));
+            comunidades.forEach(comunidad => todasLasComunidades.add(comunidad));
             }
         });
 
@@ -944,7 +1207,7 @@ class VotingSystemFirebase extends VotingSystem {
         console.log(`📊 Resumen: ${todasLasComunidades.size} comunidades, ${Object.keys(this.ubchToCommunityMap).length} centros de votación`);
         this.showMessage(`Formulario listo con ${todasLasComunidades.size} comunidades disponibles`, 'success', 'registration');
 
-        // Inicializar Choices.js para el autocompletado de comunidades
+        // Inicializar Choices.js para el autocompletado de comunidades si está disponible
         if (window.initializeChoicesForCommunity) {
             setTimeout(() => {
                 window.initializeChoicesForCommunity();
@@ -959,6 +1222,45 @@ class VotingSystemFirebase extends VotingSystem {
         // Actualizar indicadores de estado offline
         this.actualizarIndicadorOffline();
         this.actualizarFormularioOffline();
+    }
+
+    // Método para usar configuración por defecto cuando no se pueden cargar los datos
+    _useDefaultConfig() {
+        console.log('🔄 Usando configuración por defecto...');
+        
+        // Configuración por defecto
+        this.ubchToCommunityMap = {
+            "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+            "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+            "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+            "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+            "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+            "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+            "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "CONSOLACIÓN"],
+            "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+            "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+            "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+            "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "CONSOLACIÓN"],
+            "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+            "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+            "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+            "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+            "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+            "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+            "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+            "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
+        };
+        
+        // Habilitar formulario
+        const form = document.getElementById('registration-form');
+        if (form) {
+            form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
+        }
+        
+        // Renderizar con configuración por defecto
+        this.renderRegistrationPage();
+        
+        this.showMessage('Sistema funcionando con configuración por defecto', 'warning', 'registration');
     }
 
     // Los selects de comunidad y CV son independientes, no necesitan funciones de vinculación
@@ -2146,8 +2448,8 @@ class VotingSystemFirebase extends VotingSystem {
 
         try {
             const messages = [
-                `¡Excelente ${name}! Tu registro en la UBCH "${ubch}" y comunidad "${community}" es un paso importante para fortalecer nuestra democracia. Tu participación cuenta.`,
-                `${name}, gracias por registrarte en "${ubch}". Tu compromiso con la comunidad "${community}" es fundamental para el futuro de nuestro país.`,
+                            `¡Excelente ${name}! Tu registro en el Centro de Votación "${ubch}" y comunidad "${community}" es un paso importante para fortalecer nuestra democracia. Tu participación cuenta.`,
+            `${name}, gracias por registrarte en "${ubch}". Tu compromiso con la comunidad "${community}" es fundamental para el futuro de nuestro país.`,
                 `¡Bienvenido ${name}! Tu registro en "${ubch}" demuestra tu compromiso con la participación ciudadana. Juntos construimos un mejor futuro.`
             ];
             
@@ -2730,6 +3032,49 @@ class VotingSystemFirebase extends VotingSystem {
             }
         });
     }
+
+    // Función para verificar el estado del listener de sincronización
+    isSyncListenerActive() {
+        return this.unsubscribeListener && typeof this.unsubscribeListener === 'function';
+    }
+
+    // Función para reinicializar el listener de sincronización
+    async reinitializeSyncListener() {
+        console.log('🔄 Reinicializando listener de sincronización...');
+        
+        try {
+            // Limpiar listener anterior
+            if (this.unsubscribeListener && typeof this.unsubscribeListener === 'function') {
+                this.unsubscribeListener();
+                this.unsubscribeListener = null;
+            }
+            
+            // Esperar un momento antes de reconfigurar
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Reconfigurar listener
+            this.setupRealtimeListener();
+            
+            console.log('✅ Listener de sincronización reinicializado correctamente');
+            
+        } catch (error) {
+            console.error('❌ Error reinicializando listener:', error);
+        }
+    }
+
+    // Función para manejar errores de inicialización
+    handleInitError(error, context) {
+        console.error(`❌ Error en ${context}:`, error);
+        
+        // Mostrar mensaje al usuario
+        this.showMessage(`Error de inicialización: ${error.message}`, 'error', 'registration');
+        
+        // Intentar recuperación automática
+        setTimeout(() => {
+            console.log(`🔄 Intentando recuperación automática para ${context}...`);
+            this.init();
+        }, 5000);
+    }
 }
 
 // Inicializar el sistema cuando el DOM esté listo
@@ -2994,7 +3339,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 const username = (currentUser.username || '').trim().toLowerCase();
-window.firebaseDB.votesCollection.where('registeredBy', '==', username).get().then(snap => console.log('Registros:', snap.size));
+
+// Verificar que Firebase esté disponible antes de usar votesCollection
+if (window.firebaseDB && window.firebaseDB.votesCollection) {
+    window.firebaseDB.votesCollection.where('registeredBy', '==', username).get().then(snap => console.log('Registros:', snap.size));
+} else {
+    console.log('⚠️ Firebase no está listo aún, verificando registros más tarde...');
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     const btnUpdateOld = document.getElementById('myrecords-update-old');

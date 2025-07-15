@@ -75,7 +75,7 @@ const CONFIG = {
     EXPORT: {
         PDF: {
             ENABLED: true,
-            COLUMNS: ['Nombre', 'Cédula', 'Sexo', 'Edad', 'Teléfono', 'UBCH', 'Comunidad', 'Votó']
+            COLUMNS: ['Nombre', 'Cédula', 'Sexo', 'Edad', 'Teléfono', 'Centro de Votación', 'Comunidad', 'Votó']
         },
         CSV: {
             ENABLED: true,

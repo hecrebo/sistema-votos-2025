@@ -53,6 +53,7 @@
     <script src="auto-init.js"></script>
     <script src="test-automatico.js"></script>
     <script src="test-proyeccion.js"></script>
+    <script src="test-registro.js"></script>
     <script src="queue-manager.js"></script>
     <script src="notification-system.js"></script>
     <script src="realtime-notifications.js"></script>
@@ -156,49 +157,60 @@
                                 <label for="edad">Edad</label>
                                 <input type="number" id="edad" name="edad" placeholder="Ej: 25" min="16" max="120" required title="Introduce una edad válida (entre 16 y 120 años)" autocomplete="off">
                             </div>
-                            <div class="form-group">
-                                <label for="ubch">CV</label>
-                                <select id="ubch" name="ubch" required></select>
-                            </div>
+                                                <div class="form-group">
+                        <label for="ubch">Centro de Votación</label>
+                        <select id="ubch" name="ubch" required></select>
+                    </div>
                             <button type="submit" class="btn btn-primary btn-large" id="register-btn">
                                 <span class="btn-text">Registrar Persona</span>
                                 <span class="btn-loading" style="display: none;">Registrando...</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="testRegistrationSystem()" style="margin-left: 10px;">
+                                🧪 Probar Sistema
                             </button>
                         </form>
                     </div>
                     
                     <!-- Registro masivo desde Excel -->
                     <div id="bulk-registration" class="registration-mode" style="display: none;">
-                        <div class="admin-card import-section">
-                            <h3>📋 Registro Masivo (Pega los datos de Excel aquí)</h3>
-                            <div class="import-info">
-                                <p>Pega los datos copiados de Excel directamente en la tabla. Puedes editar los valores antes de cargar.</p>
-                                <p>Columnas esperadas: <b>CV, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</b></p>
+                        <div class="admin-card import-section" style="padding: 2rem; margin: 1rem 0;">
+                            <h3 style="margin-bottom: 1.5rem; color: #2c3e50; font-size: 1.5rem;">📋 Registro Masivo</h3>
+                            <div class="import-info" style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border-left: 4px solid #007bff;">
+                                <p style="margin-bottom: 1rem; color: #495057; line-height: 1.6;">Pega los datos copiados de Excel directamente en la tabla. Puedes editar los valores antes de cargar.</p>
+                                <p style="margin: 0; color: #6c757d; font-size: 0.95rem;"><strong>Columnas esperadas:</strong> <b>Centro de Votación, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</b></p>
                             </div>
-                            <div style="overflow-x:auto;">
-                                <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false" style="min-width:800px;">
+                            <div style="overflow-x:auto; margin-bottom: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false" style="min-width:800px; margin: 0;">
                                     <thead>
                                         <tr>
-                                            <th>CV</th>
-                                            <th>Comunidad</th>
-                                            <th>Nombre</th>
-                                            <th>Cédula</th>
-                                            <th>Teléfono</th>
-                                            <th>Sexo</th>
-                                            <th>Edad</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Centro de Votación</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Comunidad</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Nombre</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Cédula</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Teléfono</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Sexo</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Edad</th>
                                         </tr>
                                     </thead>
                                     <tbody id="paste-table-body">
-                                        <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                        <tr style="background: #fff;">
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="import-controls">
-                                <button class="btn btn-success" onclick="importPasteTable()">Cargar a Firebase</button>
-                                <button class="btn btn-warning" onclick="clearPasteTable()">Limpiar Tabla</button>
-                                <button class="btn btn-info" onclick="limpiarColaYForzarSync()">🔄 Limpiar Cola & Sincronizar</button>
+                            <div class="import-controls" style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                                <button class="btn btn-success" onclick="importPasteTable()" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Cargar a Firebase</button>
+                                <button class="btn btn-warning" onclick="clearPasteTable()" style="padding: 0.75rem 1.5rem; font-size: 1rem;">Limpiar Tabla</button>
+                                <button class="btn btn-info" onclick="limpiarColaYForzarSync()" style="padding: 0.75rem 1.5rem; font-size: 1rem;">🔄 Limpiar Cola & Sincronizar</button>
                             </div>
-                            <div id="import-massive-status" class="import-status info" style="display:none;"></div>
+                            <div id="import-massive-status" class="import-status info" style="display:none; margin-top: 1.5rem;"></div>
                         </div>
                     </div>
                     
@@ -209,7 +221,6 @@
                             <div class="mylistado-actions">
                                 <button class="btn btn-primary" onclick="cargarMiListado()">🔄 Actualizar Mi Listado</button>
                                 <button class="btn btn-secondary" onclick="exportarMiListado()">📊 Exportar Excel</button>
-                                <button class="btn btn-warning" onclick="insertarRegistrosPrueba()">🧪 Registros de Prueba</button>
                                 <button class="btn btn-danger" onclick="limpiarMiListado()">🗑️ Limpiar Listado</button>
                             </div>
                             <div class="mylistado-search-container">
@@ -273,7 +284,7 @@
                                         <option value="name">Nombre</option>
                                         <option value="cedula">Cédula</option>
                                         <option value="community">Comunidad</option>
-                                        <option value="ubch">CV</option>
+                                        <option value="ubch">Centro de Votación</option>
                                     </select>
                                 </div>
                             </div>
@@ -313,9 +324,9 @@
                             
                             <div class="advanced-filters">
                         <div class="ubch-filter">
-                                    <label for="ubch-filter-select">CV:</label>
+                                    <label for="ubch-filter-select">Centro de Votación:</label>
                             <select id="ubch-filter-select" class="ubch-filter-select">
-                                <option value="">Todos los CV</option>
+                                <option value="">Todos los Centros de Votación</option>
                             </select>
                         </div>
                         <div class="community-filter">
@@ -372,7 +383,7 @@
                             </div>
                             <div class="detail-section">
                                 <h4>Información Electoral</h4>
-                                <div class="detail-info"><strong>CV:</strong> <span id="detail-ubch"></span></div>
+                                <div class="detail-info"><strong>Centro de Votación:</strong> <span id="detail-ubch"></span></div>
                                 <div class="detail-info"><strong>Comunidad:</strong> <span id="detail-community"></span></div>
                                 <div class="detail-info"><strong>Estado del Voto:</strong> <span id="detail-vote-status"></span></div>
                                 <div class="detail-info"><strong>Fecha de Registro:</strong> <span id="detail-registered-at"></span></div>
@@ -402,7 +413,7 @@
                                     <th class="sortable-header" data-sort="telefono">Teléfono ↕</th>
                                     <th class="sortable-header" data-sort="sexo">Sexo ↕</th>
                                     <th class="sortable-header" data-sort="edad">Edad ↕</th>
-                                    <th class="sortable-header" data-sort="ubch">CV ↕</th>
+                                    <th class="sortable-header" data-sort="ubch">Centro de Votación ↕</th>
                                     <th class="sortable-header" data-sort="community">Comunidad ↕</th>
                                     <th class="sortable-header" data-sort="voted">Votó ↕</th>
                                     <th>Acciones</th>
@@ -463,7 +474,7 @@
                     </div>
                     <div class="stats-grid">
                         <div class="stats-card">
-                            <h3>Votos por CV</h3>
+                            <h3>Votos por Centro de Votación</h3>
                             <div class="stats-list" id="ubch-stats"></div>
                         </div>
                         <div class="stats-card">
@@ -481,7 +492,7 @@
                     </div>
                     <!-- Al final de la sección de estadísticas (antes de cerrar la page-container de statistics-page): -->
                     <div class="stats-projection-section">
-                      <h3 style="margin-top:2em;">Resumen por CV</h3>
+                                              <h3 style="margin-top:2em;">Resumen por Centro de Votación</h3>
                       <div id="stats-projection-list" class="projection-list"></div>
                     </div>
                 </div>
@@ -505,7 +516,7 @@
                     <p class="projection-text" id="projection-text">0 de 0</p>
                 </div>
                 <div class="projection-stats">
-                    <h2>Votos por CV</h2>
+                                            <h2>Votos por Centro de Votación</h2>
                     <div class="projection-list" id="projection-ubch-list"></div>
                 </div>
             </div>
@@ -565,9 +576,9 @@
                         <input type="number" id="edit-edad" name="edad" min="16" max="120" required>
                     </div>
                     <div class="form-group">
-                        <label for="edit-ubch">CV</label>
+                        <label for="edit-ubch">Centro de Votación</label>
                         <select id="edit-ubch" name="ubch" required>
-                            <option value="">Selecciona un CV</option>
+                            <option value="">Selecciona un Centro de Votación</option>
                         </select>
                     </div>
                     <div class="modal-actions">
@@ -849,14 +860,11 @@
         window.renderMyRecordsTable = async function() {
             const tableBody = document.querySelector('#myrecords-table tbody');
             if (!tableBody) return;
-            
             tableBody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
             
             try {
-                // Obtener usuario actual
                 const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 const username = normalizarUsuario(currentUser.username || '');
-                
                 if (!username) {
                     tableBody.innerHTML = '<tr><td colspan="8">No hay usuario activo</td></tr>';
                     return;
@@ -1070,22 +1078,16 @@
                 bulkDiv.style.display = 'none';
                 myListadoDiv.style.display = 'none';
                 
-                // Asegurar que el formulario esté habilitado
-                const form = document.getElementById('registration-form');
-                if (form) {
-                    form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
-                }
+                // Reinicializar el formulario individual si es necesario
+                setTimeout(() => {
+                    if (window.votingSystem) {
+                        window.votingSystem.renderRegistrationPage();
+                    }
+                }, 100);
             } else if (mode === 'bulk') {
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'block';
                 myListadoDiv.style.display = 'none';
-                
-                // Mostrar placeholder en la tabla
-                setTimeout(() => {
-                    if (typeof showPastePlaceholder === 'function') {
-                        showPastePlaceholder();
-                    }
-                }, 100);
             } else if (mode === 'mylistado') {
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'none';
@@ -1096,10 +1098,6 @@
                     }
                 }, 100);
             }
-            
-            // Guardar el modo en localStorage
-            localStorage.setItem('registrationMode', mode);
-            
             console.log(`✅ Modo de registro cambiado a: ${mode}`);
         }
 
@@ -1169,10 +1167,6 @@
 
             // Mostrar placeholder al cargar
             setTimeout(showPastePlaceholder, 500);
-            
-            // Inicializar el modo de registro por defecto
-            const savedMode = localStorage.getItem('registrationMode') || 'individual';
-            switchRegistrationMode(savedMode);
         });
 
         // Limpiar tabla
@@ -1181,22 +1175,6 @@
                 pasteTableBody.innerHTML = '<tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>';
                 if (importStatus) {
                     importStatus.style.display = 'none';
-                }
-                setTimeout(showPastePlaceholder, 100);
-            }
-        }
-
-        // Sugerencia visual en la primera celda si la tabla está vacía
-        function showPastePlaceholder() {
-            if (pasteTableBody && pasteTableBody.rows.length === 1) {
-                const firstRow = pasteTableBody.rows[0];
-                let empty = true;
-                for (let td of firstRow.cells) {
-                    if (td.textContent.trim() !== '') empty = false;
-                }
-                if (empty) {
-                    firstRow.cells[0].classList.add('placeholder');
-                    firstRow.cells[0].textContent = 'Haz clic aquí y pega los datos de Excel';
                 }
             }
         }
@@ -1224,36 +1202,27 @@
                 const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
                 
                 // Validación básica
-                if (!ubch || !community || !name || !cedula || !sexo || !edad) {
+                if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
                 }
-                
-                // Validación de cédula
                 if (!/^\d{6,10}$/.test(cedula)) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
                 }
-                
-                // Validación de teléfono (opcional pero si se proporciona debe ser válido)
-                if (telefono && !/^04\d{9}$/.test(telefono)) {
+                if (!/^04\d{9}$/.test(telefono)) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
                 }
-                
-                // Validación de sexo
                 if (!['M','F','m','f'].includes(sexo)) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
                 }
-                
-                // Validación de edad
-                const edadNum = parseInt(edad);
-                if (isNaN(edadNum) || edadNum < 16 || edadNum > 120) {
+                if (isNaN(edad) || edad < 16 || edad > 120) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
@@ -1265,9 +1234,9 @@
                     community,
                     name,
                     cedula: cedula.replace(/\D/g, ''),
-                    telefono: telefono ? telefono.replace(/\D/g, '') : '',
+                    telefono: telefono.replace(/\D/g, ''),
                     sexo: sexo.toUpperCase(),
-                    edad: edadNum,
+                    edad: parseInt(edad),
                     registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
                     voted: false,
                     registeredAt: new Date().toISOString(),
@@ -1286,7 +1255,7 @@
                     tr.style.background = '#d4edda'; // Verde: éxito
                     count++;
                     
-                    // Guardar en registros locales
+                    // Guardar también en registros locales
                     if (typeof guardarRegistroLocal === 'function') {
                         guardarRegistroLocal({
                             nombre: data.name,
@@ -1300,7 +1269,6 @@
                         });
                     }
                 } catch (err) {
-                    console.error('Error al guardar registro:', err);
                     tr.style.background = '#f8d7da'; // Rojo: error
                     errors++;
                 }
@@ -1317,6 +1285,28 @@
                 importStatus.textContent = `❌ No se cargaron registros. Verifica los datos.`;
             }
         }
+
+        // Sugerencia visual en la primera celda si la tabla está vacía
+        function showPastePlaceholder() {
+            if (pasteTableBody && pasteTableBody.rows.length === 1) {
+                const firstRow = pasteTableBody.rows[0];
+                let empty = true;
+                for (let td of firstRow.cells) {
+                    if (td.textContent.trim() !== '') empty = false;
+                }
+                if (empty) {
+                    firstRow.cells[0].classList.add('placeholder');
+                    firstRow.cells[0].textContent = 'Haz clic aquí y pega los datos de Excel';
+                }
+            }
+        }
+        
+        // También después de limpiar la tabla
+        const oldClearPasteTable = clearPasteTable;
+        clearPasteTable = function() {
+            oldClearPasteTable();
+            setTimeout(showPastePlaceholder, 100);
+        };
 
         // Función para limpiar la cola y forzar sincronización
         async function limpiarColaYForzarSync() {
@@ -1336,68 +1326,90 @@
         // Registrar Service Worker para PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(function(registration) {
-                        console.log('✅ Service Worker registrado exitosamente:', registration.scope);
-                        console.log('📱 PWA Status:', {
-                            scope: registration.scope,
-                            active: registration.active,
-                            installing: registration.installing,
-                            waiting: registration.waiting
+                // Verificar que estemos en HTTPS o localhost
+                if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                    navigator.serviceWorker.register('./service-worker.js')
+                        .then(function(registration) {
+                            console.log('✅ Service Worker registrado exitosamente:', registration.scope);
+                            console.log('📱 PWA Status:', {
+                                scope: registration.scope,
+                                active: registration.active,
+                                installing: registration.installing,
+                                waiting: registration.waiting
+                            });
+                            
+                            // Verificar si la página está controlada por el SW
+                            if (navigator.serviceWorker.controller) {
+                                console.log('✅ Página controlada por Service Worker');
+                            } else {
+                                console.log('⚠️ Página no controlada por Service Worker');
+                            }
+                        })
+                        .catch(function(error) {
+                            console.error('❌ Error registrando Service Worker:', error);
                         });
-                        
-                        // Verificar si la página está controlada por el SW
-                        if (navigator.serviceWorker.controller) {
-                            console.log('✅ Página controlada por Service Worker');
-                        } else {
-                            console.log('⚠️ Página no controlada por Service Worker');
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('❌ Error registrando Service Worker:', error);
-                    });
+                } else {
+                    console.log('⚠️ Service Worker no registrado: Protocolo no soportado (requiere HTTPS o localhost)');
+                }
             });
         } else {
             console.log('❌ Service Worker no soportado en este navegador');
         }
 
         // Función fácil para mostrar 'Mis Registros' consultando solo los registros del usuario actual desde Firebase
-        async function mostrarMisRegistrosFacil() {
+        async function renderMyRecordsTable() {
             const tableBody = document.querySelector('#myrecords-table tbody');
             if (!tableBody) return;
             tableBody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
 
-            // Consultar solo la cola local
-            let registrosLocales = [];
-            if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
-                try {
-                    registrosLocales = window.offlineQueueManager.obtenerColaLocal();
-                } catch (e) {
-                    console.error('Error consultando cola local:', e);
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const username = normalizarUsuario(currentUser.username || '');
+                if (!username) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No hay usuario activo</td></tr>';
+                    return;
                 }
+                
+                // Cargar datos desde Firebase (igual que en admin-panel)
+                const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).get();
+                const allUsers = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Filtrar por el usuario actual
+                const misRegistros = allUsers.filter(user => 
+                    (user.registeredBy || '').trim().toLowerCase() === username
+                );
+                
+                if (misRegistros.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
+                    return;
+                }
+                
+                // Renderizar tabla
+                let rows = '';
+                misRegistros.forEach(d => {
+                    rows += `<tr>
+                        <td>${d.name || ''}</td>
+                        <td>${d.cedula || ''}</td>
+                        <td>${d.telefono || ''}</td>
+                        <td>${d.sexo || ''}</td>
+                        <td>${d.edad || ''}</td>
+                        <td>${d.ubch || ''}</td>
+                        <td>${d.community || ''}</td>
+                        <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
+                    </tr>`;
+                });
+                tableBody.innerHTML = rows;
+                
+                console.log(`✅ Mis Registros: ${misRegistros.length} registros encontrados para ${username}`);
+                
+            } catch (error) {
+                console.error('❌ Error cargando Mis Registros:', error);
+                tableBody.innerHTML = '<tr><td colspan="8">Error cargando registros</td></tr>';
             }
-
-            if (!registrosLocales || registrosLocales.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
-                return;
-            }
-
-            // Renderizar tabla
-            let rows = '';
-            registrosLocales.forEach(d => {
-                rows += `<tr>
-                    <td>${d.name || ''}</td>
-                    <td>${d.cedula || ''}</td>
-                    <td>${d.telefono || ''}</td>
-                    <td>${d.sexo || ''}</td>
-                    <td>${d.edad || ''}</td>
-                    <td>${d.ubch || ''}</td>
-                    <td>${d.community || ''}</td>
-                    <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
-                </tr>`;
-            });
-            tableBody.innerHTML = rows;
-        }
+        };
 
         // === FUNCIÓN DE PRUEBA: Insertar registros de prueba para el usuario actual ===
         function insertarRegistrosDePrueba() {
@@ -1884,7 +1896,7 @@
             if (window.offlineQueueManager && typeof window.offlineQueueManager.limpiarColaLocal === 'function') {
                 if (confirm('¿Seguro que quieres borrar todos tus registros locales?')) {
                     window.offlineQueueManager.limpiarColaLocal();
-                    mostrarMisRegistrosFacil();
+                    renderMyRecordsTable();
                 }
             } else {
                 alert('No se puede limpiar la cola local.');
@@ -1948,13 +1960,187 @@
             }
         });
 
-        if (window.firebaseDB && window.firebaseDB.ubchCollection) {
-            const configDoc = await window.firebaseDB.ubchCollection.doc('config').get();
-            if (configDoc.exists && configDoc.data().mapping) {
-                mapping = configDoc.data().mapping;
-                console.log('✅ Mapeo de CV/comunidades cargado desde Firebase (ubchCollection.config.mapping)');
+        // Función para cargar configuración UBCH
+        async function loadUBCHConfig() {
+            if (window.firebaseDB && window.firebaseDB.ubchCollection) {
+                try {
+                    const configDoc = await window.firebaseDB.ubchCollection.doc('config').get();
+                    if (configDoc.exists && configDoc.data().mapping) {
+                        mapping = configDoc.data().mapping;
+                        console.log('✅ Mapeo de CV/comunidades cargado desde Firebase (ubchCollection.config.mapping)');
+                    }
+                } catch (error) {
+                    console.error('❌ Error cargando configuración UBCH:', error);
+                }
             }
         }
+        
+        // Cargar configuración UBCH cuando esté disponible
+        if (window.firebaseDB && window.firebaseDB.ubchCollection) {
+            loadUBCHConfig();
+        }
+
+        // === INICIALIZACIÓN UNIFICADA DEL SISTEMA ===
+        
+        // Función para inicializar el sistema de registro de manera unificada
+        async function initializeRegistrationSystem() {
+            console.log('🚀 Inicializando sistema de registro unificado...');
+            
+            try {
+                // 1. Verificar que Firebase esté disponible
+                if (!window.firebaseDB) {
+                    console.error('❌ Firebase no está disponible');
+                    throw new Error('Firebase no está configurado');
+                }
+                
+                // 2. Crear instancia del sistema de votos si no existe
+                if (!window.votingSystem) {
+                    console.log('📋 Creando instancia del sistema de votos...');
+                    window.votingSystem = new VotingSystemFirebase();
+                    await window.votingSystem.init();
+                }
+                
+                // 3. Configurar event listeners del formulario de registro
+                const registrationForm = document.getElementById('registration-form');
+                if (registrationForm) {
+                    // Remover event listeners existentes para evitar duplicados
+                    const newForm = registrationForm.cloneNode(true);
+                    registrationForm.parentNode.replaceChild(newForm, registrationForm);
+                    
+                    // Agregar event listener para el envío del formulario
+                    newForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        console.log('📝 Enviando formulario de registro...');
+                        
+                        if (window.votingSystem && typeof window.votingSystem.handleRegistration === 'function') {
+                            await window.votingSystem.handleRegistration();
+                        } else {
+                            console.error('❌ Sistema de votos no disponible');
+                            alert('Error: Sistema no disponible. Recarga la página.');
+                        }
+                    });
+                    
+                    console.log('✅ Event listeners del formulario configurados');
+                }
+                
+                // 4. Configurar event listeners para los selects
+                const ubchSelect = document.getElementById('ubch');
+                const communitySelect = document.getElementById('community');
+                
+                if (ubchSelect && communitySelect) {
+                    // Event listener para cuando cambie el CV
+                    ubchSelect.addEventListener('change', function() {
+                        console.log('🔄 CV seleccionado:', this.value);
+                        // Los selects son independientes, no necesitan vinculación
+                    });
+                    
+                    // Event listener para cuando cambie la comunidad
+                    communitySelect.addEventListener('change', function() {
+                        console.log('🔄 Comunidad seleccionada:', this.value);
+                    });
+                    
+                    console.log('✅ Event listeners de selects configurados');
+                }
+                
+                // 5. Cargar datos iniciales
+                if (window.votingSystem) {
+                    await window.votingSystem.loadDataFromFirebase();
+                    window.votingSystem.renderRegistrationPage();
+                }
+                
+                console.log('✅ Sistema de registro inicializado correctamente');
+                
+            } catch (error) {
+                console.error('❌ Error inicializando sistema de registro:', error);
+                alert('Error al inicializar el sistema. Recarga la página.');
+            }
+        }
+        
+        // Función para verificar y corregir problemas de inicialización
+        function checkAndFixInitialization() {
+            console.log('🔍 Verificando estado de inicialización...');
+            
+            // Verificar que el formulario existe
+            const form = document.getElementById('registration-form');
+            if (!form) {
+                console.error('❌ Formulario de registro no encontrado');
+                return false;
+            }
+            
+            // Verificar que los selects existen
+            const ubchSelect = document.getElementById('ubch');
+            const communitySelect = document.getElementById('community');
+            if (!ubchSelect || !communitySelect) {
+                console.error('❌ Selects de CV o comunidad no encontrados');
+                return false;
+            }
+            
+            // Verificar que el sistema de votos esté disponible
+            if (!window.votingSystem) {
+                console.error('❌ Sistema de votos no inicializado');
+                return false;
+            }
+            
+            console.log('✅ Verificación de inicialización exitosa');
+            return true;
+        }
+        
+        // === INICIALIZACIÓN UNIFICADA AL CARGAR LA PÁGINA ===
+        
+        // Inicializar el sistema cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('📱 Página cargada, iniciando sistema unificado...');
+            
+            // Esperar a que Firebase esté disponible
+            let retries = 0;
+            const maxRetries = 10;
+            
+            while (!window.firebaseDB && retries < maxRetries) {
+                console.log(`⏳ Esperando Firebase... (intento ${retries + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                retries++;
+            }
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase no disponible después de múltiples intentos');
+                alert('Error: No se pudo conectar con Firebase. Recarga la página.');
+                return;
+            }
+            
+            // Inicializar sistema de registro unificado
+            await initializeRegistrationSystem();
+            
+            // Verificar que todo esté funcionando correctamente
+            if (!checkAndFixInitialization()) {
+                console.error('❌ Problemas detectados en la inicialización');
+                alert('Error: Problemas detectados en la inicialización. Recarga la página.');
+                return;
+            }
+            
+            console.log('🎉 Sistema unificado inicializado completamente');
+            
+            // Mostrar mensaje de éxito
+            const messageDiv = document.getElementById('registration-message');
+            if (messageDiv) {
+                messageDiv.textContent = '✅ Sistema listo para registrar personas';
+                messageDiv.className = 'message success';
+                messageDiv.style.display = 'block';
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 3000);
+            }
+        });
+        
+        // Función global para reinicializar el sistema si es necesario
+        window.reinitializeSystem = async function() {
+            console.log('🔄 Reinicializando sistema...');
+            await initializeRegistrationSystem();
+        };
+        
+        // Función global para verificar el estado del sistema
+        window.checkSystemStatus = function() {
+            return checkAndFixInitialization();
+        };
     </script>
     
     <!-- Contenedor de Notificaciones -->

@@ -142,15 +142,15 @@ class ServiceManager {
     
     async checkSyncService() {
         try {
-            // Verificar que el listener esté activo
-            if (window.votingSystem && window.votingSystem.unsubscribeListener) {
+            // Verificar que el listener esté activo usando la función específica
+            if (window.votingSystem && window.votingSystem.isSyncListenerActive && window.votingSystem.isSyncListenerActive()) {
                 this.services.sync.status = 'online';
                 this.services.sync.lastCheck = Date.now();
                 this.services.sync.retries = 0;
                 
                 console.log('✅ Sincronización: Online');
             } else {
-                throw new Error('Listener no está activo');
+                throw new Error('Listener no está activo o sistema no inicializado');
             }
         } catch (error) {
             this.services.sync.status = 'offline';
@@ -255,9 +255,9 @@ class ServiceManager {
         console.log('🔄 Reiniciando servicio de sincronización...');
         try {
             // Reconfigurar sincronización SOLO si no está en registro
-            if (window.votingSystem && window.votingSystem.setupRealtimeListener) {
+            if (window.votingSystem && window.votingSystem.reinitializeSyncListener) {
                 if (window.votingSystem.currentPage !== 'registration') {
-                    window.votingSystem.setupRealtimeListener();
+                    await window.votingSystem.reinitializeSyncListener();
                 } else {
                     console.log('⏸️ Reconfiguración de listener evitada en sección de registro');
                 }
