@@ -1,4 +1,4 @@
-const CACHE_NAME = 'votos2025-cache-v4'; // Incremented cache version
+const CACHE_NAME = 'votos2025-cache-v3'; // Incremented cache version
 const urlsToCache = [
   // Core HTML
   './', // Alias for index.html
@@ -6,14 +6,13 @@ const urlsToCache = [
   './login.html',
   './admin-panel.html',
   './offline.html',
-  './estadisticas-avanzadas.html',
 
   // Styles
   './styles.css',
-  './estadisticas-avanzadas.css',
 
   // Core JS
   './config.js',
+  './script.js', // Main logic for index.html
   './script-firebase.js', // Firebase specific logic
   './firebase-config.js',
   './queue-manager.js',
@@ -21,30 +20,30 @@ const urlsToCache = [
   './service-manager.js',
   './auto-init.js',
   './init-system.js',
-  './pwa-installer.js',
 
-  // Admin Panel JS
+  // Admin Panel JS (if it should work offline)
   './admin-dashboard.js',
   './admin-sync-panel.js',
 
-  // Estadísticas avanzadas JS
-  './estadisticas-avanzadas.js',
-
   // Key Images
   './logo.jpg',
-  './logo 2.png',
 
-  // PWA Manifest & Core Icons
+  // PWA Manifest & Core Icons (ensure these paths match your manifest and HTML)
   './manifest.json',
-  './logo 2.png',
-  
-  // External libraries (cache for offline)
-  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
+  './favicon.ico/favicon.ico',
+  './favicon.ico/android-icon-192x192.png',
+  './favicon.ico/apple-icon-180x180.png',
+  './favicon.ico/favicon-32x32.png',
+  './favicon.ico/favicon-16x16.png',
+  // Add other icon sizes if they are critical and frequently used by devices
+  // e.g. './favicon.ico/ms-icon-144x144.png'
+
+  // Potentially cache test/debug files if needed for offline debugging, otherwise omit
+  // './test-automatico.js',
+  // './test-proyeccion.js',
+  // './debug-ubch-filter.js',
+  // './test-filtro-ubch.js',
+  // './test-exportacion-mejorada.js',
 ];
 
 // Background sync for offline data
@@ -98,15 +97,15 @@ self.addEventListener('push', event => {
   let notificationData = {
     title: 'Sistema de Votos 2025',
     body: 'Nuevo voto registrado',
-    icon: './logo 2.png',
-    badge: './logo 2.png',
+    icon: './favicon.ico/android-icon-192x192.png',
+    badge: './favicon.ico/android-icon-96x96.png',
     tag: 'voto-notification',
     requireInteraction: true,
     actions: [
       {
         action: 'view',
         title: 'Ver',
-        icon: './logo 2.png'
+        icon: './favicon.ico/android-icon-96x96.png'
       },
       {
         action: 'dismiss',
@@ -178,45 +177,10 @@ self.addEventListener('fetch', event => {
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
-        .then(response => {
-          // Cache successful responses
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return response;
-        })
         .catch(() => {
           return caches.match(event.request)
             .then(response => {
-              return response || caches.match('./offline.html');
-            });
-        })
-    );
-    return;
-  }
-
-  // For static assets, use cache first, then network
-  if (event.request.destination === 'script' || 
-      event.request.destination === 'style' || 
-      event.request.destination === 'image' ||
-      event.request.url.includes('cdnjs.cloudflare.com') ||
-      event.request.url.includes('fonts.googleapis.com')) {
-    event.respondWith(
-      caches.match(event.request)
-        .then(response => {
-          return response || fetch(event.request)
-            .then(fetchResponse => {
-              // Cache successful responses
-              if (fetchResponse.status === 200) {
-                const responseClone = fetchResponse.clone();
-                caches.open(CACHE_NAME).then(cache => {
-                  cache.put(event.request, responseClone);
-                });
-              }
-              return fetchResponse;
+              return response || caches.match('./offline.html'); // Use custom offline page
             });
         })
     );

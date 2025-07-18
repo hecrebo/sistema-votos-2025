@@ -65,13 +65,19 @@ class ServiceManager {
         });
         
         // Escuchar eventos de Firebase
-        if (window.firebaseDB) {
-            window.firebaseDB.votesCollection.onSnapshot(() => {
-                this.services.firebase.status = 'online';
-                this.services.firebase.lastCheck = Date.now();
-            }, (error) => {
-                this.handleFirebaseError(error);
-            });
+        if (window.firebaseDB && window.firebaseDB.votesCollection && typeof window.firebaseDB.votesCollection.onSnapshot === 'function') {
+            try {
+                window.firebaseDB.votesCollection.onSnapshot(() => {
+                    this.services.firebase.status = 'online';
+                    this.services.firebase.lastCheck = Date.now();
+                }, (error) => {
+                    this.handleFirebaseError(error);
+                });
+            } catch (error) {
+                console.warn('⚠️ No se pudo configurar listener de Firebase:', error.message);
+            }
+        } else {
+            console.warn('⚠️ Firebase no disponible para listener en tiempo real');
         }
     }
     
@@ -93,7 +99,7 @@ class ServiceManager {
     
     async checkFirebaseService() {
         try {
-            if (!window.firebaseDB) {
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
                 throw new Error('Firebase no está disponible');
             }
             
@@ -120,6 +126,10 @@ class ServiceManager {
     async checkDatabaseService() {
         try {
             // Verificar acceso a datos
+            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                throw new Error('Base de datos no disponible');
+            }
+            
             const snapshot = await window.firebaseDB.votesCollection.get();
             this.services.database.status = 'online';
             this.services.database.lastCheck = Date.now();
@@ -142,15 +152,15 @@ class ServiceManager {
     
     async checkSyncService() {
         try {
-            // Verificar que el listener esté activo usando la función específica
-            if (window.votingSystem && window.votingSystem.isSyncListenerActive && window.votingSystem.isSyncListenerActive()) {
+            // Verificar que el listener esté activo
+            if (window.votingSystem && window.votingSystem.unsubscribeListener) {
                 this.services.sync.status = 'online';
                 this.services.sync.lastCheck = Date.now();
                 this.services.sync.retries = 0;
                 
                 console.log('✅ Sincronización: Online');
             } else {
-                throw new Error('Listener no está activo o sistema no inicializado');
+                throw new Error('Listener no está activo');
             }
         } catch (error) {
             this.services.sync.status = 'offline';
@@ -255,9 +265,9 @@ class ServiceManager {
         console.log('🔄 Reiniciando servicio de sincronización...');
         try {
             // Reconfigurar sincronización SOLO si no está en registro
-            if (window.votingSystem && window.votingSystem.reinitializeSyncListener) {
+            if (window.votingSystem && window.votingSystem.setupRealtimeListener) {
                 if (window.votingSystem.currentPage !== 'registration') {
-                    await window.votingSystem.reinitializeSyncListener();
+                    window.votingSystem.setupRealtimeListener();
                 } else {
                     console.log('⏸️ Reconfiguración de listener evitada en sección de registro');
                 }

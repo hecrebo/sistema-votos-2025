@@ -5,14 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sin Conexión - Sistema de Votos 2025</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -22,243 +18,147 @@
         }
         
         .offline-container {
-            text-align: center;
-            padding: 2rem;
-            max-width: 500px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
             backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
         }
         
         .offline-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            font-size: 4em;
+            margin-bottom: 20px;
         }
         
         .offline-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
+            font-size: 2em;
+            margin-bottom: 10px;
+            font-weight: 600;
         }
         
         .offline-message {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
+            font-size: 1.1em;
+            margin-bottom: 30px;
             opacity: 0.9;
-            line-height: 1.6;
         }
         
         .offline-features {
+            text-align: left;
+            margin: 30px 0;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            padding: 20px;
+            border-radius: 10px;
         }
         
-        .feature-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-            font-size: 1rem;
+        .offline-features h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
         }
         
-        .feature-icon {
-            margin-right: 0.5rem;
-            font-size: 1.2rem;
-        }
-
-        .retry-button {
-            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-right: 1rem;
-        }
-
-        .retry-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+        .offline-features ul {
+            margin: 0;
+            padding-left: 20px;
         }
         
-        .offline-button {
+        .offline-features li {
+            margin-bottom: 8px;
+        }
+        
+        .retry-btn {
             background: rgba(255, 255, 255, 0.2);
             color: white;
             border: 2px solid rgba(255, 255, 255, 0.3);
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-size: 1rem;
-            font-weight: 600;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
             cursor: pointer;
             transition: all 0.3s ease;
+            margin: 10px;
         }
         
-        .offline-button:hover {
+        .retry-btn:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
-        }
-
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            backdrop-filter: blur(10px);
         }
         
         .status-indicator {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             margin-right: 8px;
-            animation: blink 1.5s infinite;
-        }
-
-        .status-offline {
-            background: #e74c3c;
-        }
-
-        .status-online {
-            background: #2ecc71;
+            background: #ff6b6b;
+            animation: pulse 2s infinite;
         }
         
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.3; }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
         
-        .sync-info {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            opacity: 0.8;
+        .connection-status {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 0.9em;
         }
     </style>
 </head>
 <body>
-    <div class="connection-status">
-        <span class="status-indicator status-offline"></span>
-        <span id="status-text">Sin conexión</span>
-    </div>
-
     <div class="offline-container">
         <div class="offline-icon">📴</div>
-        <h1 class="offline-title">Sin Conexión a Internet</h1>
+        <h1 class="offline-title">Sin Conexión</h1>
         <p class="offline-message">
-            No se puede acceder al sistema en este momento. 
-            Verifica tu conexión a internet e intenta nuevamente.
+            No se puede conectar al servidor en este momento.
         </p>
         
         <div class="offline-features">
-            <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Funciones Disponibles Offline:</h3>
-            <div class="feature-item">
-                <span class="feature-icon">✅</span>
-                <span>Registro de personas (se sincronizará cuando vuelva la conexión)</span>
-            </div>
-            <div class="feature-item">
-                <span class="feature-icon">✅</span>
-                <span>Visualización de datos previamente cargados</span>
-            </div>
-            <div class="feature-item">
-                <span class="feature-icon">✅</span>
-                <span>Acceso a estadísticas guardadas</span>
-            </div>
-            <div class="feature-item">
-                <span class="feature-icon">✅</span>
-                <span>Modo offline completamente funcional</span>
-            </div>
+            <h3>✅ Funciones Disponibles Offline:</h3>
+            <ul>
+                <li>📝 <strong>Registro de votantes</strong> - Los datos se guardan localmente</li>
+                <li>🔄 <strong>Sincronización automática</strong> - Se sincronizará cuando vuelva la conexión</li>
+                <li>📊 <strong>Visualización de datos</strong> - Acceso a información guardada</li>
+                <li>📱 <strong>Funciones básicas</strong> - Navegación y formularios</li>
+            </ul>
         </div>
         
-        <div>
-            <button class="retry-button" onclick="retryConnection()">
-                🔄 Reintentar Conexión
-            </button>
-            <button class="offline-button" onclick="continueOffline()">
-                📱 Continuar Offline
-            </button>
+        <div class="connection-status">
+            <span class="status-indicator"></span>
+            <span>Intentando reconectar automáticamente...</span>
         </div>
         
-        <div class="sync-info">
-            <p>Los datos se sincronizarán automáticamente cuando se restaure la conexión.</p>
-        </div>
+        <button class="retry-btn" onclick="window.location.reload()">
+            🔄 Reintentar Conexión
+        </button>
+        
+        <button class="retry-btn" onclick="window.location.href='./index.html'">
+            🏠 Ir al Sistema
+        </button>
     </div>
 
     <script>
-        // Verificar estado de conexión
-        function updateConnectionStatus() {
-            const statusIndicator = document.querySelector('.status-indicator');
-            const statusText = document.getElementById('status-text');
-            
+        // Verificar conexión cada 5 segundos
+        function checkConnection() {
             if (navigator.onLine) {
-                statusIndicator.className = 'status-indicator status-online';
-                statusText.textContent = 'Conectado';
-                
-                // Redirigir a la página principal cuando se restaure la conexión
-                setTimeout(() => {
                 window.location.href = './index.html';
-                }, 2000);
-            } else {
-                statusIndicator.className = 'status-indicator status-offline';
-                statusText.textContent = 'Sin conexión';
             }
         }
-
-        // Reintentar conexión
-        function retryConnection() {
-            const button = event.target;
-            button.textContent = '🔄 Verificando...';
-            button.disabled = true;
-            
-            // Simular verificación de conexión
-            setTimeout(() => {
-                if (navigator.onLine) {
-                    window.location.href = './index.html';
-                } else {
-                    button.textContent = '❌ Sin conexión';
-                    setTimeout(() => {
-                        button.textContent = '🔄 Reintentar Conexión';
-                        button.disabled = false;
-                    }, 2000);
-                }
-            }, 1500);
-        }
-
-        // Continuar en modo offline
-        function continueOffline() {
-            // Intentar cargar la página principal desde cache
-            window.location.href = './index.html';
-        }
-
-        // Event listeners para cambios de conectividad
-        window.addEventListener('online', updateConnectionStatus);
-        window.addEventListener('offline', updateConnectionStatus);
-
-        // Verificar estado inicial
-        updateConnectionStatus();
-
+        
         // Verificar cada 5 segundos
-        setInterval(updateConnectionStatus, 5000);
-
-        // Mostrar información de cache
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(registration => {
-                console.log('✅ Service Worker activo en página offline');
-            });
-        }
+        setInterval(checkConnection, 5000);
+        
+        // También verificar cuando cambie el estado de conexión
+        window.addEventListener('online', function() {
+            window.location.href = './index.html';
+        });
+        
+        // Mostrar información de la aplicación
+        console.log('📱 PWA Offline - Sistema de Votos 2025');
+        console.log('🔄 Verificando conexión cada 5 segundos...');
     </script>
 </body>
 </html> 

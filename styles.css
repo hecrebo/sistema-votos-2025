@@ -1259,28 +1259,12 @@ body {
 }
 
 .projection-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.2rem;
-  max-height: calc(100vh - 220px);
-  overflow-y: auto;
-  padding-bottom: 2rem;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
 }
-@media (max-width: 900px) {
-  .projection-list {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 600px) {
-  .projection-list {
-    grid-template-columns: 1fr;
-  }
-}
+
 .projection-item {
-  min-width: 0;
-  margin-bottom: 0;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.85em;
+    margin-bottom: 1rem;
 }
 
 .projection-item-header {

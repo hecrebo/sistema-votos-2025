@@ -12,169 +12,6 @@ if (window.votingSystem) {
     window.votingSystem = null;
 }
 
-// === FUNCIONES GLOBALES PARA REGISTRO ===
-
-// Función global para cambiar modo de registro
-window.switchRegistrationMode = function(mode) {
-    const individualDiv = document.getElementById('individual-registration');
-    const bulkDiv = document.getElementById('bulk-registration');
-    const myListadoDiv = document.getElementById('mylistado-registration');
-    const modeButtons = document.querySelectorAll('.mode-btn');
-    
-    if (!individualDiv || !bulkDiv || !myListadoDiv) {
-        console.warn('⚠️ Elementos de modo de registro no encontrados');
-        return;
-    }
-    
-    // Actualizar botones
-    modeButtons.forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.mode === mode) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // Mostrar/ocultar secciones
-    if (mode === 'individual') {
-        individualDiv.style.display = 'block';
-        bulkDiv.style.display = 'none';
-        myListadoDiv.style.display = 'none';
-        
-        // Reinicializar el formulario individual si es necesario
-        setTimeout(() => {
-            if (window.votingSystem) {
-                window.votingSystem.renderRegistrationPage();
-            }
-        }, 100);
-    } else if (mode === 'bulk') {
-        individualDiv.style.display = 'none';
-        bulkDiv.style.display = 'block';
-        myListadoDiv.style.display = 'none';
-    } else if (mode === 'mylistado') {
-        individualDiv.style.display = 'none';
-        bulkDiv.style.display = 'none';
-        myListadoDiv.style.display = 'block';
-        setTimeout(() => {
-            if (typeof cargarMiListado === 'function') {
-                cargarMiListado();
-            }
-        }, 100);
-    }
-    console.log(`✅ Modo de registro cambiado a: ${mode}`);
-};
-
-// Función global para importar tabla pegada
-window.importPasteTable = async function() {
-    const pasteTableBody = document.getElementById('paste-table-body');
-    const importStatus = document.getElementById('import-massive-status');
-    
-    if (!pasteTableBody || !importStatus) {
-        alert('Error: Elementos de la tabla no encontrados');
-        return;
-    }
-
-    // Verificar que Firebase esté disponible
-    if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
-        alert('Error: Firebase no está disponible. Intenta recargar la página.');
-        return;
-    }
-
-    importStatus.style.display = 'block';
-    importStatus.className = 'import-status info';
-    importStatus.textContent = 'Validando y cargando datos...';
-    
-    let count = 0, errors = 0;
-    
-    for (let tr of pasteTableBody.rows) {
-        const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
-        
-        // Validación básica
-        if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
-            errors++;
-            tr.style.background = '#fff3cd';
-            continue;
-        }
-        if (!/^\d{6,10}$/.test(cedula)) {
-            errors++;
-            tr.style.background = '#fff3cd';
-            continue;
-        }
-        if (!/^04\d{9}$/.test(telefono)) {
-            errors++;
-            tr.style.background = '#fff3cd';
-            continue;
-        }
-        if (!['M','F','m','f'].includes(sexo)) {
-            errors++;
-            tr.style.background = '#fff3cd';
-            continue;
-        }
-        if (isNaN(edad) || edad < 16 || edad > 120) {
-            errors++;
-            tr.style.background = '#fff3cd';
-            continue;
-        }
-        
-        // Preparar datos
-        const data = {
-            ubch,
-            community,
-            name,
-            cedula: cedula.replace(/\D/g, ''),
-            telefono: telefono.replace(/\D/g, ''),
-            sexo: sexo.toUpperCase(),
-            edad: parseInt(edad),
-            registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
-            voted: false,
-            registeredAt: new Date().toISOString(),
-            createdAt: new Date().toISOString()
-        };
-        
-        try {
-            // Verificar duplicados por cédula
-            const existing = await window.firebaseDB.votesCollection.where('cedula','==',data.cedula).get();
-            if (!existing.empty) {
-                tr.style.background = '#ffeaa7'; // Amarillo: duplicado
-                continue;
-            }
-            
-            // Guardar en Firebase
-            await window.firebaseDB.votesCollection.add(data);
-            count++;
-            tr.style.background = '#d4edda'; // Verde: éxito
-        } catch (error) {
-            errors++;
-            tr.style.background = '#f8d7da'; // Rojo: error
-            console.error('Error guardando registro:', error);
-        }
-    }
-    
-    importStatus.className = `import-status ${errors > 0 ? 'warning' : 'success'}`;
-    importStatus.textContent = `Proceso completado: ${count} registros guardados, ${errors} errores`;
-    
-    if (count > 0) {
-        // Actualizar la interfaz si el sistema de votos está disponible
-        if (window.votingSystem) {
-            setTimeout(() => {
-                window.votingSystem.loadDataFromFirebase();
-            }, 1000);
-        }
-    }
-};
-
-// Función global para limpiar tabla
-window.clearPasteTable = function() {
-    const pasteTableBody = document.getElementById('paste-table-body');
-    const importStatus = document.getElementById('import-massive-status');
-    
-    if (pasteTableBody) {
-        pasteTableBody.innerHTML = '<tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>';
-        if (importStatus) {
-            importStatus.style.display = 'none';
-        }
-    }
-};
-
 // Clase base para el sistema de votos
 class VotingSystem {
     constructor() {
@@ -252,7 +89,6 @@ class VotingSystemFirebase extends VotingSystem {
     }
 
     async init() {
-        try {
         console.log('🔄 Inicializando VotingSystemFirebase...');
         // Verificar usuario actual y establecer página inicial según rol
         const userForHeader = this.getCurrentUser();
@@ -277,9 +113,6 @@ class VotingSystemFirebase extends VotingSystem {
         this.inicializarSistemaOffline();
         console.log('✅ VotingSystemFirebase inicializado correctamente');
         this.updateUserId();
-        } catch (error) {
-            this.handleInitError(error, 'VotingSystemFirebase');
-        }
     }
 
     async loadDataFromFirebase() {
@@ -308,20 +141,45 @@ class VotingSystemFirebase extends VotingSystem {
             }));
             console.log(`✅ ${this.votes.length} votos cargados desde Firebase`);
 
-            // Cargar configuración UBCH desde Firebase
+            // Cargar configuración UBCH desde Firebase (solo una vez)
+            if (!this.ubchConfigLoaded) {
             try {
-                const ubchDoc = await window.firebaseDB.ubchCollection.doc('config').get();
-                if (ubchDoc.exists && ubchDoc.data().mapping) {
-                    this.ubchToCommunityMap = ubchDoc.data().mapping;
+            const ubchSnapshot = await window.firebaseDB.ubchCollection.doc('config').get();
+            if (ubchSnapshot.exists) {
+                this.ubchToCommunityMap = ubchSnapshot.data().mapping;
                     console.log('✅ Configuración CV cargada desde Firebase');
                 } else {
-                    console.log('⚠️ Configuración CV no encontrada en Firebase, usando configuración por defecto');
+                    // Si no existe en Firebase, usar configuración por defecto
+                    console.log('⚠️ No se encontró configuración CV en Firebase, usando configuración por defecto');
+                    this.ubchToCommunityMap = {
+                            "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+                            "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+                            "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+                            "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+                            "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+                            "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+                            "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "CONSOLACIÓN"],
+                            "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+                            "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+                            "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+                            "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "CONSOLACIÓN"],
+                            "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+                            "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+                            "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+                            "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+                            "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+                            "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+                            "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+                            "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
+                    };
+                    
+                    // Guardar configuración por defecto en Firebase para futuras cargas
                     await this.saveUBCHConfigToFirebase();
                 }
                     
                     // Calcular estadísticas claras
-                const totalUBCH = this.ubchToCommunityMap && Object.keys(this.ubchToCommunityMap).length || 0;
-                const todasLasComunidades = this.ubchToCommunityMap ? Object.values(this.ubchToCommunityMap).flat() : [];
+                    const totalUBCH = Object.keys(this.ubchToCommunityMap).length;
+                    const todasLasComunidades = Object.values(this.ubchToCommunityMap).flat();
                     const comunidadesUnicas = [...new Set(todasLasComunidades)];
                     
                     console.log(`📊 Configuración CV: ${totalUBCH} centros de votación, ${comunidadesUnicas.length} comunidades únicas`);
@@ -332,7 +190,29 @@ class VotingSystemFirebase extends VotingSystem {
             } catch (error) {
                 console.error('❌ Error cargando configuración CV:', error);
                 // Usar configuración por defecto en caso de error
-                this._useDefaultConfig();
+                this.ubchToCommunityMap = {
+                        "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+                        "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+                        "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+                        "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+                        "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+                        "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+                        "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "CONSOLACIÓN"],
+                        "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+                        "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+                        "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+                        "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "CONSOLACIÓN"],
+                        "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+                        "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+                        "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+                        "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+                        "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+                        "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+                        "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+                        "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
+                    };
+                    this.ubchConfigLoaded = true;
+                }
             }
 
             this.isLoadingData = false;
@@ -373,7 +253,7 @@ class VotingSystemFirebase extends VotingSystem {
                 "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
                 "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
                 "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
-                "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGUE", "CONSOLACIÓN"],
+                "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "CONSOLACIÓN"],
                 "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
                 "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
                 "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
@@ -409,18 +289,6 @@ class VotingSystemFirebase extends VotingSystem {
     setupRealtimeListener() {
         console.log('🔄 Configurando listener en tiempo real...');
         
-        try {
-            // Limpiar listener anterior si existe
-            if (this.unsubscribeListener && typeof this.unsubscribeListener === 'function') {
-                console.log('🧹 Limpiando listener anterior...');
-                this.unsubscribeListener();
-            }
-            
-            // Verificar que Firebase esté disponible
-            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
-                throw new Error('Firebase no está disponible');
-            }
-        
         // Escuchar cambios en tiempo real
         const unsubscribe = window.firebaseDB.votesCollection.onSnapshot((snapshot) => {
             console.log('📡 Cambio detectado en Firebase:', snapshot.docs.length, 'registros');
@@ -444,35 +312,6 @@ class VotingSystemFirebase extends VotingSystem {
         // Guardar la función de unsubscribe para limpiar después
         this.unsubscribeListener = unsubscribe;
         console.log('✅ Listener en tiempo real configurado correctamente');
-            
-        } catch (error) {
-            console.error('❌ Error configurando listener:', error);
-            this.unsubscribeListener = null;
-        }
-    }
-
-    // Función para reinicializar el listener de sincronización
-    async reinitializeSyncListener() {
-        console.log('🔄 Reinicializando listener de sincronización...');
-        
-        try {
-            // Limpiar listener anterior
-            if (this.unsubscribeListener && typeof this.unsubscribeListener === 'function') {
-                this.unsubscribeListener();
-                this.unsubscribeListener = null;
-            }
-            
-            // Esperar un momento antes de reconfigurar
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Reconfigurar listener
-            this.setupRealtimeListener();
-            
-            console.log('✅ Listener de sincronización reinicializado correctamente');
-            
-        } catch (error) {
-            console.error('❌ Error reinicializando listener:', error);
-        }
     }
 
     // Función para actualizar todas las pantallas de datos
@@ -703,9 +542,9 @@ class VotingSystemFirebase extends VotingSystem {
             return { isValid: false, message: 'Edad inválida. Debe estar entre 16 y 120 años' };
         }
 
-        // Validar Centro de Votación y comunidad
+        // Validar UBCH y comunidad
         if (!data.ubch || !data.community) {
-            return { isValid: false, message: 'Debe seleccionar Centro de Votación y comunidad' };
+            return { isValid: false, message: 'Debe seleccionar CV y comunidad' };
         }
 
         return { isValid: true, message: 'Datos válidos' };
@@ -713,23 +552,15 @@ class VotingSystemFirebase extends VotingSystem {
 
     async handleRegistration() {
         const form = document.getElementById('registration-form');
-        if (!form) {
-            console.error('❌ Formulario de registro no encontrado');
-            this.showMessage('Error: Formulario no encontrado.', 'error', 'registration');
-            return;
-        }
-        
         const formData = new FormData(form);
         
-        const name = formData.get('name')?.trim();
-        const cedula = formData.get('cedula')?.trim();
-        const telefono = formData.get('telefono')?.trim();
+        const name = formData.get('name').trim();
+        const cedula = formData.get('cedula').trim();
+        const telefono = formData.get('telefono').trim();
         const sexo = formData.get('sexo');
         const edad = formData.get('edad');
         const ubch = formData.get('ubch');
         const community = formData.get('community');
-
-        console.log('📝 Datos del formulario:', { name, cedula, telefono, sexo, edad, ubch, community });
 
         // Validación inicial (teléfono es opcional)
         if (!name || !cedula || !sexo || !edad || !ubch || !community) {
@@ -737,32 +568,13 @@ class VotingSystemFirebase extends VotingSystem {
             return;
         }
 
-        // Validación de cédula
-        if (!/^\d{6,10}$/.test(cedula)) {
-            this.showMessage('La cédula debe tener entre 6 y 10 dígitos numéricos.', 'error', 'registration');
-            return;
-        }
-
-        // Validación de edad
-        const edadNum = parseInt(edad);
-        if (isNaN(edadNum) || edadNum < 16 || edadNum > 120) {
-            this.showMessage('La edad debe estar entre 16 y 120 años.', 'error', 'registration');
-            return;
-        }
-
-        // Validación de teléfono (opcional pero si se proporciona debe ser válido)
-        if (telefono && !/^04\d{9}$/.test(telefono)) {
-            this.showMessage('El teléfono debe tener el formato 04xxxxxxxxx.', 'error', 'registration');
-            return;
-        }
-
         // Preparar datos
         const registrationData = {
             name,
             cedula: cedula.replace(/\D/g, ''),
-            telefono: telefono ? telefono.replace(/\D/g, '') : '',
+            telefono: telefono.replace(/\D/g, ''),
             sexo,
-            edad: edadNum,
+            edad: parseInt(edad),
             ubch,
             community,
             registeredBy: normalizarUsuario(this.getCurrentUser()?.username || this.userId),
@@ -770,8 +582,6 @@ class VotingSystemFirebase extends VotingSystem {
             registeredAt: new Date().toISOString(),
             createdAt: new Date().toISOString()
         };
-
-        console.log('📋 Datos preparados para registro:', registrationData);
 
         this.setLoadingState('registration', true);
 
@@ -793,7 +603,7 @@ class VotingSystemFirebase extends VotingSystem {
                         cedula: registrationData.cedula,
                         telefono: registrationData.telefono,
                         sexo: sexo,
-                        edad: edadNum,
+                        edad: edad,
                         ubch: ubch,
                         comunidad: community,
                         fecha: new Date().toLocaleString()
@@ -816,7 +626,7 @@ class VotingSystemFirebase extends VotingSystem {
                         cedula: registrationData.cedula,
                         telefono: registrationData.telefono,
                         sexo: sexo,
-                        edad: edadNum,
+                        edad: edad,
                         ubch: ubch,
                         comunidad: community,
                         fecha: new Date().toLocaleString()
@@ -880,7 +690,6 @@ class VotingSystemFirebase extends VotingSystem {
             // Actualizar en Firebase
             await this.updateVoteInFirebase(personId, {
                 voted: true,
-                fechaConfirmacion: new Date().toISOString(),
                 voteTimestamp: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
@@ -889,7 +698,6 @@ class VotingSystemFirebase extends VotingSystem {
             const voteIndex = this.votes.findIndex(v => v.id === personId);
             if (voteIndex !== -1) {
                 this.votes[voteIndex].voted = true;
-                this.votes[voteIndex].fechaConfirmacion = new Date().toISOString();
                 this.votes[voteIndex].voteTimestamp = new Date().toISOString();
             }
             
@@ -1130,12 +938,7 @@ class VotingSystemFirebase extends VotingSystem {
             form: !!form
         });
 
-        if (!ubchSelect || !communitySelect || !form) {
-            console.error('❌ Elementos del formulario no encontrados');
-            return;
-        }
-
-        // Limpiar selects
+        // Limpiar opciones
         ubchSelect.innerHTML = '<option value="">Selecciona un Centro de Votación (CV)</option>';
         communitySelect.innerHTML = '<option value="">Selecciona una comunidad</option>';
 
@@ -1143,15 +946,6 @@ class VotingSystemFirebase extends VotingSystem {
         if (!this.ubchToCommunityMap || Object.keys(this.ubchToCommunityMap).length === 0) {
             console.log('⚠️ No hay datos disponibles, intentando recargar...');
             console.log('🔍 DEBUG: ubchToCommunityMap está vacío o no definido');
-            
-            // Evitar bucle infinito - solo intentar recargar una vez
-            if (this._reloadAttempted) {
-                console.log('⚠️ Ya se intentó recargar una vez, usando configuración por defecto');
-                this._useDefaultConfig();
-                return;
-            }
-            
-            this._reloadAttempted = true;
             form.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
             this.showMessage('Cargando datos...', 'info', 'registration');
             
@@ -1162,13 +956,9 @@ class VotingSystemFirebase extends VotingSystem {
             }).catch(error => {
                 console.error('❌ Error recargando datos:', error);
                 this.showMessage('Error cargando datos. Contacte al administrador.', 'error', 'registration');
-                this._useDefaultConfig();
             });
             return;
         }
-
-        // Resetear flag de recarga
-        this._reloadAttempted = false;
 
         console.log('🔍 DEBUG: Datos disponibles, procediendo a cargar formulario...');
 
@@ -1178,9 +968,7 @@ class VotingSystemFirebase extends VotingSystem {
         // Cargar todas las comunidades disponibles (sin vinculación)
         const todasLasComunidades = new Set();
         Object.values(this.ubchToCommunityMap).forEach(comunidades => {
-            if (Array.isArray(comunidades)) {
             comunidades.forEach(comunidad => todasLasComunidades.add(comunidad));
-            }
         });
 
         console.log('🔍 DEBUG: Comunidades encontradas:', Array.from(todasLasComunidades));
@@ -1209,7 +997,7 @@ class VotingSystemFirebase extends VotingSystem {
         console.log(`📊 Resumen: ${todasLasComunidades.size} comunidades, ${Object.keys(this.ubchToCommunityMap).length} centros de votación`);
         this.showMessage(`Formulario listo con ${todasLasComunidades.size} comunidades disponibles`, 'success', 'registration');
 
-        // Inicializar Choices.js para el autocompletado de comunidades si está disponible
+        // Inicializar Choices.js para el autocompletado de comunidades
         if (window.initializeChoicesForCommunity) {
             setTimeout(() => {
                 window.initializeChoicesForCommunity();
@@ -1224,45 +1012,6 @@ class VotingSystemFirebase extends VotingSystem {
         // Actualizar indicadores de estado offline
         this.actualizarIndicadorOffline();
         this.actualizarFormularioOffline();
-    }
-
-    // Método para usar configuración por defecto cuando no se pueden cargar los datos
-    _useDefaultConfig() {
-        console.log('🔄 Usando configuración por defecto...');
-        
-        // Configuración por defecto
-        this.ubchToCommunityMap = {
-            "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
-            "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
-            "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
-            "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
-            "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
-            "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
-            "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "CONSOLACIÓN"],
-            "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
-            "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
-            "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
-            "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGUE", "CONSOLACIÓN"],
-            "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
-            "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
-            "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
-            "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
-            "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
-            "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
-            "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
-            "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
-        };
-        
-        // Habilitar formulario
-        const form = document.getElementById('registration-form');
-        if (form) {
-            form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
-        }
-        
-        // Renderizar con configuración por defecto
-        this.renderRegistrationPage();
-        
-        this.showMessage('Sistema funcionando con configuración por defecto', 'warning', 'registration');
     }
 
     // Los selects de comunidad y CV son independientes, no necesitan funciones de vinculación
@@ -2388,42 +2137,6 @@ class VotingSystemFirebase extends VotingSystem {
         this.renderStatsList('community-stats', communityStats, 'community');
         this.renderStatsList('sexo-stats', sexoStats, 'sexo');
         this.renderStatsList('edad-stats', edadStats, 'edad');
-
-        // --- NUEVO: Renderizar tarjetas de todas las CV abajo ---
-        const statsProjectionList = document.getElementById('stats-projection-list');
-        if (statsProjectionList) {
-            // Obtener todos los CV posibles (ordenados)
-            const allCVs = Object.keys(this.ubchToCommunityMap || {}).sort();
-            // Contar votos y registrados por CV
-            const votosPorCV = {};
-            const registradosPorCV = {};
-            allCVs.forEach(cv => { votosPorCV[cv] = 0; registradosPorCV[cv] = 0; });
-            this.votes.forEach(v => {
-                if (v.ubch && registradosPorCV.hasOwnProperty(v.ubch)) {
-                    registradosPorCV[v.ubch]++;
-                    if (v.voted) votosPorCV[v.ubch]++;
-                }
-            });
-            // Renderizar tarjetas
-            statsProjectionList.innerHTML = allCVs.map((cv, i) => {
-                const votos = votosPorCV[cv];
-                const registrados = registradosPorCV[cv];
-                const porcentajeCV = registrados ? ((votos / registrados) * 100).toFixed(1) : 0;
-                return `
-                <div class='projection-item' style="background:#232946; border-radius:1rem; padding:0.3rem 0.5rem; margin-bottom:0.7rem; box-shadow:0 2px 8px rgba(80,112,255,0.08);">
-                    <div class='projection-item-header' style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
-                        <span class='projection-item-name' style="font-size:1em; font-weight:600; color:#fff;">${i+1}. ${cv}</span>
-                        <span class='projection-item-count' style="font-size:1.1em; font-weight:700; color:#43e97b;">${votos}</span>
-                    </div>
-                    <div style="font-size:0.93em; color:#bfc9d1; margin-bottom:0.2em;">Registrados: ${registrados}</div>
-                    <div class='projection-item-progress' style="width:100%; height:0.7rem; background:#374151; border-radius:0.5rem; overflow:hidden; margin-bottom:0.1em;">
-                        <div class='projection-item-progress-fill' style="height:100%; background:linear-gradient(90deg,#10b981,#34d399); width:${porcentajeCV}%; transition:width 0.5s; border-radius:0.5rem;"></div>
-                    </div>
-                    <div style="font-size:0.85em; color:#43e97b;">${porcentajeCV}% participación</div>
-                </div>
-                `;
-            }).join('');
-        }
     }
 
     renderStatsList(containerId, stats, type) {
@@ -2450,7 +2163,7 @@ class VotingSystemFirebase extends VotingSystem {
 
         try {
             const messages = [
-                            `¡Excelente ${name}! Tu registro en el Centro de Votación "${ubch}" y comunidad "${community}" es un paso importante para fortalecer nuestra democracia. Tu participación cuenta.`,
+                `¡Excelente ${name}! Tu registro en la UBCH "${ubch}" y comunidad "${community}" es un paso importante para fortalecer nuestra democracia. Tu participación cuenta.`,
                 `${name}, gracias por registrarte en "${ubch}". Tu compromiso con la comunidad "${community}" es fundamental para el futuro de nuestro país.`,
                 `¡Bienvenido ${name}! Tu registro en "${ubch}" demuestra tu compromiso con la participación ciudadana. Juntos construimos un mejor futuro.`
             ];
@@ -2679,7 +2392,6 @@ class VotingSystemFirebase extends VotingSystem {
         const tableData = filteredVotes.map(vote => [
             vote.name,
             vote.cedula,
-            vote.telefono || '',
             vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : 'N/A',
             vote.edad || 'N/A',
             vote.ubch,
@@ -2688,7 +2400,7 @@ class VotingSystemFirebase extends VotingSystem {
         ]);
 
         doc.autoTable({
-            head: [['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó']],
+            head: [['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó']],
             body: tableData,
             startY: filterInfo.hasFilters ? 65 : 50,
             styles: {
@@ -2753,11 +2465,10 @@ class VotingSystemFirebase extends VotingSystem {
 
     // Método para exportar registros específicos a CSV
     exportVotesToCSV(votesData, fileName) {
-        const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
+        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
         const rows = votesData.map(vote => [
             `"${(vote.name || '').replace(/"/g, '""')}"`,
             `"${(vote.cedula || '').replace(/"/g, '""')}"`,
-            `"${(vote.telefono || '').replace(/"/g, '""')}"`,
             `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
             `"${vote.edad || ''}"`,
             `"${(vote.ubch || '').replace(/"/g, '""')}"`,
@@ -2786,11 +2497,10 @@ class VotingSystemFirebase extends VotingSystem {
         const filteredVotes = this.getFilteredVotes();
         const filterInfo = this.getFilterInfo();
         
-        const headers = ['Nombre', 'Cédula', 'Teléfono', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
+        const headers = ['Nombre', 'Cédula', 'Sexo', 'Edad', 'CV', 'Comunidad', 'Votó'];
         const rows = filteredVotes.map(vote => [
             `"${(vote.name || '').replace(/"/g, '""')}"`,
             `"${(vote.cedula || '').replace(/"/g, '""')}"`,
-            `"${(vote.telefono || '').replace(/"/g, '""')}"`,
             `"${vote.sexo === 'M' ? 'Masculino' : vote.sexo === 'F' ? 'Femenino' : ''}"`,
             `"${vote.edad || ''}"`,
             `"${(vote.ubch || '').replace(/"/g, '""')}"`,
@@ -2834,7 +2544,7 @@ class VotingSystemFirebase extends VotingSystem {
             "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
             "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
             "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
-            "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGUE", "CONSOLACIÓN"],
+            "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGÜE", "CONSOLACIÓN"],
             "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
             "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
             "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
@@ -3033,49 +2743,6 @@ class VotingSystemFirebase extends VotingSystem {
                 this.exitProjectionMode();
             }
         });
-    }
-
-    // Función para verificar el estado del listener de sincronización
-    isSyncListenerActive() {
-        return this.unsubscribeListener && typeof this.unsubscribeListener === 'function';
-    }
-
-    // Función para reinicializar el listener de sincronización
-    async reinitializeSyncListener() {
-        console.log('🔄 Reinicializando listener de sincronización...');
-        
-        try {
-            // Limpiar listener anterior
-            if (this.unsubscribeListener && typeof this.unsubscribeListener === 'function') {
-                this.unsubscribeListener();
-                this.unsubscribeListener = null;
-            }
-            
-            // Esperar un momento antes de reconfigurar
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Reconfigurar listener
-            this.setupRealtimeListener();
-            
-            console.log('✅ Listener de sincronización reinicializado correctamente');
-            
-        } catch (error) {
-            console.error('❌ Error reinicializando listener:', error);
-        }
-    }
-
-    // Función para manejar errores de inicialización
-    handleInitError(error, context) {
-        console.error(`❌ Error en ${context}:`, error);
-        
-        // Mostrar mensaje al usuario
-        this.showMessage(`Error de inicialización: ${error.message}`, 'error', 'registration');
-        
-        // Intentar recuperación automática
-        setTimeout(() => {
-            console.log(`🔄 Intentando recuperación automática para ${context}...`);
-            this.init();
-        }, 5000);
     }
 }
 
@@ -3341,13 +3008,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 const username = (currentUser.username || '').trim().toLowerCase();
-
-// Verificar que Firebase esté disponible antes de usar votesCollection
-if (window.firebaseDB && window.firebaseDB.votesCollection) {
 window.firebaseDB.votesCollection.where('registeredBy', '==', username).get().then(snap => console.log('Registros:', snap.size));
-} else {
-    console.log('⚠️ Firebase no está listo aún, verificando registros más tarde...');
-}
 
 document.addEventListener('DOMContentLoaded', function() {
     const btnUpdateOld = document.getElementById('myrecords-update-old');

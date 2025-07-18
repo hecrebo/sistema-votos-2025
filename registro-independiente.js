@@ -1,4 +1,5 @@
-// --- REGISTRO CENTRO DE VOTACIÓN/COMUNIDAD AISLADO ---
+// Choices.js solo debe cargarse en la página de registro si se usa autocompletado avanzado. No cargarlo globalmente.
+// --- REGISTRO UBCH/COMUNIDAD AISLADO ---
 
 // Configuración estática (puedes cargarla dinámicamente si lo prefieres)
 const UBCH_TO_COMMUNITY = {
@@ -83,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ubch = document.getElementById('ubch-ind').value;
         const comunidad = document.getElementById('community-ind').value;
         if (!ubch || !comunidad) {
-            document.getElementById('msg-registro-independiente').textContent = 'Debes seleccionar Centro de Votación y comunidad.';
+            document.getElementById('msg-registro-independiente').textContent = 'Debes seleccionar UBCH y comunidad.';
             document.getElementById('msg-registro-independiente').style.color = 'red';
             return;
         }

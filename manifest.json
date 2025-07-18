@@ -3,28 +3,61 @@
  "short_name": "Votos2025",
  "description": "App para registro, control y sincronización de votos y UBCH en tiempo real.",
  "lang": "es-VE",
- "start_url": "./index.html?utm_source=homescreen",
- "scope": "./",
+ "start_url": "/",
+ "scope": "/",
  "display": "standalone",
  "orientation": "portrait-primary",
  "background_color": "#ffffff",
  "theme_color": "#667eea",
  "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
- "edge_side_panel": {
-   "preferred_width": 400
- },
- "launch_handler": {
-   "client_mode": "navigate-existing"
- },
+ "icons": [
+  {
+   "src": "/favicon.ico/icon-512x512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  },
+  {
+   "src": "/favicon.ico/android-icon-192x192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any maskable"
+  },
+  {
+   "src": "/favicon.ico/android-icon-144x144.png",
+   "sizes": "144x144",
+   "type": "image/png"
+  },
+  {
+   "src": "/favicon.ico/android-icon-96x96.png",
+   "sizes": "96x96",
+   "type": "image/png"
+  },
+  {
+   "src": "/favicon.ico/android-icon-72x72.png",
+   "sizes": "72x72",
+   "type": "image/png"
+  },
+  {
+   "src": "/favicon.ico/android-icon-48x48.png",
+   "sizes": "48x48",
+   "type": "image/png"
+  },
+  {
+   "src": "/favicon.ico/android-icon-36x36.png",
+   "sizes": "36x36",
+   "type": "image/png"
+  }
+ ],
  "shortcuts": [
    {
      "name": "Registrar Voto",
      "short_name": "Registrar",
      "description": "Registrar una nueva persona",
-     "url": "./index.html?page=registration",
+     "url": "/index.html?page=registration",
      "icons": [
        {
-         "src": "logo 2.png",
+         "src": "/favicon.ico/android-icon-96x96.png",
          "sizes": "96x96"
        }
      ]
@@ -33,10 +66,10 @@
      "name": "Confirmar Voto",
      "short_name": "Confirmar",
      "description": "Confirmar que una persona votó",
-     "url": "./index.html?page=check-in",
+     "url": "/index.html?page=check-in",
      "icons": [
        {
-         "src": "logo 2.png",
+         "src": "/favicon.ico/android-icon-96x96.png",
          "sizes": "96x96"
        }
      ]
@@ -45,70 +78,14 @@
      "name": "Estadísticas",
      "short_name": "Stats",
      "description": "Ver estadísticas detalladas",
-     "url": "./index.html?page=statistics",
+     "url": "/index.html?page=statistics",
      "icons": [
        {
-         "src": "logo 2.png",
+         "src": "/favicon.ico/android-icon-96x96.png",
          "sizes": "96x96"
        }
      ]
    }
- ],
- "icons": [
-  {
-   "src": "logo 2.png",
-   "sizes": "512x512",
-   "type": "image/png",
-   "purpose": "any"
-  },
-  {
-   "src": "logo 2.png",
-   "sizes": "512x512",
-   "type": "image/png",
-   "purpose": "maskable"
-  },
-  {
-   "src": "logo 2.png",
-   "sizes": "192x192",
-   "type": "image/png",
-   "purpose": "any"
-  },
-  {
-   "src": "logo 2.png",
-   "sizes": "192x192",
-   "type": "image/png",
-   "purpose": "maskable"
-  },
-  {
-   "src": "logo 2.png",
-   "sizes": "144x144",
-   "type": "image/png",
-   "purpose": "any"
-  },
-  {
-   "src": "logo 2.png",
-   "sizes": "96x96",
-   "type": "image/png",
-   "purpose": "any"
-  },
-  {
-   "src": "logo 2.png",
-   "sizes": "72x72",
-   "type": "image/png",
-   "purpose": "any"
-  },
-  {
-   "src": "logo 2.png",
-   "sizes": "48x48",
-   "type": "image/png",
-   "purpose": "any"
-  },
-  {
-   "src": "logo 2.png",
-   "sizes": "36x36",
-   "type": "image/png",
-   "purpose": "any"
-  }
  ],
  "screenshots": [
   {
@@ -124,17 +101,5 @@
    "description": "Dashboard de estadísticas."
   }
  ],
- "prefer_related_applications": false,
- "related_applications": [],
- "categories": ["productivity", "utilities", "government"],
- "handle_links": "preferred",
- "capture_links": "existing-client-navigate",
- "file_handlers": [
-   {
-     "action": "/index.html?import=csv",
-     "accept": {
-       "text/csv": [".csv"]
-     }
-   }
- ]
+ "categories": ["productivity", "utilities", "government"]
 } 

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Diagnóstico - Mis Registros</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        button { padding: 12px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        .result { margin: 15px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; }
+        .big-btn { font-size: 18px; padding: 15px 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test Diagnóstico - Mis Registros</h1>
+        <p>Esta página te ayudará a diagnosticar por qué no ves tus registros en "Mis Registros".</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="big-btn" onclick="ejecutarDiagnostico()">🚀 EJECUTAR DIAGNÓSTICO COMPLETO</button>
+        </div>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+            <button onclick="verificarUsuario()">👤 Verificar Usuario</button>
+            <button onclick="verificarFirebase()">📊 Verificar Firebase</button>
+            <button onclick="verificarLocales()">💾 Verificar Locales</button>
+            <button onclick="insertarPrueba()">🧪 Insertar Prueba</button>
+            <button onclick="limpiarTodo()">🧹 Limpiar Todo</button>
+        </div>
+        
+        <div id="resultados"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+        function mostrarResultado(titulo, contenido, tipo = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${tipo}`;
+            div.innerHTML = `<h3>${titulo}</h3><pre>${contenido}</pre>`;
+            document.getElementById('resultados').appendChild(div);
+        }
+
+        function limpiarResultados() {
+            document.getElementById('resultados').innerHTML = '';
+        }
+
+        function normalizarUsuario(username) {
+            return (username || '').trim().toLowerCase();
+        }
+
+        function verificarUsuario() {
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const username = normalizarUsuario(currentUser.username || '');
+                
+                mostrarResultado('👤 Usuario Actual', 
+                    `Usuario original: "${currentUser.username}"\n` +
+                    `Usuario normalizado: "${username}"\n` +
+                    `Rol: ${currentUser.rol || 'N/A'}\n` +
+                    `Tiempo de login: ${currentUser.loginTime || 'N/A'}`, 
+                    username ? 'success' : 'error');
+            } catch (error) {
+                mostrarResultado('❌ Error al verificar usuario', error.message, 'error');
+            }
+        }
+
+        async function verificarFirebase() {
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const username = normalizarUsuario(currentUser.username || '');
+                
+                if (!username) {
+                    mostrarResultado('❌ Error', 'No hay usuario activo', 'error');
+                    return;
+                }
+
+                if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+                    mostrarResultado('❌ Firebase', 'Firebase no está disponible', 'error');
+                    return;
+                }
+
+                // Consultar registros específicos del usuario
+                const userSnapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).get();
+                
+                // Consultar todos los registros para comparar
+                const allSnapshot = await window.firebaseDB.votesCollection.get();
+                const allRecords = [];
+                
+                allSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    allRecords.push({
+                        name: data.name,
+                        cedula: data.cedula,
+                        registeredBy: data.registeredBy,
+                        registeredByNormalized: normalizarUsuario(data.registeredBy || '')
+                    });
+                });
+
+                const userRecords = allRecords.filter(r => r.registeredByNormalized === username);
+
+                mostrarResultado('📊 Firebase', 
+                    `Total de registros: ${allRecords.length}\n` +
+                    `Registros del usuario "${username}" (consulta directa): ${userSnapshot.size}\n` +
+                    `Registros del usuario "${username}" (filtro manual): ${userRecords.length}\n\n` +
+                    `Primeros 5 registros con sus registeredBy:\n` +
+                    allRecords.slice(0, 5).map(r => 
+                        `- ${r.name} (${r.cedula}) -> registeredBy: "${r.registeredBy}" -> normalizado: "${r.registeredByNormalized}"`
+                    ).join('\n'),
+                    userRecords.length > 0 ? 'success' : 'error');
+
+            } catch (error) {
+                mostrarResultado('❌ Error al verificar Firebase', error.message, 'error');
+            }
+        }
+
+        function verificarLocales() {
+            try {
+                // Verificar misRegistrosLocales
+                const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+                
+                // Verificar cola offline
+                let colaLocal = [];
+                if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
+                    colaLocal = window.offlineQueueManager.obtenerColaLocal();
+                }
+
+                mostrarResultado('💾 Datos Locales', 
+                    `Registros locales: ${registrosLocales.length}\n` +
+                    `Cola offline: ${colaLocal.length}\n\n` +
+                    `Primeros 3 registros locales:\n` +
+                    registrosLocales.slice(0, 3).map(r => 
+                        `- ${r.nombre || 'N/A'} (${r.cedula || 'N/A'})`
+                    ).join('\n') + '\n\n' +
+                    `Primeros 3 de cola offline:\n` +
+                    colaLocal.slice(0, 3).map(r => 
+                        `- ${r.name || 'N/A'} (${r.cedula || 'N/A'}) -> registeredBy: "${r.registeredBy || 'N/A'}"`
+                    ).join('\n'),
+                    'info');
+
+            } catch (error) {
+                mostrarResultado('❌ Error al verificar datos locales', error.message, 'error');
+            }
+        }
+
+        function insertarPrueba() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const username = normalizarUsuario(currentUser.username || '');
+            
+            if (!username) {
+                mostrarResultado('❌ Error', 'No hay usuario activo', 'error');
+                return;
+            }
+
+            // Insertar registro de prueba en localStorage
+            const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
+            const timestamp = new Date().toLocaleString();
+            
+            registrosLocales.push({
+                nombre: `Prueba Test ${Date.now()}`,
+                cedula: `${Date.now()}`.slice(-8),
+                telefono: '04121234567',
+                sexo: 'M',
+                edad: 30,
+                ubch: 'UBCH TEST',
+                comunidad: 'Comunidad Test',
+                fecha: timestamp
+            });
+            
+            localStorage.setItem('misRegistrosLocales', JSON.stringify(registrosLocales));
+            
+            mostrarResultado('✅ Prueba Insertada', 
+                `Registro de prueba insertado en localStorage\n` +
+                `Total registros locales: ${registrosLocales.length}\n` +
+                `Timestamp: ${timestamp}`, 
+                'success');
+        }
+
+        function limpiarTodo() {
+            localStorage.removeItem('misRegistrosLocales');
+            mostrarResultado('🧹 Limpieza', 'Todos los registros locales han sido eliminados', 'info');
+        }
+
+        async function ejecutarDiagnostico() {
+            limpiarResultados();
+            verificarUsuario();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await verificarFirebase();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            verificarLocales();
+        }
+
+        // Inicializar cuando la página cargue
+        window.addEventListener('load', () => {
+            if (window.firebaseDB) {
+                mostrarResultado('✅ Firebase', 'Firebase inicializado correctamente', 'success');
+            } else {
+                mostrarResultado('❌ Firebase', 'Firebase no está disponible', 'error');
+            }
+        });
+    </script>
+</body>
+</html> 
