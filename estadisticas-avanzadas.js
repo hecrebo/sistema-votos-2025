@@ -7,61 +7,26 @@ class EstadisticasAvanzadas {
         this.charts = {};
         this.currentUser = this.getCurrentUser();
         this.projectionInterval = null;
-        this.isRendering = false;
-        this.isRenderingUBCHChart = false;
-        this.isRenderingCommunityChart = false;
-        this.isRenderingUBCHComparisonChart = false;
-        this.isRenderingCommunityComparisonChart = false;
         this.init();
     }
 
     async init() {
-        console.log('🚀 Iniciando EstadisticasAvanzadas...');
-        
-        // Limpiar cualquier gráfico existente al inicio
-        this.forceCleanAllCharts();
-        
-        // Establecer el día actual para el reinicio diario
-        localStorage.setItem('ultimoDiaReporte', new Date().toDateString());
-        
         await this.loadData();
-        
-        // Migrar votos existentes que tienen voteTimestamp pero no fechaConfirmacion
-        this.migrarVotosExistentes();
-        
         this.setupEventListeners();
-        // Configurar filtros después de cargar datos
-        this.setupDashboardFilters();
-        this.renderAllStatistics();
+        this.renderAllStatistics(); // Solo una vez aquí
         this.updateUserInfo();
+        this.setupDashboardFilters();
+        // Actualización automática cada 30 segundos, pero solo si no está ya en proceso
         if (!this.updateInterval) {
             this.updateInterval = setInterval(async () => {
                 if (this.isRendering) return;
                 this.isRendering = true;
-                
-                // Verificar si es un nuevo día
-                this.reiniciarTablaDiaria();
-                
-                // Guardar valores actuales de los filtros
-                const selCom = document.getElementById('filtro-comunidad');
-                const selCV = document.getElementById('filtro-cv');
-                const comunidadSeleccionada = selCom ? selCom.value : '';
-                const cvSeleccionado = selCV ? selCV.value : '';
-                
                 await this.loadData();
-                
-                // Restaurar valores de los filtros después de recargar datos
-                if (selCom && comunidadSeleccionada) {
-                    selCom.value = comunidadSeleccionada;
-                }
-                if (selCV && cvSeleccionado) {
-                    selCV.value = cvSeleccionado;
-                }
-                
                 this.renderAllStatistics();
                 this.isRendering = false;
             }, 30000);
         }
+        // Botón modo proyección
         document.getElementById('projection-mode-btn').onclick = () => this.enterProjectionMode();
         document.getElementById('exit-projection-btn').onclick = () => this.exitProjectionMode();
         document.addEventListener('keydown', (e) => {
@@ -89,60 +54,22 @@ class EstadisticasAvanzadas {
         try {
             console.log('🔄 Cargando datos de estadísticas avanzadas...');
             
-            // Cargar votos desde Firebase
+            // Cargar datos desde Firebase
             const db = firebase.firestore();
             const votesSnapshot = await db.collection('votes').get();
             this.votes = votesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log('📊 Votos cargados:', this.votes.length);
             
-            // --- CARGAR CONFIGURACIÓN UBCH DESDE FIREBASE (igual que script-firebase.js) ---
-            console.log('🔧 Cargando configuración UBCH desde Firebase...');
+            // Cargar configuración de UBCH
+            const ubchSnapshot = await db.collection('ubch_config').get();
+            this.ubchData = {};
+            ubchSnapshot.docs.forEach(doc => {
+                this.ubchData[doc.id] = doc.data();
+            });
             
-            // Intentar cargar desde ubchCollection/config (como en script-firebase.js)
-            let ubchConfig = null;
-            try {
-                const configDoc = await db.collection('ubchCollection').doc('config').get();
-                if (configDoc.exists && configDoc.data().mapping) {
-                    ubchConfig = configDoc.data().mapping;
-                    console.log('✅ Configuración UBCH cargada desde Firebase (ubchCollection/config):', Object.keys(ubchConfig).length, 'CV');
-                }
-            } catch (err) {
-                console.error('❌ Error cargando configuración desde ubchCollection/config:', err);
-            }
-            
-            // Si no se pudo cargar, intentar desde la variable global
-            if (!ubchConfig && window.ubchToCommunityMap && typeof window.ubchToCommunityMap === 'object') {
-                ubchConfig = window.ubchToCommunityMap;
-                console.log('✅ Configuración UBCH cargada desde variable global:', Object.keys(ubchConfig).length, 'CV');
-            }
-            
-            // Si aún no hay configuración, usar datos por defecto
-            if (!ubchConfig) {
-                console.log('⚠️ No se pudo cargar configuración UBCH, usando datos por defecto...');
-                // Aquí podrías agregar una configuración por defecto si es necesario
-                ubchConfig = {};
-            }
-            
-            this.ubchData = ubchConfig;
-            
-            // Contar comunidades totales (igual que en script-firebase.js)
-            const todasComunidades = new Set();
-            if (this.ubchData && typeof this.ubchData === 'object') {
-                Object.values(this.ubchData).forEach(comunidades => {
-                    if (Array.isArray(comunidades)) {
-                        comunidades.forEach(comunidad => todasComunidades.add(comunidad));
-                    }
-                });
-            }
-            
-            console.log('🔍 DEBUG - CV disponibles:', Object.keys(this.ubchData));
-            console.log('🔍 DEBUG - Comunidades totales:', todasComunidades.size);
-            console.log('🔍 DEBUG - Comunidades disponibles:', Array.from(todasComunidades).sort());
-            
-            this.populateSelectors();
-            console.log('✅ Datos cargados:', this.votes.length, 'votos,', Object.keys(this.ubchData).length, 'centros de votación,', todasComunidades.size, 'comunidades');
+            console.log('✅ Datos cargados:', this.votes.length, 'votos,', Object.keys(this.ubchData).length, 'centros de votación');
         } catch (error) {
             console.error('❌ Error cargando datos:', error);
+            // Cargar datos locales si Firebase falla
             this.loadLocalData();
         }
     }
@@ -154,11 +81,10 @@ class EstadisticasAvanzadas {
             this.votes = JSON.parse(localVotes);
         }
         
-        // Eliminar la carga local de ubch_config en loadLocalData()
-        // const localUBCH = localStorage.getItem('ubch_config');
-        // if (localUBCH) {
-        //     this.ubchData = JSON.parse(localUBCH);
-        // }
+        const localUBCH = localStorage.getItem('ubch_config');
+        if (localUBCH) {
+            this.ubchData = JSON.parse(localUBCH);
+        }
         
         console.log('✅ Datos locales cargados:', this.votes.length, 'votos');
     }
@@ -209,41 +135,8 @@ class EstadisticasAvanzadas {
     }
 
     renderAllStatistics() {
-        try {
-            // Reiniciar completamente Chart.js antes de renderizar
-            this.resetChartJS();
-            
         this.renderGeneralStatistics();
         this.renderDashboardAdvanced();
-        this.renderReportesHora();
-        } catch (error) {
-            console.error('❌ Error en renderAllStatistics:', error);
-        }
-    }
-    
-    // Método para reiniciar completamente Chart.js
-    resetChartJS() {
-        try {
-            // Limpiar todos los gráficos existentes
-            this.forceCleanAllCharts();
-            
-            // Limpiar el registro interno de Chart.js
-            this.clearChartRegistry();
-            
-            // Limpiar todos los canvas
-            const canvases = document.querySelectorAll('canvas');
-            canvases.forEach(canvas => {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            });
-            
-            // Resetear nuestro objeto de gráficos
-            this.charts = {};
-            
-            console.log('✅ Chart.js completamente reiniciado');
-        } catch (error) {
-            console.error('❌ Error reiniciando Chart.js:', error);
-        }
     }
 
     renderGeneralStatistics() {
@@ -469,9 +362,11 @@ class EstadisticasAvanzadas {
         // Obtener lista completa de comunidades
         let allCommunities = [];
         if (this.ubchData) {
-            // NUEVO: Recorrer el mapping actual (cada valor es un array de comunidades)
-            Object.values(this.ubchData).forEach(arr => {
-                if (Array.isArray(arr)) allCommunities.push(...arr);
+            // Si en la config de UBCH hay comunidades, úsalas
+            Object.values(this.ubchData).forEach(ubch => {
+                if (ubch.comunidades && Array.isArray(ubch.comunidades)) {
+                    allCommunities.push(...ubch.comunidades);
+                }
             });
         }
         // Agregar las que aparecen en votos
@@ -610,36 +505,18 @@ class EstadisticasAvanzadas {
     }
 
     renderUBCHChart() {
-        // Evitar renderizado múltiple simultáneo
-        if (this.isRenderingUBCHChart) return;
-        this.isRenderingUBCHChart = true;
-        
-        try {
-            const canvas = document.getElementById('ubch-chart');
-            if (!canvas) {
-                console.error('❌ Canvas ubch-chart no encontrado');
-                this.isRenderingUBCHChart = false;
-                return;
-            }
-            
-            const ctx = canvas.getContext('2d');
-            
+        const ctx = document.getElementById('ubch-chart').getContext('2d');
         // Destruir y limpiar el gráfico anterior si existe
         if (this.charts.ubch) {
             this.charts.ubch.destroy();
             this.charts.ubch = null;
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         }
-            
-            // Limpiar el canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
         const ubchStats = {};
         this.votes.filter(v => v.voted).forEach(vote => {
             ubchStats[vote.ubch] = (ubchStats[vote.ubch] || 0) + 1;
         });
         const sortedUBCH = Object.entries(ubchStats).sort(([,a], [,b]) => b - a);
-            
-            // Crear nuevo gráfico directamente
         this.charts.ubch = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -687,45 +564,21 @@ class EstadisticasAvanzadas {
                 }
             }
         });
-        } catch (error) {
-            console.error('❌ Error renderizando gráfico UBCH:', error);
-        } finally {
-            // Resetear bandera de renderizado
-            this.isRenderingUBCHChart = false;
-        }
     }
 
     renderCommunityChart() {
-        // Evitar renderizado múltiple simultáneo
-        if (this.isRenderingCommunityChart) return;
-        this.isRenderingCommunityChart = true;
-        
-        try {
-            const canvas = document.getElementById('community-chart');
-            if (!canvas) {
-                console.error('❌ Canvas community-chart no encontrado');
-                this.isRenderingCommunityChart = false;
-                return;
-            }
-            
-            const ctx = canvas.getContext('2d');
-            
+        const ctx = document.getElementById('community-chart').getContext('2d');
         // Destruir y limpiar el gráfico anterior si existe
         if (this.charts.community) {
             this.charts.community.destroy();
             this.charts.community = null;
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         }
-            
-            // Limpiar el canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
         const communityStats = {};
         this.votes.filter(v => v.voted).forEach(vote => {
             communityStats[vote.community] = (communityStats[vote.community] || 0) + 1;
         });
         const sortedCommunities = Object.entries(communityStats).sort(([,a], [,b]) => b - a);
-            
-            // Crear nuevo gráfico directamente
         this.charts.community = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -785,19 +638,9 @@ class EstadisticasAvanzadas {
                 }
             }
         });
-        } catch (error) {
-            console.error('❌ Error renderizando gráfico Community:', error);
-        } finally {
-            // Resetear bandera de renderizado
-            this.isRenderingCommunityChart = false;
-        }
     }
 
     renderUBCHComparisonChart() {
-        // Evitar renderizado múltiple simultáneo
-        if (this.isRenderingUBCHComparisonChart) return;
-        this.isRenderingUBCHComparisonChart = true;
-        
         const ctx = document.getElementById('ubch-comparison-chart').getContext('2d');
         
         const ubchData = [];
@@ -888,16 +731,9 @@ class EstadisticasAvanzadas {
                 }
             }
         });
-        
-        // Resetear bandera de renderizado
-        this.isRenderingUBCHComparisonChart = false;
     }
 
     renderCommunityComparisonChart() {
-        // Evitar renderizado múltiple simultáneo
-        if (this.isRenderingCommunityComparisonChart) return;
-        this.isRenderingCommunityComparisonChart = true;
-        
         const ctx = document.getElementById('community-comparison-chart').getContext('2d');
         
         const communityData = [];
@@ -1002,9 +838,6 @@ class EstadisticasAvanzadas {
                 }
             }
         });
-        
-        // Resetear bandera de renderizado
-        this.isRenderingCommunityComparisonChart = false;
     }
 
     async exportData(tab, format) {
@@ -1418,30 +1251,8 @@ class EstadisticasAvanzadas {
     }
 
     renderBarChart(canvasId, {labels, data, label, color}) {
-        try {
-            // Verificar que el canvas existe
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) {
-                console.error(`❌ Canvas ${canvasId} no encontrado`);
-                return;
-            }
-            
-            // Destruir gráfico existente si existe
-            if (this.charts[canvasId]) {
-                try {
-                    this.charts[canvasId].destroy();
-                } catch (e) {
-                    // Ignorar errores de gráficos ya destruidos
-                }
-                this.charts[canvasId] = null;
-            }
-            
-            const ctx = canvas.getContext('2d');
-            
-            // Limpiar el canvas antes de crear nuevo gráfico
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Crear nuevo gráfico directamente
+        if (this.charts[canvasId]) this.charts[canvasId].destroy();
+        const ctx = document.getElementById(canvasId).getContext('2d');
         this.charts[canvasId] = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -1459,36 +1270,11 @@ class EstadisticasAvanzadas {
                 scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
             }
         });
-        } catch (error) {
-            console.error(`❌ Error renderizando gráfico ${canvasId}:`, error);
-        }
     }
 
     renderLineChart(canvasId, {labels, data, label, color}) {
-        try {
-            // Verificar que el canvas existe
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) {
-                console.error(`❌ Canvas ${canvasId} no encontrado`);
-                return;
-            }
-            
-            // Destruir gráfico existente si existe
-            if (this.charts[canvasId]) {
-                try {
-                    this.charts[canvasId].destroy();
-                } catch (e) {
-                    // Ignorar errores de gráficos ya destruidos
-                }
-                this.charts[canvasId] = null;
-            }
-            
-            const ctx = canvas.getContext('2d');
-            
-            // Limpiar el canvas antes de crear nuevo gráfico
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Crear nuevo gráfico directamente
+        if (this.charts[canvasId]) this.charts[canvasId].destroy();
+        const ctx = document.getElementById(canvasId).getContext('2d');
         this.charts[canvasId] = new Chart(ctx, {
             type: 'line',
             data: {
@@ -1509,36 +1295,11 @@ class EstadisticasAvanzadas {
                 scales: { x: { ticks: { color: '#333' } }, y: { ticks: { color: '#333' } } }
             }
         });
-        } catch (error) {
-            console.error(`❌ Error renderizando gráfico ${canvasId}:`, error);
-        }
     }
 
     renderPieChart(canvasId, {labels, data, colors}) {
-        try {
-            // Verificar que el canvas existe
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) {
-                console.error(`❌ Canvas ${canvasId} no encontrado`);
-                return;
-            }
-            
-            // Destruir gráfico existente si existe
-            if (this.charts[canvasId]) {
-                try {
-                    this.charts[canvasId].destroy();
-                } catch (e) {
-                    // Ignorar errores de gráficos ya destruidos
-                }
-                this.charts[canvasId] = null;
-            }
-            
-            const ctx = canvas.getContext('2d');
-            
-            // Limpiar el canvas antes de crear nuevo gráfico
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Crear nuevo gráfico directamente
+        if (this.charts[canvasId]) this.charts[canvasId].destroy();
+        const ctx = document.getElementById(canvasId).getContext('2d');
         this.charts[canvasId] = new Chart(ctx, {
             type: 'pie',
             data: {
@@ -1553,9 +1314,6 @@ class EstadisticasAvanzadas {
                 plugins: { legend: { position: 'bottom', labels: { color: '#333' } } }
             }
         });
-        } catch (error) {
-            console.error(`❌ Error renderizando gráfico ${canvasId}:`, error);
-        }
     }
 
     enterProjectionMode() {
@@ -1571,6 +1329,56 @@ class EstadisticasAvanzadas {
         overlay.style.display = 'none';
         document.body.style.overflow = '';
         if (this.projectionInterval) clearInterval(this.projectionInterval);
+    }
+
+    setupDashboardFilters() {
+        // Esperar hasta que los selects existan en el DOM
+        const selCom = document.getElementById('filtro-comunidad');
+        const selUbch = document.getElementById('filtro-ubch');
+        if (!selCom || !selUbch) {
+            setTimeout(() => this.setupDashboardFilters(), 100);
+            return;
+        }
+        // Usar mapping de UBCH igual que en index
+        let mapping = (this.ubchData && this.ubchData.mapping) ? this.ubchData.mapping : (window.firebaseDB && window.firebaseDB.defaultUBCHConfig ? window.firebaseDB.defaultUBCHConfig : {});
+        // Llenar filtro de CV/UBCH
+        const ubchList = Object.keys(mapping).sort();
+        selUbch.innerHTML = '<option value="">Todos</option>' + ubchList.map(u => `<option value="${u}">${u}</option>`).join('');
+        // Llenar filtro de comunidad
+        const comunidadesSet = new Set();
+        Object.values(mapping).forEach(arr => arr.forEach(com => comunidadesSet.add(com)));
+        const comunidades = Array.from(comunidadesSet).sort();
+        selCom.innerHTML = '<option value="">Todas</option>' + comunidades.map(c => `<option value="${c}">${c}</option>`).join('');
+        // Lógica: solo uno activo a la vez
+        selCom.onchange = () => {
+            if (selCom.value) {
+                selUbch.value = '';
+                selUbch.disabled = true;
+            } else {
+                selUbch.disabled = false;
+            }
+            this.renderAllStatistics();
+        };
+        selUbch.onchange = () => {
+            if (selUbch.value) {
+                selCom.value = '';
+                selCom.disabled = true;
+            } else {
+                selCom.disabled = false;
+            }
+            this.renderAllStatistics();
+        };
+    }
+
+    getFilteredVotes() {
+        const selCom = document.getElementById('filtro-comunidad');
+        const selUbch = document.getElementById('filtro-ubch');
+        if (selCom && selCom.value) {
+            return this.votes.filter(v => v.community === selCom.value);
+        } else if (selUbch && selUbch.value) {
+            return this.votes.filter(v => v.ubch === selUbch.value);
+        }
+        return this.votes;
     }
 
     renderProjection() {
@@ -1597,1136 +1405,9 @@ class EstadisticasAvanzadas {
         const rankingList = document.getElementById('projection-ranking-list');
         rankingList.innerHTML = ranking.map(([com, count],i) => `<div class='projection-item'><span class='projection-item-name'>${i+1}. ${com}</span> <span class='projection-item-count'>${count}</span></div>`).join('');
     }
-
-    setupDashboardFilters() {
-        const selCom = document.getElementById('filtro-comunidad');
-        const selCV = document.getElementById('filtro-cv');
-        
-        // Guardar valores actuales antes de repoblar
-        const comunidadSeleccionada = selCom ? selCom.value : '';
-        const cvSeleccionado = selCV ? selCV.value : '';
-        
-        console.log('🔧 Configurando filtros...');
-        console.log('🔧 this.ubchData:', this.ubchData);
-        console.log('🔧 this.votes.length:', this.votes.length);
-        
-        // Poblar comunidad (TODAS las comunidades del mapping, igual que en script-firebase.js)
-        const todasLasComunidades = new Set();
-        
-        // Usar la misma lógica que script-firebase.js
-        if (this.ubchData && typeof this.ubchData === 'object') {
-            Object.values(this.ubchData).forEach(comunidades => {
-                if (Array.isArray(comunidades)) {
-                    comunidades.forEach(comunidad => todasLasComunidades.add(comunidad));
-                }
-            });
-        }
-        
-        console.log('🔧 Comunidades del mapping:', todasLasComunidades.size);
-        console.log('🔍 DEBUG: Comunidades encontradas:', Array.from(todasLasComunidades));
-        
-        // Llenar select de comunidades (igual que en script-firebase.js)
-        console.log(`🔄 Cargando ${todasLasComunidades.size} comunidades en el formulario...`);
-        console.log('📋 Lista completa de comunidades:', Array.from(todasLasComunidades).sort());
-        
-        const comunidadesOrdenadas = Array.from(todasLasComunidades).sort();
-        selCom.innerHTML = '<option value="">Todas</option>' + comunidadesOrdenadas.map(c => `<option value="${c}">${c}</option>`).join('');
-        console.log('🔧 Comunidades en selector:', comunidadesOrdenadas.length);
-        
-        // Poblar CV (TODOS los CV del mapping, igual que en script-firebase.js)
-        console.log(`🔄 Cargando ${Object.keys(this.ubchData).length} Centros de Votación en el formulario...`);
-        
-        const cvOrdenados = Object.keys(this.ubchData).sort();
-        selCV.innerHTML = '<option value="">Todos</option>' + cvOrdenados.map(cv => `<option value="${cv}">${cv}</option>`).join('');
-        console.log('🔧 CV en selector:', cvOrdenados.length);
-        
-        // Restaurar valores seleccionados si existían
-        if (comunidadSeleccionada && selCom) {
-            selCom.value = comunidadSeleccionada;
-        }
-        if (cvSeleccionado && selCV) {
-            selCV.value = cvSeleccionado;
-        }
-        
-        // Evento de cambio - AMBOS filtros siempre activos
-        selCom.onchange = () => {
-            console.log('🔧 Filtro comunidad cambiado a:', selCom.value);
-            this.renderAllStatistics();
-        };
-        selCV.onchange = () => {
-            console.log('🔧 Filtro CV cambiado a:', selCV.value);
-            this.renderAllStatistics();
-        };
-        
-        console.log('✅ Filtros configurados - Comunidades:', comunidadesOrdenadas.length, 'CV:', cvOrdenados.length);
-        console.log(`📊 Resumen: ${todasLasComunidades.size} comunidades, ${Object.keys(this.ubchData).length} centros de votación`);
-    }
-    
-    getFilteredVotes() {
-        const selCom = document.getElementById('filtro-comunidad');
-        const selCV = document.getElementById('filtro-cv');
-        let filtered = this.votes;
-        
-        // Aplicar filtro de comunidad si está seleccionado
-        if (selCom && selCom.value) {
-            filtered = filtered.filter(v => v.community === selCom.value);
-        }
-        
-        // Aplicar filtro de CV si está seleccionado
-        if (selCV && selCV.value) {
-            filtered = filtered.filter(v => v.ubch === selCV.value);
-        }
-        
-        return filtered;
-    }
-    populateSelectors() {
-        this.setupDashboardFilters();
-    }
-    
-    // Método para limpiar gráficos de manera rápida y eficiente
-    quickCleanCharts() {
-        try {
-            // Lista de todos los gráficos que vamos a renderizar
-            const chartsToClean = [
-                'ubch', 'community',
-                'dashboard-registros-mes-chart',
-                'dashboard-votos-comunidad-chart',
-                'dashboard-crecimiento-chart',
-                'dashboard-sexo-chart',
-                'dashboard-edad-chart',
-                'dashboard-flujo-horas-chart'
-            ];
-            
-            // Destruir solo los gráficos que necesitamos
-            chartsToClean.forEach(chartId => {
-                if (this.charts[chartId]) {
-                    try {
-                        this.charts[chartId].destroy();
-                    } catch (e) {
-                        // Ignorar errores de gráficos ya destruidos
-                    }
-                    this.charts[chartId] = null;
-                }
-            });
-            
-            console.log('✅ Limpieza rápida de gráficos completada');
-        } catch (error) {
-            console.error('❌ Error en limpieza rápida:', error);
-        }
-    }
-    
-    // Método para limpiar gráficos específicos que se van a renderizar
-    clearSpecificCharts() {
-        try {
-            // Gráficos principales que siempre se renderizan
-            const mainCharts = ['ubch', 'community'];
-            mainCharts.forEach(chartKey => {
-                if (this.charts[chartKey]) {
-                    this.charts[chartKey].destroy();
-                    this.charts[chartKey] = null;
-                }
-            });
-            
-            // Gráficos del dashboard que se renderizan en renderDashboardAdvanced
-            const dashboardCharts = [
-                'dashboard-registros-mes-chart',
-                'dashboard-votos-comunidad-chart',
-                'dashboard-crecimiento-chart',
-                'dashboard-sexo-chart',
-                'dashboard-edad-chart',
-                'dashboard-flujo-horas-chart'
-            ];
-            
-            dashboardCharts.forEach(chartId => {
-                if (this.charts[chartId]) {
-                    this.charts[chartId].destroy();
-                    this.charts[chartId] = null;
-                }
-            });
-            
-            console.log('✅ Gráficos específicos limpiados');
-        } catch (error) {
-            console.error('❌ Error limpiando gráficos específicos:', error);
-        }
-    }
-    
-    // Método para forzar la limpieza de todos los gráficos de Chart.js
-    forceCleanAllCharts() {
-        try {
-            // Limpiar todos los gráficos de Chart.js de manera más agresiva
-            if (typeof Chart !== 'undefined') {
-                // Destruir todas las instancias de Chart.js
-                if (Chart.instances) {
-                    Object.keys(Chart.instances).forEach(key => {
-                        try {
-                            Chart.instances[key].destroy();
-                        } catch (e) {
-                            // Ignorar errores de gráficos ya destruidos
-                        }
-                    });
-                }
-                
-                // Limpiar el registro de instancias
-                Chart.instances = {};
-                
-                // Forzar la limpieza del registro interno de Chart.js
-                if (Chart.helpers && Chart.helpers.each) {
-                    Chart.helpers.each(Chart.instances, (instance) => {
-                        try {
-                            instance.destroy();
-                        } catch (e) {
-                            // Ignorar errores
-                        }
-                    });
-                }
-                
-                // Limpiar completamente el registro interno de Chart.js
-                this.clearChartRegistry();
-            }
-            
-            // Limpiar nuestro objeto de gráficos
-            this.charts = {};
-            
-            // Limpiar todos los canvas
-            const canvases = document.querySelectorAll('canvas');
-            canvases.forEach(canvas => {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            });
-            
-            console.log('✅ Limpieza forzada de todos los gráficos completada');
-        } catch (error) {
-            console.error('❌ Error en limpieza forzada:', error);
-        }
-    }
-    
-    // Método para limpiar completamente el registro interno de Chart.js
-    clearChartRegistry() {
-        try {
-            if (typeof Chart !== 'undefined') {
-                // Limpiar el registro de instancias
-                Chart.instances = {};
-                
-                // Limpiar cualquier referencia interna
-                if (Chart.helpers && Chart.helpers.each) {
-                    Chart.helpers.each(Chart.instances, (instance) => {
-                        try {
-                            instance.destroy();
-                        } catch (e) {
-                            // Ignorar errores
-                        }
-                    });
-                }
-                
-                // Forzar la limpieza del registro
-                if (Chart.instances && typeof Chart.instances === 'object') {
-                    Object.keys(Chart.instances).forEach(key => {
-                        delete Chart.instances[key];
-                    });
-                }
-                
-                console.log('✅ Registro interno de Chart.js limpiado');
-            }
-        } catch (error) {
-            console.error('❌ Error limpiando registro de Chart.js:', error);
-        }
-    }
-    
-    // Método para limpiar todos los gráficos
-    destroyAllCharts() {
-        try {
-            // Destruir gráficos específicos que conocemos
-            const knownCharts = ['ubch', 'community', 'ubchComparison', 'communityComparison'];
-            knownCharts.forEach(chartKey => {
-                if (this.charts[chartKey]) {
-                    this.charts[chartKey].destroy();
-                    this.charts[chartKey] = null;
-                }
-            });
-            
-            // Destruir gráficos dinámicos del dashboard
-            const dashboardCharts = [
-                'dashboard-registros-mes-chart',
-                'dashboard-votos-comunidad-chart',
-                'dashboard-crecimiento-chart',
-                'dashboard-sexo-chart',
-                'dashboard-edad-chart',
-                'dashboard-flujo-horas-chart'
-            ];
-            
-            dashboardCharts.forEach(chartId => {
-                if (this.charts[chartId]) {
-                    this.charts[chartId].destroy();
-                    this.charts[chartId] = null;
-                }
-            });
-            
-            // Limpiar el objeto de gráficos
-            this.charts = {};
-            
-            // Forzar la limpieza de Chart.js
-            if (typeof Chart !== 'undefined') {
-                Chart.helpers.each(Chart.instances, (instance) => {
-                    instance.destroy();
-                });
-            }
-            
-            console.log('✅ Todos los gráficos destruidos');
-        } catch (error) {
-            console.error('❌ Error destruyendo gráficos:', error);
-        }
-    }
-
-    // ===== FUNCIONES PARA REPORTES POR HORA =====
-    
-    async renderReportesHora() {
-        try {
-            console.log('📊 Renderizando tabla de reportes por hora...');
-            
-            // DEBUG: Verificar datos de votos
-            this.debugVotosConfirmados();
-            
-            // Actualizar fecha en la tabla
-            this.actualizarFechaReporte();
-            
-            const tbody = document.getElementById('reportes-hora-tbody');
-            if (!tbody) {
-                console.warn('⚠️ No se encontró el tbody para reportes por hora');
-                return;
-            }
-
-            // Obtener todos los Centros de Votación del filtro (incluyendo los que no tienen votos)
-            const todosLosCV = this.obtenerTodosLosCV();
-            todosLosCV.sort();
-
-            // Limpiar tabla
-            tbody.innerHTML = '';
-
-            // Inicializar totales
-            const totales = {
-                '08:00': 0, '10:00': 0, '12:00': 0, '14:00': 0, 
-                '16:00': 0, '18:00': 0, '19:00': 0, '20:00': 0, '21:00': 0
-            };
-
-            // Procesar cada centro de votación (todos los del filtro)
-            todosLosCV.forEach((cv, index) => {
-                // Filtrar votos solo del día actual (usar fechaConfirmacion o voteTimestamp como respaldo)
-                const votosCV = this.votes.filter(vote => 
-                    vote.ubch === cv && 
-                    vote.voted && 
-                    this.esVotoDelDiaActual(vote.fechaConfirmacion || vote.voteTimestamp)
-                );
-                
-                // DEBUG: Mostrar votos encontrados para este CV
-                if (votosCV.length > 0) {
-                    console.log(`🔍 CV ${cv}: ${votosCV.length} votos confirmados hoy`);
-                    votosCV.forEach(voto => {
-                        console.log(`  - Voto ID: ${voto.id}, Fecha: ${voto.fechaConfirmacion}, Hora: ${new Date(voto.fechaConfirmacion).getHours()}:${new Date(voto.fechaConfirmacion).getMinutes()}`);
-                    });
-                }
-                
-                // Contar votos por hora
-                const votosPorHora = this.contarVotosPorHora(votosCV);
-                
-                // Crear fila
-                const row = document.createElement('tr');
-                row.style.backgroundColor = index % 2 === 0 ? '#f8f9fa' : '#ffffff';
-                
-                row.innerHTML = `
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold;">${index + 1}</td>
-                    <td style="padding: 8px; text-align: left; border: 1px solid #ddd; font-weight: 500;">${cv}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['08:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['10:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['12:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['14:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['16:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['18:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['19:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['20:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; font-size: 13px; color: #2c3e50;">${votosPorHora['21:00'] || 0}</td>
-                    <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; background: #e8f5e8; color: #2e7d32; font-size: 14px;">${Object.values(votosPorHora).reduce((sum, count) => sum + count, 0)}</td>
-                `;
-
-                tbody.appendChild(row);
-
-                // Sumar a totales
-                Object.keys(votosPorHora).forEach(hora => {
-                    totales[hora] += votosPorHora[hora] || 0;
-                });
-            });
-
-            // Actualizar totales en el pie de tabla
-            this.actualizarTotalesReporte(totales);
-
-            console.log('✅ Tabla de reportes por hora renderizada con todos los CV del filtro');
-        } catch (error) {
-            console.error('❌ Error renderizando reportes por hora:', error);
-        }
-    }
-
-    // Función para obtener todos los Centros de Votación del filtro
-    obtenerTodosLosCV() {
-        // Verificar si hay filtro de CV aplicado
-        if (typeof obtenerCVFiltrados === 'function') {
-            const cvFiltrados = obtenerCVFiltrados();
-            console.log('📊 CV filtrados para tabla de reportes:', cvFiltrados.length, 'centros de votación');
-            return cvFiltrados;
-        }
-        
-        // Usar los mismos CV que se cargan en el filtro
-        if (this.ubchData && typeof this.ubchData === 'object') {
-            const cvOrdenados = Object.keys(this.ubchData).sort();
-            console.log('📊 CV para tabla de reportes:', cvOrdenados.length, 'centros de votación');
-            return cvOrdenados;
-        } else {
-            console.warn('⚠️ No hay datos de CV disponibles, usando lista por defecto');
-            // Lista de respaldo si no hay datos cargados
-            return [
-                'CV 01 - Escuela Básica Nacional "Simón Bolívar"',
-                'CV 02 - Escuela Básica Nacional "Rómulo Gallegos"',
-                'CV 03 - Escuela Básica Nacional "Andrés Bello"',
-                'CV 04 - Escuela Básica Nacional "Juan Vicente González"',
-                'CV 05 - Escuela Básica Nacional "Rafael Urdaneta"',
-                'CV 06 - Escuela Básica Nacional "Antonio José de Sucre"',
-                'CV 07 - Escuela Básica Nacional "José Félix Ribas"',
-                'CV 08 - Escuela Básica Nacional "José Antonio Páez"',
-                'CV 09 - Escuela Básica Nacional "Francisco de Miranda"',
-                'CV 10 - Escuela Básica Nacional "José Gregorio Monagas"',
-                'CV 11 - Escuela Básica Nacional "Manuel Piar"',
-                'CV 12 - Escuela Básica Nacional "José Tadeo Monagas"',
-                'CV 13 - Escuela Básica Nacional "Ezequiel Zamora"',
-                'CV 14 - Escuela Básica Nacional "Juan Crisóstomo Falcón"',
-                'CV 15 - Escuela Básica Nacional "José María Vargas"',
-                'CV 16 - Escuela Básica Nacional "Carlos Soublette"',
-                'CV 17 - Escuela Básica Nacional "José Laurencio Silva"',
-                'CV 18 - Escuela Básica Nacional "Tomás Lander"',
-                'CV 19 - Escuela Básica Nacional "José Félix Blanco"'
-            ];
-        }
-    }
-
-    // Función para verificar si un voto es del día actual
-    esVotoDelDiaActual(fechaConfirmacion) {
-        if (!fechaConfirmacion) return false;
-        
-        try {
-            const fechaVoto = new Date(fechaConfirmacion);
-            const hoy = new Date();
-            
-            // Verificar que la fecha sea válida
-            if (isNaN(fechaVoto.getTime())) {
-                console.warn('⚠️ Fecha inválida:', fechaConfirmacion);
-                return false;
-            }
-            
-            // Comparar solo fecha (sin hora)
-            const fechaVotoDate = fechaVoto.toDateString();
-            const hoyDate = hoy.toDateString();
-            
-            return fechaVotoDate === hoyDate;
-        } catch (error) {
-            console.error('❌ Error verificando fecha del voto:', error, 'Fecha:', fechaConfirmacion);
-            return false;
-        }
-    }
-
-    // Función para verificar si es un nuevo día
-    esNuevoDia() {
-        const hoy = new Date().toDateString();
-        const ultimoDia = localStorage.getItem('ultimoDiaReporte');
-        
-        if (ultimoDia !== hoy) {
-            localStorage.setItem('ultimoDiaReporte', hoy);
-            return true;
-        }
-        return false;
-    }
-
-    // Función para reiniciar tabla al inicio del día
-    reiniciarTablaDiaria() {
-        if (this.esNuevoDia()) {
-            console.log('🔄 Nuevo día detectado, reiniciando tabla de reportes...');
-            this.renderReportesHora();
-        }
-    }
-
-    // Función para actualizar la fecha en la tabla
-    actualizarFechaReporte() {
-        const fechaElement = document.getElementById('fecha-actual-reporte');
-        if (fechaElement) {
-            const fechaActual = new Date().toLocaleDateString('es-VE', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            fechaElement.textContent = fechaActual;
-        }
-    }
-
-    contarVotosPorHora(votos) {
-        const votosPorHora = {
-            '08:00': 0, '10:00': 0, '12:00': 0, '14:00': 0, 
-            '16:00': 0, '18:00': 0, '19:00': 0, '20:00': 0, '21:00': 0
-        };
-
-        votos.forEach(voto => {
-            // Usar fechaConfirmacion o voteTimestamp como respaldo
-            const fechaConfirmacion = voto.fechaConfirmacion || voto.voteTimestamp;
-            
-            if (fechaConfirmacion) {
-                const fecha = new Date(fechaConfirmacion);
-                const hora = fecha.getHours();
-                
-                // Mapear horas a franjas horarias
-                if (hora >= 8 && hora < 10) votosPorHora['08:00']++;
-                else if (hora >= 10 && hora < 12) votosPorHora['10:00']++;
-                else if (hora >= 12 && hora < 14) votosPorHora['12:00']++;
-                else if (hora >= 14 && hora < 16) votosPorHora['14:00']++;
-                else if (hora >= 16 && hora < 18) votosPorHora['16:00']++;
-                else if (hora >= 18 && hora < 19) votosPorHora['18:00']++;
-                else if (hora >= 19 && hora < 20) votosPorHora['19:00']++;
-                else if (hora >= 20 && hora < 21) votosPorHora['20:00']++;
-                else if (hora >= 21 && hora < 22) votosPorHora['21:00']++;
-            }
-        });
-
-        return votosPorHora;
-    }
-
-    actualizarTotalesReporte(totales) {
-        document.getElementById('total-08am').textContent = totales['08:00'] || 0;
-        document.getElementById('total-10am').textContent = totales['10:00'] || 0;
-        document.getElementById('total-12pm').textContent = totales['12:00'] || 0;
-        document.getElementById('total-02pm').textContent = totales['14:00'] || 0;
-        document.getElementById('total-04pm').textContent = totales['16:00'] || 0;
-        document.getElementById('total-06pm').textContent = totales['18:00'] || 0;
-        document.getElementById('total-07pm').textContent = totales['19:00'] || 0;
-        document.getElementById('total-08pm').textContent = totales['20:00'] || 0;
-        document.getElementById('total-09pm').textContent = totales['21:00'] || 0;
-        
-        const totalGeneral = Object.values(totales).reduce((sum, count) => sum + count, 0);
-        document.getElementById('total-general').textContent = totalGeneral;
-    }
-
-    // Función para migrar votos existentes que tienen voteTimestamp pero no fechaConfirmacion
-    migrarVotosExistentes() {
-        console.log('🔄 Migrando votos existentes...');
-        
-        let migrados = 0;
-        this.votes.forEach(vote => {
-            if (vote.voted && vote.voteTimestamp && !vote.fechaConfirmacion) {
-                vote.fechaConfirmacion = vote.voteTimestamp;
-                migrados++;
-            }
-        });
-        
-        if (migrados > 0) {
-            console.log(`✅ ${migrados} votos migrados exitosamente`);
-            // Guardar cambios en localStorage como respaldo
-            localStorage.setItem('votes', JSON.stringify(this.votes));
-        } else {
-            console.log('ℹ️ No hay votos que necesiten migración');
-        }
-        
-        return migrados;
-    }
-
-    // Función de debugging para diagnosticar problemas con votos confirmados
-    debugVotosConfirmados() {
-        console.log('🔍 DEBUG: Analizando votos confirmados...');
-        console.log(`📊 Total de votos cargados: ${this.votes.length}`);
-        
-        // Contar votos confirmados
-        const votosConfirmados = this.votes.filter(vote => vote.voted);
-        console.log(`✅ Votos confirmados (vote.voted = true): ${votosConfirmados.length}`);
-        
-        // Verificar campo fechaConfirmacion
-        const votosConFecha = this.votes.filter(vote => vote.fechaConfirmacion);
-        console.log(`📅 Votos con fechaConfirmacion: ${votosConFecha.length}`);
-        
-        // Verificar campo voteTimestamp como respaldo
-        const votosConTimestamp = this.votes.filter(vote => vote.voteTimestamp);
-        console.log(`⏰ Votos con voteTimestamp: ${votosConTimestamp.length}`);
-        
-        // Verificar votos del día actual usando fechaConfirmacion
-        const hoy = new Date();
-        console.log(`📅 Fecha actual: ${hoy.toLocaleDateString('es-VE')} ${hoy.toLocaleTimeString('es-VE')}`);
-        
-        const votosHoy = this.votes.filter(vote => 
-            vote.voted && 
-            vote.fechaConfirmacion && 
-            this.esVotoDelDiaActual(vote.fechaConfirmacion)
-        );
-        console.log(`🎯 Votos confirmados hoy (fechaConfirmacion): ${votosHoy.length}`);
-        
-        // Verificar votos del día actual usando voteTimestamp como respaldo
-        const votosHoyTimestamp = this.votes.filter(vote => 
-            vote.voted && 
-            vote.voteTimestamp && 
-            this.esVotoDelDiaActual(vote.voteTimestamp)
-        );
-        console.log(`🎯 Votos confirmados hoy (voteTimestamp): ${votosHoyTimestamp.length}`);
-        
-        // Mostrar algunos ejemplos de votos
-        if (votosHoy.length > 0) {
-            console.log('📋 Ejemplos de votos confirmados hoy (fechaConfirmacion):');
-            votosHoy.slice(0, 5).forEach((voto, index) => {
-                const fecha = new Date(voto.fechaConfirmacion);
-                console.log(`  ${index + 1}. ID: ${voto.id}, CV: ${voto.ubch}, Fecha: ${fecha.toLocaleString('es-VE')}, Hora: ${fecha.getHours()}:${fecha.getMinutes()}`);
-            });
-        } else if (votosHoyTimestamp.length > 0) {
-            console.log('📋 Ejemplos de votos confirmados hoy (voteTimestamp):');
-            votosHoyTimestamp.slice(0, 5).forEach((voto, index) => {
-                const fecha = new Date(voto.voteTimestamp);
-                console.log(`  ${index + 1}. ID: ${voto.id}, CV: ${voto.ubch}, Fecha: ${fecha.toLocaleString('es-VE')}, Hora: ${fecha.getHours()}:${fecha.getMinutes()}`);
-            });
-        } else {
-            console.log('⚠️ No se encontraron votos confirmados para hoy');
-            
-            // Mostrar algunos votos confirmados recientes para debugging
-            const votosConfirmadosRecientes = this.votes
-                .filter(vote => vote.voted && (vote.fechaConfirmacion || vote.voteTimestamp))
-                .sort((a, b) => {
-                    const fechaA = new Date(a.fechaConfirmacion || a.voteTimestamp);
-                    const fechaB = new Date(b.fechaConfirmacion || b.voteTimestamp);
-                    return fechaB - fechaA;
-                })
-                .slice(0, 5);
-            
-            if (votosConfirmadosRecientes.length > 0) {
-                console.log('📋 Votos confirmados más recientes:');
-                votosConfirmadosRecientes.forEach((voto, index) => {
-                    const fecha = new Date(voto.fechaConfirmacion || vote.voteTimestamp);
-                    console.log(`  ${index + 1}. ID: ${voto.id}, CV: ${voto.ubch}, Fecha: ${fecha.toLocaleString('es-VE')}, Campo usado: ${voto.fechaConfirmacion ? 'fechaConfirmacion' : 'voteTimestamp'}`);
-                });
-            }
-        }
-        
-        // Verificar estructura de datos
-        if (this.votes.length > 0) {
-            const primerVoto = this.votes[0];
-            console.log('🔍 Estructura del primer voto:', Object.keys(primerVoto));
-            console.log('📋 Campos relevantes del primer voto:', {
-                id: primerVoto.id,
-                ubch: primerVoto.ubch,
-                voted: primerVoto.voted,
-                fechaConfirmacion: primerVoto.fechaConfirmacion,
-                voteTimestamp: primerVoto.voteTimestamp,
-                fechaConfirmacionTipo: typeof primerVoto.fechaConfirmacion,
-                voteTimestampTipo: typeof primerVoto.voteTimestamp
-            });
-        }
-    }
-
-    async exportarReporteHora() {
-        try {
-            console.log('📊 Exportando reporte por hora a Excel y PDF...');
-            
-            // Obtener todos los Centros de Votación del filtro
-            const todosLosCV = this.obtenerTodosLosCV();
-            todosLosCV.sort();
-
-            // Crear datos para Excel
-            const excelData = [
-                ['N°', 'Centro de Votación', 'Reporte 08:00 AM', 'Reporte 10:00 AM', 'Reporte 12:00 M', 
-                 'Reporte 02:00 PM', 'Reporte 04:00 PM', 'Reporte 06:00 PM', 'Reporte 07:00 PM', 
-                 'Reporte 08:00 PM', 'Reporte 09:00 PM', 'TOTAL']
-            ];
-
-            const totales = {
-                '08:00': 0, '10:00': 0, '12:00': 0, '14:00': 0, 
-                '16:00': 0, '18:00': 0, '19:00': 0, '20:00': 0, '21:00': 0
-            };
-
-            // Agregar datos de cada CV (todos los 19)
-            todosLosCV.forEach((cv, index) => {
-                // Filtrar votos solo del día actual (usar fechaConfirmacion o voteTimestamp como respaldo)
-                const votosCV = this.votes.filter(vote => 
-                    vote.ubch === cv && 
-                    vote.voted && 
-                    this.esVotoDelDiaActual(vote.fechaConfirmacion || vote.voteTimestamp)
-                );
-                
-                const votosPorHora = this.contarVotosPorHora(votosCV);
-                const totalCV = Object.values(votosPorHora).reduce((sum, count) => sum + count, 0);
-
-                excelData.push([
-                    index + 1,
-                    cv,
-                    votosPorHora['08:00'] || 0,
-                    votosPorHora['10:00'] || 0,
-                    votosPorHora['12:00'] || 0,
-                    votosPorHora['14:00'] || 0,
-                    votosPorHora['16:00'] || 0,
-                    votosPorHora['18:00'] || 0,
-                    votosPorHora['19:00'] || 0,
-                    votosPorHora['20:00'] || 0,
-                    votosPorHora['21:00'] || 0,
-                    totalCV
-                ]);
-
-                // Sumar a totales
-                Object.keys(votosPorHora).forEach(hora => {
-                    totales[hora] += votosPorHora[hora] || 0;
-                });
-            });
-
-            // Agregar fila de totales
-            const totalGeneral = Object.values(totales).reduce((sum, count) => sum + count, 0);
-            excelData.push([
-                '-',
-                'TOTALES',
-                totales['08:00'] || 0,
-                totales['10:00'] || 0,
-                totales['12:00'] || 0,
-                totales['14:00'] || 0,
-                totales['16:00'] || 0,
-                totales['18:00'] || 0,
-                totales['19:00'] || 0,
-                totales['20:00'] || 0,
-                totales['21:00'] || 0,
-                totalGeneral
-            ]);
-
-            // Generar Excel usando SheetJS
-            await this.generarExcelReporte(excelData);
-            
-            // Generar PDF
-            await this.generarPDFReporte(todosLosCV, totales, totalGeneral);
-
-            console.log('✅ Reporte por hora exportado exitosamente como Excel y PDF');
-            alert('✅ Reporte por hora exportado exitosamente como Excel y PDF');
-        } catch (error) {
-            console.error('❌ Error exportando reporte por hora:', error);
-            alert('❌ Error exportando reporte por hora');
-        }
-    }
-
-    // Función para generar Excel
-    async generarExcelReporte(excelData) {
-        try {
-            // Verificar si SheetJS está disponible
-            if (typeof XLSX === 'undefined') {
-                console.warn('⚠️ SheetJS no está disponible, generando CSV como respaldo');
-                this.generarCSVRespaldo(excelData);
-                return;
-            }
-
-            // Crear workbook
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(excelData);
-
-            // Aplicar estilos y formato
-            ws['!cols'] = [
-                { width: 5 },   // N°
-                { width: 50 },  // Centro de Votación
-                { width: 15 },  // 08:00 AM
-                { width: 15 },  // 10:00 AM
-                { width: 15 },  // 12:00 M
-                { width: 15 },  // 02:00 PM
-                { width: 15 },  // 04:00 PM
-                { width: 15 },  // 06:00 PM
-                { width: 15 },  // 07:00 PM
-                { width: 15 },  // 08:00 PM
-                { width: 15 },  // 09:00 PM
-                { width: 15 }   // TOTAL
-            ];
-
-            // Agregar hoja al workbook
-            XLSX.utils.book_append_sheet(wb, ws, 'Reporte por Hora');
-
-            // Generar archivo
-            const fecha = new Date().toISOString().split('T')[0];
-            XLSX.writeFile(wb, `reporte_por_hora_${fecha}.xlsx`);
-
-            console.log('✅ Archivo Excel generado exitosamente');
-        } catch (error) {
-            console.error('❌ Error generando Excel:', error);
-            this.generarCSVRespaldo(excelData);
-        }
-    }
-
-    // Función de respaldo para generar CSV
-    generarCSVRespaldo(excelData) {
-        const csvContent = excelData.map(row => 
-            row.map(cell => `"${cell}"`).join(',')
-        ).join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `reporte_por_hora_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    // Función para generar PDF
-    async generarPDFReporte(todosLosCV, totales, totalGeneral) {
-        try {
-            // Verificar si jsPDF está disponible
-            if (typeof window.jspdf === 'undefined') {
-                console.warn('⚠️ jsPDF no está disponible');
-                return;
-            }
-
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('l', 'mm', 'a4'); // Orientación horizontal para mejor ajuste
-
-            const fechaActual = new Date().toLocaleDateString('es-VE', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-
-            // Configurar fuente
-            pdf.setFont('helvetica');
-            pdf.setFontSize(16);
-
-            // Título
-            pdf.text('📊 Reporte de Confirmación de Votos por Centro de Votación y Hora', 20, 20);
-            pdf.setFontSize(12);
-            pdf.text(`📅 Fecha: ${fechaActual}`, 20, 30);
-
-            // Crear tabla para PDF
-            const headers = ['N°', 'Centro de Votación', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '19:00', '20:00', '21:00', 'TOTAL'];
-            
-            const tableData = [];
-            
-            // Agregar datos de cada CV
-            todosLosCV.forEach((cv, index) => {
-                const votosCV = this.votes.filter(vote => 
-                    vote.ubch === cv && 
-                    vote.voted && 
-                    this.esVotoDelDiaActual(vote.fechaConfirmacion)
-                );
-                
-                const votosPorHora = this.contarVotosPorHora(votosCV);
-                const totalCV = Object.values(votosPorHora).reduce((sum, count) => sum + count, 0);
-
-                tableData.push([
-                    index + 1,
-                    cv,
-                    votosPorHora['08:00'] || 0,
-                    votosPorHora['10:00'] || 0,
-                    votosPorHora['12:00'] || 0,
-                    votosPorHora['14:00'] || 0,
-                    votosPorHora['16:00'] || 0,
-                    votosPorHora['18:00'] || 0,
-                    votosPorHora['19:00'] || 0,
-                    votosPorHora['20:00'] || 0,
-                    votosPorHora['21:00'] || 0,
-                    totalCV
-                ]);
-            });
-
-            // Agregar fila de totales
-            tableData.push([
-                '-',
-                'TOTALES',
-                totales['08:00'] || 0,
-                totales['10:00'] || 0,
-                totales['12:00'] || 0,
-                totales['14:00'] || 0,
-                totales['16:00'] || 0,
-                totales['18:00'] || 0,
-                totales['19:00'] || 0,
-                totales['20:00'] || 0,
-                totales['21:00'] || 0,
-                totalGeneral
-            ]);
-
-            // Generar tabla usando autoTable
-            pdf.autoTable({
-                head: [headers],
-                body: tableData,
-                startY: 40,
-                styles: {
-                    fontSize: 8,
-                    cellPadding: 2
-                },
-                headStyles: {
-                    fillColor: [102, 126, 234],
-                    textColor: 255
-                },
-                alternateRowStyles: {
-                    fillColor: [248, 249, 250]
-                },
-                columnStyles: {
-                    0: { cellWidth: 10 },  // N°
-                    1: { cellWidth: 60 },  // Centro de Votación
-                    11: { fillColor: [232, 245, 232] } // TOTAL
-                }
-            });
-
-            // Agregar información adicional
-            const finalY = pdf.lastAutoTable.finalY + 10;
-            pdf.setFontSize(10);
-            pdf.text('📊 Reporte generado automáticamente por el Sistema de Registro de Votos 2025', 20, finalY);
-            pdf.text('🔄 La tabla se reinicia automáticamente cada día a las 00:00 horas', 20, finalY + 8);
-
-            // Guardar PDF
-            const fecha = new Date().toISOString().split('T')[0];
-            pdf.save(`reporte_por_hora_${fecha}.pdf`);
-
-            console.log('✅ Archivo PDF generado exitosamente');
-        } catch (error) {
-            console.error('❌ Error generando PDF:', error);
-        }
-    }
-
-    async actualizarReporteHora() {
-        try {
-            console.log('🔄 Actualizando reporte por hora...');
-            await this.loadData();
-            await this.renderReportesHora();
-            console.log('✅ Reporte por hora actualizado');
-            alert('✅ Reporte por hora actualizado');
-        } catch (error) {
-            console.error('❌ Error actualizando reporte por hora:', error);
-            alert('❌ Error actualizando reporte por hora');
-        }
-    }
 }
-
-// Funciones globales para los botones
-window.exportarReporteHora = function() {
-    if (window.estadisticasAvanzadas) {
-        window.estadisticasAvanzadas.exportarReporteHora();
-    }
-};
-
-window.actualizarReporteHora = function() {
-    if (window.estadisticasAvanzadas) {
-        window.estadisticasAvanzadas.actualizarReporteHora();
-    }
-};
 
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     new EstadisticasAvanzadas();
 }); 
-
-// Función para manejar el acordeón de la tabla de reportes
-function toggleAccordion() {
-    const content = document.getElementById('accordion-content');
-    const icon = document.getElementById('accordion-icon');
-    
-    if (content.style.display === 'none' || content.style.display === '') {
-        // Abrir acordeón
-        content.style.display = 'block';
-        content.style.animation = 'slideDown 0.3s ease-out';
-        icon.classList.add('rotated');
-        
-        // Cargar los filtros de CV cuando se abre el acordeón
-        setTimeout(() => {
-            cargarFiltrosCV();
-        }, 100);
-    } else {
-        // Cerrar acordeón
-        content.style.animation = 'slideUp 0.3s ease-out';
-        icon.classList.remove('rotated');
-        
-        // Esperar a que termine la animación antes de ocultar
-        setTimeout(() => {
-            content.style.display = 'none';
-        }, 300);
-    }
-}
-
-// Inicializar el acordeón cuando se carga la página
-document.addEventListener('DOMContentLoaded', function() {
-    // El acordeón comienza cerrado por defecto
-    const content = document.getElementById('accordion-content');
-    const icon = document.getElementById('accordion-icon');
-    
-    if (content && icon) {
-        content.style.display = 'none';
-        icon.classList.remove('rotated');
-    }
-    
-    // Inicializar filtros de CV cuando los datos estén disponibles
-    setTimeout(() => {
-        if (window.estadisticasAvanzadas && window.estadisticasAvanzadas.ubchData) {
-            cargarFiltrosCV();
-        }
-    }, 2000);
-}); 
-
-// Variables globales para el filtro de CV
-let centrosVotacionSeleccionados = new Set();
-let todosLosCentrosVotacion = [];
-
-// Función para cargar los checkboxes de centros de votación
-function cargarFiltrosCV() {
-    const container = document.getElementById('cv-filtros-container');
-    if (!container) return;
-    
-    // Obtener todos los centros de votación disponibles
-    if (window.estadisticasAvanzadas && window.estadisticasAvanzadas.ubchData) {
-        todosLosCentrosVotacion = Object.keys(window.estadisticasAvanzadas.ubchData).sort();
-    } else {
-        // Lista de respaldo
-        todosLosCentrosVotacion = [
-            'CV 01 - Escuela Básica Nacional "Simón Bolívar"',
-            'CV 02 - Escuela Básica Nacional "Rómulo Gallegos"',
-            'CV 03 - Escuela Básica Nacional "Andrés Bello"',
-            'CV 04 - Escuela Básica Nacional "Juan Vicente González"',
-            'CV 05 - Escuela Básica Nacional "Rafael Urdaneta"',
-            'CV 06 - Escuela Básica Nacional "Antonio José de Sucre"',
-            'CV 07 - Escuela Básica Nacional "José Félix Ribas"',
-            'CV 08 - Escuela Básica Nacional "José Antonio Páez"',
-            'CV 09 - Escuela Básica Nacional "Francisco de Miranda"',
-            'CV 10 - Escuela Básica Nacional "José Gregorio Monagas"',
-            'CV 11 - Escuela Básica Nacional "Manuel Piar"',
-            'CV 12 - Escuela Básica Nacional "José Tadeo Monagas"',
-            'CV 13 - Escuela Básica Nacional "Ezequiel Zamora"',
-            'CV 14 - Escuela Básica Nacional "Juan Crisóstomo Falcón"',
-            'CV 15 - Escuela Básica Nacional "José María Vargas"',
-            'CV 16 - Escuela Básica Nacional "Carlos Soublette"',
-            'CV 17 - Escuela Básica Nacional "José Laurencio Silva"',
-            'CV 18 - Escuela Básica Nacional "Tomás Lander"',
-            'CV 19 - Escuela Básica Nacional "José Félix Blanco"'
-        ];
-    }
-    
-    // Limpiar contenedor
-    container.innerHTML = '';
-    
-    // Crear checkboxes para cada centro de votación de forma más compacta
-    todosLosCentrosVotacion.forEach(cv => {
-        const checkboxContainer = document.createElement('div');
-        checkboxContainer.className = 'cv-checkbox-container';
-        checkboxContainer.onclick = () => toggleCVSelection(cv, checkboxContainer);
-        
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = `cv-checkbox-${cv.replace(/[^a-zA-Z0-9]/g, '-')}`;
-        checkbox.checked = centrosVotacionSeleccionados.has(cv);
-        
-        const label = document.createElement('label');
-        label.className = 'cv-checkbox-label';
-        label.htmlFor = checkbox.id;
-        
-        // Acortar el nombre del CV para mejor visualización
-        let cvCorto = cv;
-        if (cv.includes(' - ')) {
-            const partes = cv.split(' - ');
-            if (partes.length >= 2) {
-                cvCorto = partes[0] + ' - ' + partes[1].substring(0, 25) + (partes[1].length > 25 ? '...' : '');
-            }
-        }
-        label.textContent = cvCorto;
-        label.title = cv; // Tooltip con el nombre completo
-        
-        checkboxContainer.appendChild(checkbox);
-        checkboxContainer.appendChild(label);
-        
-        // Aplicar estilo si está seleccionado
-        if (centrosVotacionSeleccionados.has(cv)) {
-            checkboxContainer.classList.add('selected');
-        }
-        
-        container.appendChild(checkboxContainer);
-    });
-    
-    console.log('✅ Filtros de CV cargados:', todosLosCentrosVotacion.length, 'centros de votación');
-    actualizarContadorCV();
-}
-
-// Función para alternar selección de un CV
-function toggleCVSelection(cv, container) {
-    if (centrosVotacionSeleccionados.has(cv)) {
-        centrosVotacionSeleccionados.delete(cv);
-        container.classList.remove('selected');
-    } else {
-        centrosVotacionSeleccionados.add(cv);
-        container.classList.add('selected');
-    }
-    
-    // Actualizar checkbox
-    const checkbox = container.querySelector('input[type="checkbox"]');
-    if (checkbox) {
-        checkbox.checked = centrosVotacionSeleccionados.has(cv);
-    }
-    
-    // Actualizar contador
-    actualizarContadorCV();
-}
-
-// Función para actualizar el contador de CV seleccionados
-function actualizarContadorCV() {
-    const contador = document.getElementById('cv-seleccionados-count');
-    if (contador) {
-        const count = centrosVotacionSeleccionados.size;
-        const total = todosLosCentrosVotacion.length;
-        contador.textContent = `${count} de ${total} seleccionados`;
-        
-        // Cambiar color según la cantidad
-        if (count === 0) {
-            contador.style.background = '#95a5a6';
-        } else if (count === total) {
-            contador.style.background = '#2ecc71';
-        } else {
-            contador.style.background = '#667eea';
-        }
-    }
-}
-
-// Función para seleccionar todos los CV
-function seleccionarTodosCV() {
-    centrosVotacionSeleccionados = new Set(todosLosCentrosVotacion);
-    cargarFiltrosCV();
-    actualizarContadorCV();
-    console.log('✅ Todos los CV seleccionados');
-}
-
-// Función para deseleccionar todos los CV
-function deseleccionarTodosCV() {
-    centrosVotacionSeleccionados.clear();
-    cargarFiltrosCV();
-    actualizarContadorCV();
-    console.log('❌ Todos los CV deseleccionados');
-}
-
-// Función para aplicar el filtro
-function aplicarFiltroCV() {
-    if (centrosVotacionSeleccionados.size === 0) {
-        alert('⚠️ Por favor selecciona al menos un Centro de Votación');
-        return;
-    }
-    
-    console.log('🔍 Aplicando filtro de CV:', centrosVotacionSeleccionados.size, 'centros seleccionados');
-    
-    // Actualizar la tabla con el filtro aplicado
-    if (window.estadisticasAvanzadas) {
-        window.estadisticasAvanzadas.renderReportesHora();
-    }
-}
-
-// Función para limpiar el filtro
-function limpiarFiltroCV() {
-    centrosVotacionSeleccionados.clear();
-    cargarFiltrosCV();
-    
-    // Actualizar la tabla sin filtro
-    if (window.estadisticasAvanzadas) {
-        window.estadisticasAvanzadas.renderReportesHora();
-    }
-    
-    console.log('🗑️ Filtro de CV limpiado');
-}
-
-// Función para obtener los CV filtrados
-function obtenerCVFiltrados() {
-    if (centrosVotacionSeleccionados.size === 0) {
-        // Si no hay filtro, mostrar todos
-        return todosLosCentrosVotacion;
-    }
-    
-    return Array.from(centrosVotacionSeleccionados).sort();
-}

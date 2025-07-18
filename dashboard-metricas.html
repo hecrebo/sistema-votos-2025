@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Métricas - Sistema de Votos 2025</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .metric-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .metric-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .metric-change {
+            font-size: 0.9rem;
+            padding: 4px 8px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .positive {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .neutral {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-excellent { background: #28a745; }
+        .progress-good { background: #17a2b8; }
+        .progress-warning { background: #ffc107; }
+        .progress-danger { background: #dc3545; }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        .status-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .status-success { background: #28a745; }
+        .status-warning { background: #ffc107; }
+        .status-danger { background: #dc3545; }
+        .status-info { background: #17a2b8; }
+
+        .status-text {
+            flex: 1;
+        }
+
+        .status-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .status-description {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .actions-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .action-btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .metric-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Dashboard de Métricas</h1>
+            <p>Sistema de Votos 2025 - Análisis Completo</p>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">
+                    <div class="metric-icon" style="background: #28a745;">⚡</div>
+                    Tiempo de Carga
+                </div>
+                <div class="metric-value" id="tiempoCarga">3.2s</div>
+                <div class="metric-change negative">+1.2s vs objetivo</div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-warning" style="width: 60%;"></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-title">
+                    <div class="metric-icon" style="background: #17a2b8;">📊</div>
+                    Registros Máximos
+                </div>
+                <div class="metric-value" id="registrosMaximos">5,000</div>
+                <div class="metric-change negative">-5,000 vs objetivo</div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-warning" style="width: 50%;"></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-title">
+                    <div class="metric-icon" style="background: #ffc107;">👥</div>
+                    Usuarios Simultáneos
+                </div>
+                <div class="metric-value" id="usuariosSimultaneos">25</div>
+                <div class="metric-change negative">-25 vs objetivo</div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-warning" style="width: 50%;"></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-title">
+                    <div class="metric-icon" style="background: #dc3545;">💰</div>
+                    Costo Mensual
+                </div>
+                <div class="metric-value" id="costoMensual">$750</div>
+                <div class="metric-change negative">+$350 vs objetivo</div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-danger" style="width: 75%;"></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-title">
+                    <div class="metric-icon" style="background: #6f42c1;">💾</div>
+                    Memoria Navegador
+                </div>
+                <div class="metric-value" id="memoriaNavegador">225MB</div>
+                <div class="metric-change negative">+25MB vs objetivo</div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-warning" style="width: 65%;"></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-title">
+                    <div class="metric-icon" style="background: #20c997;">🎯</div>
+                    Score General
+                </div>
+                <div class="metric-value" id="scoreGeneral">65%</div>
+                <div class="metric-change neutral">-35% vs objetivo</div>
+                <div class="progress-bar">
+                    <div class="progress-fill progress-warning" style="width: 65%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-card">
+                <div class="chart-title">📈 Progreso de Optimizaciones</div>
+                <div class="chart-container">
+                    <canvas id="optimizacionesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-title">💰 Análisis de Costos</div>
+                <div class="chart-container">
+                    <canvas id="costosChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-section">
+            <h2 style="margin-bottom: 20px; color: #333;">🔍 Estado del Sistema</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-indicator status-success"></div>
+                    <div class="status-text">
+                        <div class="status-title">Funcionalidad</div>
+                        <div class="status-description">Sistema completamente operativo</div>
+                    </div>
+                </div>
+
+                <div class="status-item">
+                    <div class="status-indicator status-warning"></div>
+                    <div class="status-text">
+                        <div class="status-title">Rendimiento</div>
+                        <div class="status-description">Necesita optimizaciones críticas</div>
+                    </div>
+                </div>
+
+                <div class="status-item">
+                    <div class="status-indicator status-danger"></div>
+                    <div class="status-text">
+                        <div class="status-title">Escalabilidad</div>
+                        <div class="status-description">Limitada para grandes volúmenes</div>
+                    </div>
+                </div>
+
+                <div class="status-item">
+                    <div class="status-indicator status-info"></div>
+                    <div class="status-text">
+                        <div class="status-title">Costos</div>
+                        <div class="status-description">Elevados para municipios grandes</div>
+                    </div>
+                </div>
+
+                <div class="status-item">
+                    <div class="status-indicator status-success"></div>
+                    <div class="status-text">
+                        <div class="status-title">Interfaz</div>
+                        <div class="status-description">Moderno y responsivo</div>
+                    </div>
+                </div>
+
+                <div class="status-item">
+                    <div class="status-indicator status-warning"></div>
+                    <div class="status-text">
+                        <div class="status-title">Arquitectura</div>
+                        <div class="status-description">Necesita modularización</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions-section">
+            <h2 style="margin-bottom: 20px; color: #333;">🚀 Acciones Recomendadas</h2>
+            <div class="actions-grid">
+                <a href="analisis-completo-proyecto.md" class="action-btn btn-primary">
+                    📋 Ver Análisis Completo
+                </a>
+                <a href="resumen-ejecutivo-proyecto.md" class="action-btn btn-info">
+                    📊 Resumen Ejecutivo
+                </a>
+                <a href="plan-accion-fase1.md" class="action-btn btn-success">
+                    🎯 Plan de Acción
+                </a>
+                <a href="estadisticas-avanzadas.html" class="action-btn btn-warning">
+                    📈 Dashboard Avanzado
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Configuración de Chart.js
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.color = '#333';
+
+        // Gráfico de optimizaciones
+        const optimizacionesCtx = document.getElementById('optimizacionesChart').getContext('2d');
+        new Chart(optimizacionesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completado', 'En Progreso', 'Pendiente'],
+                datasets: [{
+                    data: [30, 25, 45],
+                    backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de costos
+        const costosCtx = document.getElementById('costosChart').getContext('2d');
+        new Chart(costosCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Actual', 'Objetivo', 'Optimizado'],
+                datasets: [{
+                    label: 'Costo Mensual ($)',
+                    data: [750, 400, 300],
+                    backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Animación de métricas
+        function animateMetric(elementId, targetValue, suffix = '') {
+            const element = document.getElementById(elementId);
+            const currentValue = parseFloat(element.textContent.replace(/[^\d.]/g, ''));
+            const increment = (targetValue - currentValue) / 50;
+            let current = currentValue;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= targetValue) || 
+                    (increment < 0 && current <= targetValue)) {
+                    current = targetValue;
+                    clearInterval(timer);
+                }
+                element.textContent = current.toFixed(1) + suffix;
+            }, 50);
+        }
+
+        // Simular actualizaciones en tiempo real
+        setInterval(() => {
+            // Simular pequeñas variaciones en las métricas
+            const tiempoCarga = 3.2 + (Math.random() - 0.5) * 0.4;
+            document.getElementById('tiempoCarga').textContent = tiempoCarga.toFixed(1) + 's';
+            
+            const memoria = 225 + (Math.random() - 0.5) * 20;
+            document.getElementById('memoriaNavegador').textContent = Math.round(memoria) + 'MB';
+        }, 5000);
+    </script>
+</body>
+</html> 
