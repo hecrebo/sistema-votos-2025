@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpiar Comunidades - Sistema de Votos 2025</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+        
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .communities-list {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .communities-list h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .communities-list ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .communities-list li {
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .communities-list .removed {
+            color: #c62828;
+            text-decoration: line-through;
+            font-weight: bold;
+        }
+        
+        .communities-list .kept {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Limpiar Comunidades</h1>
+        
+        <div class="status info" id="status">
+            Preparando limpieza de configuración...
+        </div>
+        
+        <div class="communities-list">
+            <h3>Comunidades a eliminar:</h3>
+            <ul>
+                <li class="removed">❌ BARRIO SOLIDARIO</li>
+                <li class="removed">❌ COMUNIDAD FUTURO</li>
+            </ul>
+            
+            <h3>Comunidad que se mantiene:</h3>
+            <ul>
+                <li class="kept">✅ FE Y ALEGRIA</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center;">
+            <button class="btn" id="cleanBtn" onclick="limpiarConfiguracion()">
+                🧹 Limpiar Configuración
+            </button>
+            
+            <button class="btn" onclick="window.location.href='index.html'">
+                🏠 Volver al Sistema
+            </button>
+        </div>
+        
+        <div id="log" style="margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Configuración Firebase -->
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        async function limpiarConfiguracion() {
+            const btn = document.getElementById('cleanBtn');
+            btn.disabled = true;
+            btn.textContent = '🔄 Limpiando...';
+            
+            try {
+                updateStatus('Conectando a Firebase...', 'info');
+                log('Iniciando proceso de limpieza...');
+                
+                // Esperar a que Firebase esté disponible
+                let intentos = 0;
+                while (!window.firebaseDB && intentos < 10) {
+                    log(`Esperando Firebase... (intento ${intentos + 1}/10)`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    intentos++;
+                }
+                
+                if (!window.firebaseDB) {
+                    throw new Error('Firebase no está disponible');
+                }
+                
+                log('✅ Firebase disponible');
+                updateStatus('Firebase conectado, actualizando configuración...', 'info');
+                
+                // Configuración corregida
+                const configCorregida = {
+                    "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+                    "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+                    "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+                    "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+                    "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+                    "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+                    "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "CONSOLACIÓN"],
+                    "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+                    "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+                    "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+                    "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGUE", "CONSOLACIÓN"],
+                    "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+                    "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+                    "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+                    "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+                    "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+                    "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+                    "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+                    "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
+                };
+                
+                log('Actualizando configuración en Firebase...');
+                
+                // Actualizar configuración en Firebase
+                await window.firebaseDB.ubchCollection.doc('config').set({
+                    mapping: configCorregida,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                    version: '1.1',
+                    cleaned: true,
+                    cleanedAt: new Date().toISOString()
+                });
+                
+                log('✅ Configuración actualizada en Firebase');
+                log('✅ Comunidades "BARRIO SOLIDARIO" y "COMUNIDAD FUTURO" eliminadas');
+                
+                updateStatus('✅ Configuración limpiada exitosamente', 'success');
+                
+                // Recargar la página principal después de 3 segundos
+                setTimeout(() => {
+                    log('🔄 Redirigiendo al sistema principal...');
+                    window.location.href = 'index.html';
+                }, 3000);
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+                updateStatus(`❌ Error: ${error.message}`, 'error');
+                btn.disabled = false;
+                btn.textContent = '🔄 Reintentar';
+            }
+        }
+        
+        // Log inicial
+        log('Página de limpieza cargada');
+        log('Esperando conexión a Firebase...');
+    </script>
+</body>
+</html> 

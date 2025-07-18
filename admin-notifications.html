@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Notificaciones - Panel de Administración</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="estadisticas-avanzadas.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="favicon.ico/manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="favicon.ico/apple-icon-180x180.png">
+    <style>
+        /* Estilos para la página de notificaciones */
+        .notification-controls {
+            margin-top: 15px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            min-width: 150px;
+        }
+        
+        .control-group select,
+        .control-group input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: white;
+            font-size: 14px;
+        }
+        
+        .control-info {
+            font-size: 12px;
+            color: #6b7280;
+            margin-left: 10px;
+        }
+        
+        .blocked-types {
+            margin-top: 15px;
+        }
+        
+        .type-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+        
+        .type-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        
+        .type-item label {
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .keyword-controls {
+            margin-top: 15px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .keywords-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 10px;
+            background: #f9fafb;
+        }
+        
+        .keyword-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .keyword-text {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .no-keywords {
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        .stats-display {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .stat-value {
+            font-weight: 700;
+            color: #059669;
+            background: #d1fae5;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .control-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .control-group label {
+                min-width: auto;
+                margin-bottom: 5px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .keyword-item {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Encabezado principal -->
+        <header class="header dashboard-header">
+            <div class="header-content">
+                <div class="header-top">
+                    <div class="logo-container">
+                        <img src="logo 2.png" alt="Logo Sistema de Votos" class="header-logo">
+                    </div>
+                    <div>
+                        <h1 class="header-title" style="font-size:2.2em; margin-bottom:0;">Sistema de Notificaciones</h1>
+                        <p class="header-subtitle" style="font-size:1.1em; color:#667eea; margin-top:8px;">Gestión y control de notificaciones del Sistema de Votos 2025</p>
+                    </div>
+                </div>
+                <div class="user-info">
+                    <span class="user-id" id="userId"></span>
+                    <button class="btn btn-primary" onclick="window.location.href='admin-panel.html'" style="margin-right: 10px;">
+                        🛠️ Panel Principal
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Volver al Sistema</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content stats-container">
+            <!-- Resumen de Estado -->
+            <div class="stats-summary">
+                <div class="stat-summary">
+                    <h4>📢 Notificaciones Activas</h4>
+                    <div class="stat-number" id="notification-count">0</div>
+                    <div class="stat-percentage">En tiempo real</div>
+                </div>
+                <div class="stat-summary">
+                    <h4>🎯 Tipos Disponibles</h4>
+                    <div class="stat-number" id="notification-types">4</div>
+                    <div class="stat-percentage">Info, Éxito, Advertencia, Error</div>
+                </div>
+                <div class="stat-summary">
+                    <h4>👥 Usuarios Conectados</h4>
+                    <div class="stat-number" id="notification-users">0</div>
+                    <div class="stat-percentage">Activos ahora</div>
+                </div>
+                <div class="stat-summary">
+                    <h4>⏱️ Tiempo Activo</h4>
+                    <div class="stat-number" id="notification-uptime">0h</div>
+                    <div class="stat-percentage">Sin interrupciones</div>
+                </div>
+            </div>
+
+            <!-- Controles del Sistema -->
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>
+                        <span class="status-indicator status-online" id="notification-status"></span>
+                        Estado del Sistema
+                    </h3>
+                    <div class="service-controls" style="margin-top: 20px;">
+                        <button class="btn btn-success" onclick="startNotificationSystem()">🚀 Iniciar</button>
+                        <button class="btn btn-danger" onclick="stopNotificationSystem()">🛑 Detener</button>
+                        <button class="btn btn-warning" onclick="restartNotificationSystem()">🔄 Reiniciar</button>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>🧪 Pruebas de Notificaciones</h3>
+                    <div class="notification-test-group" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="testNotification('info')">ℹ️ Info</button>
+                        <button class="btn btn-success" onclick="testNotification('success')">✅ Éxito</button>
+                        <button class="btn btn-warning" onclick="testNotification('warning')">⚠️ Advertencia</button>
+                        <button class="btn btn-danger" onclick="testNotification('error')">❌ Error</button>
+                    </div>
+                    <small style="color: #666; font-size: 0.9em; display: block; margin-top: 10px;">
+                        Prueba los diferentes tipos de notificación visual
+                    </small>
+                </div>
+            </div>
+
+            <!-- Envío de Notificaciones -->
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>📤 Envío de Notificaciones</h3>
+                    <div style="margin-top: 20px;">
+                        <textarea id="custom-notification" class="notification-textarea" placeholder="Escribe un mensaje personalizado..." style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid #e1e5e9; border-radius: 8px; font-family: inherit; font-size: 0.9em; resize: vertical; margin-bottom: 15px;"></textarea>
+                        <div class="service-controls">
+                            <button class="btn btn-primary" onclick="sendCustomNotification()">📤 Enviar Local</button>
+                            <button class="btn btn-success" onclick="sendGlobalNotificationFromAdmin()">🌐 Enviar a Todos</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>👥 Notificaciones por Rol</h3>
+                    <div class="service-controls" style="margin-top: 20px;">
+                        <button class="btn btn-warning" onclick="sendRoleNotificationFromAdmin('registrador')">👤 Registradores</button>
+                        <button class="btn btn-info" onclick="sendRoleNotificationFromAdmin('verificador')">✅ Verificadores</button>
+                        <button class="btn btn-secondary" onclick="sendRoleNotificationFromAdmin('usuario')">👥 Usuarios</button>
+                        <button class="btn btn-primary" onclick="sendRoleNotificationFromAdmin('superusuario')">👑 Superusuarios</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración Avanzada -->
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>⚙️ Configuración Avanzada</h3>
+                    <div class="service-controls" style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="configureNotificationSettings()">🔧 Configurar</button>
+                        <button class="btn btn-warning" onclick="exportNotificationLogs()">📥 Exportar Logs</button>
+                        <button class="btn btn-danger" onclick="clearNotificationHistory()">🗑️ Limpiar Historial</button>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>📋 Historial de Notificaciones</h3>
+                    <div class="service-controls" style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="refreshNotificationHistory()">🔄 Actualizar</button>
+                        <button class="btn btn-warning" onclick="exportNotificationHistory()">📥 Exportar</button>
+                        <button class="btn btn-danger" onclick="clearNotificationHistory()">🗑️ Limpiar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nueva sección: Control de Notificaciones Molestas -->
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>🚫 Control de Notificaciones Molestas</h3>
+                    <div class="notification-controls">
+                        <div class="control-group">
+                            <label>Nivel de Filtro:</label>
+                            <select id="filter-level" onchange="updateFilterLevel()">
+                                <option value="minimal">Mínimo (solo críticas)</option>
+                                <option value="normal" selected>Normal (recomendado)</option>
+                                <option value="verbose">Verboso (todas)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label>Prevenir Duplicados:</label>
+                            <input type="checkbox" id="prevent-duplicates" checked onchange="updateDuplicatePrevention()">
+                            <span class="control-info">Evita notificaciones repetidas en 30 segundos</span>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label>Auto-ocultar después de:</label>
+                            <select id="auto-dismiss-delay" onchange="updateAutoDismissDelay()">
+                                <option value="3000">3 segundos</option>
+                                <option value="5000" selected>5 segundos</option>
+                                <option value="10000">10 segundos</option>
+                                <option value="0">No auto-ocultar</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>🔒 Bloqueo de Tipos</h3>
+                    <div class="blocked-types">
+                        <div class="type-item">
+                            <input type="checkbox" id="block-info" onchange="toggleBlockedType('info')">
+                            <label for="block-info">Información</label>
+                        </div>
+                        <div class="type-item">
+                            <input type="checkbox" id="block-success" onchange="toggleBlockedType('success')">
+                            <label for="block-success">Éxito</label>
+                        </div>
+                        <div class="type-item">
+                            <input type="checkbox" id="block-warning" onchange="toggleBlockedType('warning')">
+                            <label for="block-warning">Advertencia</label>
+                        </div>
+                        <div class="type-item">
+                            <input type="checkbox" id="block-error" onchange="toggleBlockedType('error')">
+                            <label for="block-error">Error</label>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="resetBlockedTypes()">🔄 Resetear</button>
+                </div>
+            </div>
+
+            <!-- Nueva sección: Palabras Clave Bloqueadas -->
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>🚫 Palabras Clave Bloqueadas</h3>
+                    <div class="keyword-controls">
+                        <div class="input-group">
+                            <input type="text" id="new-keyword" placeholder="Agregar palabra clave...">
+                            <button class="btn btn-primary" onclick="addBlockedKeyword()">➕ Agregar</button>
+                        </div>
+                        <div id="blocked-keywords-list" class="keywords-list">
+                            <!-- Las palabras clave se cargarán dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>📊 Estadísticas del Sistema</h3>
+                    <div id="notification-stats" class="stats-display">
+                        <!-- Las estadísticas se cargarán dinámicamente -->
+                    </div>
+                    <button class="btn btn-primary" onclick="refreshNotificationStats()">🔄 Actualizar</button>
+                </div>
+            </div>
+
+            <!-- Historial de Notificaciones -->
+            <div class="stats-card" style="grid-column: 1 / -1;">
+                <h3>📋 Historial de Notificaciones</h3>
+                <div class="notification-history" id="notification-history" style="max-height: 300px; overflow-y: auto;">
+                    <div class="history-item success" style="background: rgba(40, 167, 69, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #28a745;">
+                        <div class="history-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span class="history-type" style="font-weight: 600; font-size: 0.9em;">✅ Éxito</span>
+                            <span class="history-time" style="font-size: 0.8em; opacity: 0.7;">Hace 2 minutos</span>
+                        </div>
+                        <div class="history-message" style="font-size: 0.9em; line-height: 1.4;">Sistema de notificaciones iniciado correctamente</div>
+                        <div class="history-target" style="font-size: 0.8em; opacity: 0.8; margin-top: 5px;">🌐 Global</div>
+                    </div>
+                    <div class="history-item info" style="background: rgba(102, 126, 234, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+                        <div class="history-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span class="history-type" style="font-weight: 600; font-size: 0.9em;">ℹ️ Info</span>
+                            <span class="history-time" style="font-size: 0.8em; opacity: 0.7;">Hace 5 minutos</span>
+                        </div>
+                        <div class="history-message" style="font-size: 0.9em; line-height: 1.4;">Notificación de prueba enviada a registradores</div>
+                        <div class="history-target" style="font-size: 0.8em; opacity: 0.8; margin-top: 5px;">👤 Registradores</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs del Sistema -->
+            <div class="stats-card" style="grid-column: 1 / -1;">
+                <h3>📋 Logs del Sistema de Notificaciones</h3>
+                <div class="service-controls" style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="clearNotificationLogs()">🗑️ Limpiar Logs</button>
+                    <button class="btn btn-warning" onclick="downloadNotificationLogs()">📥 Descargar</button>
+                </div>
+                <div class="log-container" id="notification-logs" style="background: #f8f9fa; border-radius: 12px; padding: 20px; max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 0.85em; line-height: 1.4;">
+                    <div class="log-entry log-info" style="margin-bottom: 8px; padding: 8px; border-radius: 6px; border-left: 3px solid #2196f3; background: #e3f2fd;">Sistema de notificaciones iniciado</div>
+                    <div class="log-entry log-success" style="margin-bottom: 8px; padding: 8px; border-radius: 6px; border-left: 3px solid #4caf50; background: #e8f5e8;">Notificación de prueba enviada exitosamente</div>
+                    <div class="log-entry log-warning" style="margin-bottom: 8px; padding: 8px; border-radius: 6px; border-left: 3px solid #ff9800; background: #fff3e0;">Advertencia: Conexión lenta detectada</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Configuración Firebase -->
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        // Función para mostrar notificaciones
+        function showNotification(message, type = 'info', isGlobal = false) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <div class="notification-message">${message}</div>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remover después de 5 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Función para registrar logs
+        function log(message, type = 'info') {
+            const logsContainer = document.getElementById('notification-logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.style.cssText = 'margin-bottom: 8px; padding: 8px; border-radius: 6px; border-left: 3px solid;';
+            
+            if (type === 'info') {
+                logEntry.style.borderLeftColor = '#2196f3';
+                logEntry.style.background = '#e3f2fd';
+            } else if (type === 'success') {
+                logEntry.style.borderLeftColor = '#4caf50';
+                logEntry.style.background = '#e8f5e8';
+            } else if (type === 'warning') {
+                logEntry.style.borderLeftColor = '#ff9800';
+                logEntry.style.background = '#fff3e0';
+            } else if (type === 'error') {
+                logEntry.style.borderLeftColor = '#f44336';
+                logEntry.style.background = '#ffebee';
+            }
+            
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        // Funciones del sistema de notificaciones
+        function startNotificationSystem() {
+            showNotification('🚀 Sistema de notificaciones iniciado', 'success', true);
+            log('Sistema de notificaciones iniciado', 'success');
+            document.getElementById('notification-status').className = 'status-indicator status-online';
+        }
+
+        function stopNotificationSystem() {
+            showNotification('🛑 Sistema de notificaciones detenido', 'warning', true);
+            log('Sistema de notificaciones detenido', 'warning');
+            document.getElementById('notification-status').className = 'status-indicator status-offline';
+        }
+
+        function restartNotificationSystem() {
+            showNotification('🔄 Sistema de notificaciones reiniciado', 'info', true);
+            log('Sistema de notificaciones reiniciado', 'info');
+            document.getElementById('notification-status').className = 'status-indicator status-online';
+        }
+
+        // Función para probar notificaciones
+        function testNotification(type) {
+            const messages = {
+                'info': 'Esta es una notificación de información del sistema.',
+                'success': '¡Operación completada exitosamente!',
+                'warning': 'Advertencia: El sistema detectó actividad inusual.',
+                'error': 'Error: No se pudo procesar la solicitud.'
+            };
+            
+            showNotification(messages[type], type, true);
+            log(`Notificación de prueba enviada (${type}): ${messages[type]}`, 'info');
+        }
+
+        // Función para enviar notificación personalizada
+        function sendCustomNotification() {
+            const textarea = document.getElementById('custom-notification');
+            const message = textarea.value.trim();
+            
+            if (!message) {
+                showNotification('Por favor, escribe un mensaje antes de enviar.', 'warning', true);
+                return;
+            }
+            
+            showNotification(message, 'info', true);
+            log('Notificación personalizada enviada: ' + message, 'info');
+            textarea.value = '';
+        }
+
+        // Función para enviar notificación global
+        async function sendGlobalNotificationFromAdmin() {
+            const textarea = document.getElementById('custom-notification');
+            const message = textarea.value.trim();
+            
+            if (!message) {
+                showNotification('Por favor, escribe un mensaje antes de enviar.', 'warning', true);
+                return;
+            }
+            
+            try {
+                if (window.realtimeNotificationSystem && window.realtimeNotificationSystem.isInitialized) {
+                    await window.realtimeNotificationSystem.sendGlobalNotification(message, 'info', true);
+                    showNotification('✅ Notificación enviada a todos los usuarios', 'success', true);
+                    log('Notificación global enviada: ' + message, 'success');
+                } else {
+                    // Fallback al sistema local
+                    showNotification(message, 'info', true);
+                    showNotification('✅ Notificación enviada localmente', 'success', true);
+                    log('Notificación local enviada: ' + message, 'success');
+                }
+            } catch (error) {
+                showNotification('❌ Error enviando notificación: ' + error.message, 'error', true);
+                log('Error enviando notificación: ' + error.message, 'error');
+            }
+            
+            textarea.value = '';
+        }
+
+        // Función para enviar notificación por rol
+        async function sendRoleNotificationFromAdmin(role) {
+            const textarea = document.getElementById('custom-notification');
+            const message = textarea.value.trim();
+            
+            if (!message) {
+                showNotification('Por favor, escribe un mensaje antes de enviar.', 'warning', true);
+                return;
+            }
+            
+            try {
+                if (window.realtimeNotificationSystem && window.realtimeNotificationSystem.isInitialized) {
+                    await window.realtimeNotificationSystem.sendRoleNotification(role, message, 'info', true);
+                    showNotification(`✅ Notificación enviada a ${role}s`, 'success', true);
+                    log(`Notificación enviada a rol ${role}: ${message}`, 'success');
+                } else {
+                    // Fallback al sistema local
+                    showNotification(`[${role.toUpperCase()}] ${message}`, 'info', true);
+                    showNotification(`✅ Notificación enviada localmente a ${role}s`, 'success', true);
+                    log(`Notificación local enviada a rol ${role}: ${message}`, 'success');
+                }
+            } catch (error) {
+                showNotification('❌ Error enviando notificación: ' + error.message, 'error', true);
+                log('Error enviando notificación: ' + error.message, 'error');
+            }
+            
+            textarea.value = '';
+        }
+
+        // Funciones de configuración
+        function configureNotificationSettings() {
+            showNotification('🔧 Configuración de notificaciones abierta', 'info', true);
+            log('Configuración de notificaciones solicitada', 'info');
+        }
+
+        // Nuevas funciones para control de notificaciones molestas
+        function updateFilterLevel() {
+            const filterLevel = document.getElementById('filter-level').value;
+            const settings = {
+                filterLevel: filterLevel
+            };
+            
+            if (window.updateNotificationSettings) {
+                window.updateNotificationSettings(settings);
+                showNotification(`✅ Nivel de filtro actualizado a: ${filterLevel}`, 'success', true);
+                log(`Nivel de filtro cambiado a: ${filterLevel}`, 'info');
+            }
+        }
+
+        function updateDuplicatePrevention() {
+            const preventDuplicates = document.getElementById('prevent-duplicates').checked;
+            const settings = {
+                preventDuplicates: preventDuplicates
+            };
+            
+            if (window.updateNotificationSettings) {
+                window.updateNotificationSettings(settings);
+                const status = preventDuplicates ? 'habilitada' : 'deshabilitada';
+                showNotification(`✅ Prevención de duplicados ${status}`, 'success', true);
+                log(`Prevención de duplicados ${status}`, 'info');
+            }
+        }
+
+        function updateAutoDismissDelay() {
+            const delay = parseInt(document.getElementById('auto-dismiss-delay').value);
+            const settings = {
+                autoDismissDelay: delay
+            };
+            
+            if (window.updateNotificationSettings) {
+                window.updateNotificationSettings(settings);
+                const delayText = delay === 0 ? 'deshabilitado' : `${delay/1000} segundos`;
+                showNotification(`✅ Auto-ocultar actualizado a: ${delayText}`, 'success', true);
+                log(`Auto-ocultar cambiado a: ${delayText}`, 'info');
+            }
+        }
+
+        function toggleBlockedType(type) {
+            const checkbox = document.getElementById(`block-${type}`);
+            const isBlocked = checkbox.checked;
+            
+            if (isBlocked) {
+                if (window.blockNotificationType) {
+                    window.blockNotificationType(type);
+                    showNotification(`🚫 Tipo '${type}' bloqueado`, 'warning', true);
+                    log(`Tipo de notificación bloqueado: ${type}`, 'warning');
+                }
+            } else {
+                if (window.unblockNotificationType) {
+                    window.unblockNotificationType(type);
+                    showNotification(`✅ Tipo '${type}' desbloqueado`, 'success', true);
+                    log(`Tipo de notificación desbloqueado: ${type}`, 'info');
+                }
+            }
+        }
+
+        function resetBlockedTypes() {
+            const types = ['info', 'success', 'warning', 'error'];
+            types.forEach(type => {
+                const checkbox = document.getElementById(`block-${type}`);
+                if (checkbox) {
+                    checkbox.checked = false;
+                    if (window.unblockNotificationType) {
+                        window.unblockNotificationType(type);
+                    }
+                }
+            });
+            
+            showNotification('🔄 Tipos de notificación reseteados', 'info', true);
+            log('Tipos de notificación reseteados', 'info');
+        }
+
+        function addBlockedKeyword() {
+            const input = document.getElementById('new-keyword');
+            const keyword = input.value.trim();
+            
+            if (!keyword) {
+                showNotification('⚠️ Por favor, ingresa una palabra clave', 'warning', true);
+                return;
+            }
+            
+            if (window.blockNotificationKeyword) {
+                window.blockNotificationKeyword(keyword);
+                input.value = '';
+                refreshBlockedKeywordsList();
+                showNotification(`🚫 Palabra clave '${keyword}' bloqueada`, 'warning', true);
+                log(`Palabra clave bloqueada: ${keyword}`, 'warning');
+            }
+        }
+
+        function removeBlockedKeyword(keyword) {
+            if (window.unblockNotificationKeyword) {
+                window.unblockNotificationKeyword(keyword);
+                refreshBlockedKeywordsList();
+                showNotification(`✅ Palabra clave '${keyword}' desbloqueada`, 'success', true);
+                log(`Palabra clave desbloqueada: ${keyword}`, 'info');
+            }
+        }
+
+        function refreshBlockedKeywordsList() {
+            const container = document.getElementById('blocked-keywords-list');
+            if (!container) return;
+            
+            const settings = window.getNotificationSettings();
+            if (!settings || !settings.blockedKeywords) {
+                container.innerHTML = '<p class="no-keywords">No hay palabras clave bloqueadas</p>';
+                return;
+            }
+            
+            if (settings.blockedKeywords.length === 0) {
+                container.innerHTML = '<p class="no-keywords">No hay palabras clave bloqueadas</p>';
+                return;
+            }
+            
+            container.innerHTML = settings.blockedKeywords.map(keyword => `
+                <div class="keyword-item">
+                    <span class="keyword-text">${keyword}</span>
+                    <button class="btn btn-sm btn-danger" onclick="removeBlockedKeyword('${keyword}')">❌</button>
+                </div>
+            `).join('');
+        }
+
+        function refreshNotificationStats() {
+            const container = document.getElementById('notification-stats');
+            if (!container) return;
+            
+            const stats = window.getNotificationStatistics();
+            if (!stats) {
+                container.innerHTML = '<p>No se pudieron cargar las estadísticas</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="stat-item">
+                    <span class="stat-label">Total:</span>
+                    <span class="stat-value">${stats.totalNotifications}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Activas:</span>
+                    <span class="stat-value">${stats.activeNotifications}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Última hora:</span>
+                    <span class="stat-value">${stats.lastHour}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Último día:</span>
+                    <span class="stat-value">${stats.lastDay}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Duplicados recientes:</span>
+                    <span class="stat-value">${stats.recentDuplicates}</span>
+                </div>
+            `;
+        }
+
+        // Cargar configuración al iniciar
+        function loadNotificationSettings() {
+            const settings = window.getNotificationSettings();
+            if (!settings) return;
+            
+            // Cargar nivel de filtro
+            const filterSelect = document.getElementById('filter-level');
+            if (filterSelect) {
+                filterSelect.value = settings.filterLevel || 'normal';
+            }
+            
+            // Cargar prevención de duplicados
+            const duplicateCheckbox = document.getElementById('prevent-duplicates');
+            if (duplicateCheckbox) {
+                duplicateCheckbox.checked = settings.preventDuplicates !== false;
+            }
+            
+            // Cargar auto-dismiss delay
+            const delaySelect = document.getElementById('auto-dismiss-delay');
+            if (delaySelect) {
+                delaySelect.value = settings.autoDismissDelay || 5000;
+            }
+            
+            // Cargar tipos bloqueados
+            const blockedTypes = settings.blockedTypes || [];
+            blockedTypes.forEach(type => {
+                const checkbox = document.getElementById(`block-${type}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            // Cargar palabras clave bloqueadas
+            refreshBlockedKeywordsList();
+            
+            // Cargar estadísticas
+            refreshNotificationStats();
+        }
+
+        // Inicializar configuración cuando se carga la página
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadNotificationSettings, 1000); // Esperar a que el sistema se inicialice
+        });
+    </script>
+    
+    <script src="notification-system.js"></script>
+    <script src="realtime-notifications.js"></script>
+    <div id="notification-container"></div>
+</body>
+</html> 
