@@ -7,9 +7,69 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="estadisticas-avanzadas.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="apple-touch-icon" sizes="192x192" href="favicon.ico/icon-512x512.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="favicon.ico/apple-icon-180x180.png">
-    <meta name="description" content="Sistema de Registro de Votos 2025. Plataforma moderna para registro, control y estadísticas de votación.">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Ocultar elementos por defecto hasta que JavaScript los configure */
+        .nav-btn {
+            display: none !important;
+        }
+        
+        /* Ocultar específicamente los botones de dashboards de roles específicos */
+        #nav-verifier-dashboard,
+        #nav-verifier-history,
+        #nav-registrator-dashboard,
+        #nav-registrator-history {
+            display: none !important;
+        }
+        
+        .dashboard-card {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        .dashboard-card.loaded {
+            opacity: 1;
+        }
+        
+        /* Mostrar spinner de carga mientras se inicializa */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+        
+        .loading-spinner::after {
+            content: '';
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Ocultar contenido hasta que esté listo */
+        .content-hidden {
+            visibility: hidden;
+        }
+        
+        .content-visible {
+            visibility: visible;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -18,7 +78,7 @@
             <div class="header-content">
                 <div class="header-top">
                     <div class="logo-container">
-                        <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
+                        <img src="logo 2.png" alt="Logo Sistema de Votos" class="header-logo">
                     </div>
                     <div>
                         <h1 class="header-title" style="font-size:2.2em; margin-bottom:0;">Panel de Estadísticas</h1>
@@ -27,23 +87,209 @@
                 </div>
                 <div class="user-info">
                     <span class="user-id" id="userId"></span>
-                    <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Volver al Sistema</button>
+                    <button class="btn btn-primary" onclick="generarInformePDF()" style="margin-right: 10px;">
+                        📊 Generar Informe PDF
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.location.href='index.html'" style="margin-right: 10px;">← Volver al Sistema</button>
+                    <button class="btn btn-outline" onclick="logout()" style="margin-right: 10px; border: 1px solid #e5e7eb; color: #ffffff; background: transparent;">
+                        Cerrar Sesión
+                    </button>
                 </div>
             </div>
         </header>
 
-        <main class="main-content stats-container">
+        <main class="main-content stats-container content-hidden">
+            <!-- Indicador de carga -->
+            <div id="loading-indicator" class="loading-spinner">
+                Cargando estadísticas avanzadas...
+            </div>
+            
+            <!-- CUENTA ATRÁS PROGRAMABLE - ACORDEÓN -->
+            <div class="countdown-accordion-container" style="margin-bottom: 40px;">
+                <div class="accordion-header" onclick="toggleCountdownAccordion()" style="cursor: pointer; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(102,126,234,0.2);">
+                    <h3 style="margin: 0; font-size: 1.5em; font-weight: 600;">
+                        ⏰ Cuenta Atrás para las Elecciones
+                    </h3>
+                    <span id="countdown-accordion-icon" style="font-size: 1.5em; transition: transform 0.3s;">▼</span>
+                </div>
+                
+                <div id="countdown-accordion-content" class="accordion-content" style="display: none; animation: slideDown 0.3s ease-out;">
+                    <div class="countdown-container" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 15px; text-align: center; box-shadow: 0 8px 25px rgba(102,126,234,0.3);">
+                        <div class="countdown-display" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+                            <div class="countdown-item" style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; min-width: 80px;">
+                                <div id="countdown-days" style="font-size: 2.5em; font-weight: bold; line-height: 1;">00</div>
+                                <div style="font-size: 0.9em; opacity: 0.9;">Días</div>
+                            </div>
+                            <div class="countdown-item" style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; min-width: 80px;">
+                                <div id="countdown-hours" style="font-size: 2.5em; font-weight: bold; line-height: 1;">00</div>
+                                <div style="font-size: 0.9em; opacity: 0.9;">Horas</div>
+                            </div>
+                            <div class="countdown-item" style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; min-width: 80px;">
+                                <div id="countdown-minutes" style="font-size: 2.5em; font-weight: bold; line-height: 1;">00</div>
+                                <div style="font-size: 0.9em; opacity: 0.9;">Minutos</div>
+                            </div>
+                            <div class="countdown-item" style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; min-width: 80px;">
+                                <div id="countdown-seconds" style="font-size: 2.5em; font-weight: bold; line-height: 1;">00</div>
+                                <div style="font-size: 0.9em; opacity: 0.9;">Segundos</div>
+                            </div>
+                        </div>
+                        <div class="countdown-controls" style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <label for="countdown-date" style="font-weight: 600; font-size: 1.1em;">📅 Fecha Objetivo:</label>
+                                <input type="datetime-local" id="countdown-date" style="padding: 8px 12px; border: none; border-radius: 6px; font-size: 1em; background: rgba(255,255,255,0.9); color: #333;">
+                            </div>
+                            <button onclick="setCountdownDate()" class="btn btn-primary" style="background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                                🎯 Establecer Fecha
+                            </button>
+                            <button onclick="resetCountdown()" class="btn btn-secondary" style="background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); color: white; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                                🔄 Reiniciar
+                            </button>
+                        </div>
+                        <div id="countdown-message" style="margin-top: 15px; font-size: 1.1em; font-weight: 500; opacity: 0.9;">
+                            Establece una fecha objetivo para comenzar la cuenta atrás
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- DASHBOARD AVANZADO -->
-            <div class="dashboard-filtros" style="display:flex; gap:18px; align-items:center; margin-bottom:18px;">
+            <div class="dashboard-filtros" style="display:flex; justify-content:center; gap:18px; align-items:center; margin-bottom:18px;">
                 <label for="filtro-comunidad">Comunidad:</label>
-                <select id="filtro-comunidad" class="dashboard-select">
+                <select id="filtro-comunidad" class="dashboard-select filtro-verde">
                     <option value="">Todas</option>
                 </select>
-                <label for="filtro-ubch">Centro de Votación:</label>
-                <select id="filtro-ubch" class="dashboard-select">
+                <label for="filtro-cv">Centro de Votación:</label>
+                <select id="filtro-cv" class="dashboard-select filtro-verde">
                     <option value="">Todos</option>
                 </select>
             </div>
+            <style>
+                .filtro-verde option:checked, .filtro-verde:focus option:checked {
+                    background: #43e97b !important;
+                    color: #fff !important;
+                }
+                .dashboard-select:disabled {
+                    background: #eee;
+                    color: #aaa;
+                }
+            </style>
+
+            <!-- Tabla de Reportes por Hora -->
+            <div class="reportes-hora-container" style="margin-bottom: 40px;">
+                <div class="accordion-header" onclick="toggleAccordion()" style="cursor: pointer; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(102,126,234,0.2);">
+                    <h3 style="margin: 0; font-size: 1.5em; font-weight: 600;">
+                        📊 Reporte de Confirmación de Votos por Centro de Votación y Hora
+                    </h3>
+                    <span id="accordion-icon" style="font-size: 1.5em; transition: transform 0.3s;">▼</span>
+                </div>
+                
+                <div id="accordion-content" class="accordion-content" style="display: none; animation: slideDown 0.3s ease-out;">
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <span style="background: #667eea; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold;">
+                            📅 Fecha: <span id="fecha-actual-reporte"></span>
+                        </span>
+                    </div>
+
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p style="margin: 0; text-align: center; color: #666; font-size: 14px;">
+                            Esta tabla muestra la cantidad de votos confirmados por cada Centro de Votación en diferentes franjas horarias del día de votación.
+                        </p>
+                        <p style="margin: 10px 0 0 0; text-align: center; color: #2ecc71; font-size: 12px; font-weight: bold;">
+                            🔄 La tabla se reinicia automáticamente cada día a las 00:00 horas
+                        </p>
+                    </div>
+
+                    <!-- Filtro compacto de Centros de Votación -->
+                    <div style="background: white; padding: 12px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <!-- Header compacto -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="color: #2c3e50; font-size: 13px; font-weight: 600;">🎯 Filtrar CV:</span>
+                                <span id="cv-seleccionados-count" style="background: #667eea; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px; font-weight: bold;">
+                                    0 seleccionados
+                                </span>
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <button onclick="seleccionarTodosCV()" class="btn btn-secondary" style="padding: 3px 6px; font-size: 10px;">
+                                    ✅ Todos
+                                </button>
+                                <button onclick="deseleccionarTodosCV()" class="btn btn-secondary" style="padding: 3px 6px; font-size: 10px;">
+                                    ❌ Ninguno
+                                </button>
+                                <button onclick="aplicarFiltroCV()" class="btn btn-primary" style="padding: 3px 8px; font-size: 10px;">
+                                    🔍 Aplicar
+                                </button>
+                                <button onclick="limpiarFiltroCV()" class="btn btn-secondary" style="padding: 3px 8px; font-size: 10px;">
+                                    🗑️ Limpiar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Contenedor de checkboxes más compacto -->
+                        <div style="max-height: 100px; overflow-y: auto; padding: 6px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e1e5e9;">
+                            <div id="cv-filtros-container" class="cv-filtros-container">
+                                <!-- Los checkboxes se cargarán dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <table id="reportes-hora-table" class="reportes-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 40px;">N°</th>
+                                    <th style="padding: 12px 8px; text-align: left; border: 1px solid #ddd; font-weight: bold; min-width: 250px;">Centro de Votación</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px;">Reporte 08:00 AM</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px;">Reporte 10:00 AM</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px;">Reporte 12:00 M</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px;">Reporte 02:00 PM</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px;">Reporte 04:00 PM</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px;">Reporte 06:00 PM</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px;">Reporte 07:00 PM</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px;">Reporte 08:00 PM</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px;">Reporte 09:00 PM</th>
+                                    <th style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 100px; background: #2ecc71; color: white;">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportes-hora-tbody">
+                                <!-- Los datos se cargarán dinámicamente -->
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: #ecf0f1; font-weight: bold;">
+                                    <td style="padding: 12px 8px; text-align: center; border: 1px solid #ddd;">-</td>
+                                    <td style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold;">TOTALES</td>
+                                    <td id="total-08am" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea; font-size: 14px;">0</td>
+                                    <td id="total-10am" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea; font-size: 14px;">0</td>
+                                    <td id="total-12pm" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea; font-size: 14px;">0</td>
+                                    <td id="total-02pm" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea; font-size: 14px;">0</td>
+                                    <td id="total-04pm" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea; font-size: 14px;">0</td>
+                                    <td id="total-06pm" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea; font-size: 14px;">0</td>
+                                    <td id="total-07pm" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea; font-size: 14px;">0</td>
+                                    <td id="total-08pm" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea; font-size: 14px;">0</td>
+                                    <td id="total-09pm" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea; font-size: 14px;">0</td>
+                                    <td id="total-general" style="padding: 12px 8px; text-align: center; border: 1px solid #ddd; font-weight: bold; background: #2ecc71; color: white; font-size: 16px;">0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="exportarReporteHora()" class="btn btn-primary" style="margin-right: 10px;">
+                            📊 Exportar Reporte (Excel + PDF)
+                        </button>
+                        <button onclick="actualizarReporteHora()" class="btn btn-secondary" style="margin-right: 10px;">
+                            🔄 Actualizar Datos
+                        </button>
+                        <button onclick="debugVotosConfirmados()" class="btn btn-warning" style="background: #f39c12; color: white; margin-right: 10px;">
+                            🔍 Debug Votos
+                        </button>
+                        <button onclick="migrarVotosExistentes()" class="btn btn-info" style="background: #17a2b8; color: white;">
+                            🔄 Migrar Votos
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <section class="dashboard-grid" style="margin-bottom:40px;">
                 <div class="dashboard-card">
                     <h3>👥 Registrados</h3>
@@ -166,6 +412,8 @@
                     <div class="stats-list" id="all-communities"></div>
                 </div>
             </div>
+
+
         </main>
 
         <footer class="footer">
@@ -196,11 +444,6 @@
             </div>
         </div>
 
-        <!-- Solo cargar estos scripts aquí porque son necesarios para estadísticas y exportación PDF -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" defer></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-        <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js" defer></script>
-
         <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
         <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
         <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -210,8 +453,1236 @@
         <script>
         document.addEventListener('DOMContentLoaded', function() {
             window.estadisticasAvanzadas = new EstadisticasAvanzadas();
+            
+            // Verificar que las librerías se cargaron correctamente
+            setTimeout(() => {
+                if (typeof window.jspdf === 'undefined') {
+                    console.warn('⚠️ jsPDF no se cargó correctamente');
+                }
+                if (typeof window.html2canvas === 'undefined') {
+                    console.warn('⚠️ html2canvas no se cargó correctamente');
+                }
+                if (typeof XLSX === 'undefined') {
+                    console.warn('⚠️ SheetJS (XLSX) no se cargó correctamente');
+                }
+            }, 2000);
         });
+
+        // Función global para debugging de votos confirmados
+        function debugVotosConfirmados() {
+            if (window.estadisticasAvanzadas) {
+                window.estadisticasAvanzadas.debugVotosConfirmados();
+            } else {
+                console.error('❌ EstadisticasAvanzadas no está inicializado');
+                alert('❌ El sistema de estadísticas no está inicializado. Recarga la página e intenta nuevamente.');
+            }
+        }
+
+        // Función global para migrar votos existentes
+        function migrarVotosExistentes() {
+            if (window.estadisticasAvanzadas) {
+                const migrados = window.estadisticasAvanzadas.migrarVotosExistentes();
+                if (migrados > 0) {
+                    alert(`✅ ${migrados} votos migrados exitosamente. La tabla se actualizará automáticamente.`);
+                    // Recargar la tabla
+                    window.estadisticasAvanzadas.renderReportesHora();
+                } else {
+                    alert('ℹ️ No hay votos que necesiten migración.');
+                }
+            } else {
+                console.error('❌ EstadisticasAvanzadas no está inicializado');
+                alert('❌ El sistema de estadísticas no está inicializado. Recarga la página e intenta nuevamente.');
+            }
+        }
+
+        async function generarInformePDF() {
+            const btn = event.target;
+            btn.innerHTML = '⏳ Generando...';
+            btn.disabled = true;
+
+            try {
+                // Verificar que las librerías estén cargadas
+                if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
+                    alert('❌ Error: Las librerías PDF no están cargadas. Verifica tu conexión a internet.');
+                    return;
+                }
+
+                // Obtener datos de la instancia de EstadisticasAvanzadas
+                if (!window.estadisticasAvanzadas) {
+                    alert('❌ Error: El sistema de estadísticas no está inicializado. Recarga la página e intenta nuevamente.');
+                    return;
+                }
+                
+                const stats = {
+                    votes: window.estadisticasAvanzadas.votes || []
+                };
+                
+                if (stats.votes.length === 0) {
+                    alert('❌ No hay datos disponibles para generar el informe. Asegúrate de que haya votos registrados.');
+                    return;
+                }
+                const fechaActual = new Date().toLocaleDateString('es-VE', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // Obtener datos para el informe detallado
+                const totalRegistrados = stats.votes.length;
+                const totalVotaron = stats.votes.filter(v => v.voted).length;
+                const porcentajeParticipacion = totalRegistrados > 0 ? ((totalVotaron / totalRegistrados) * 100).toFixed(1) : 0;
+                
+                // Estadísticas por sexo
+                const votosMasculinos = stats.votes.filter(v => v.voted && v.sexo === 'Masculino').length;
+                const votosFemeninos = stats.votes.filter(v => v.voted && v.sexo === 'Femenino').length;
+                
+                // Estadísticas por edad
+                const edades = stats.votes.filter(v => v.voted && v.edad).map(v => v.edad);
+                const gruposEdad = {
+                    '18-25': edades.filter(e => e >= 18 && e <= 25).length,
+                    '26-40': edades.filter(e => e >= 26 && e <= 40).length,
+                    '41-60': edades.filter(e => e >= 41 && e <= 60).length,
+                    '60+': edades.filter(e => e > 60).length
+                };
+
+                // Top comunidades y centros de votación
+                const comunidadesStats = {};
+                const ubchStats = {};
+                
+                stats.votes.forEach(vote => {
+                    if (vote.comunidad) {
+                        if (!comunidadesStats[vote.comunidad]) {
+                            comunidadesStats[vote.comunidad] = { total: 0, votaron: 0 };
+                        }
+                        comunidadesStats[vote.comunidad].total++;
+                        if (vote.voted) comunidadesStats[vote.comunidad].votaron++;
+                    }
+                    
+                    if (vote.ubch) {
+                        if (!ubchStats[vote.ubch]) {
+                            ubchStats[vote.ubch] = { total: 0, votaron: 0 };
+                        }
+                        ubchStats[vote.ubch].total++;
+                        if (vote.voted) ubchStats[vote.ubch].votaron++;
+                    }
+                });
+
+                const topComunidades = Object.entries(comunidadesStats)
+                    .filter(([_, stats]) => stats.votaron > 0)
+                    .sort((a, b) => b[1].votaron - a[1].votaron)
+                    .slice(0, 5);
+
+                const topUBCH = Object.entries(ubchStats)
+                    .filter(([_, stats]) => stats.votaron > 0)
+                    .sort((a, b) => b[1].votaron - a[1].votaron)
+                    .slice(0, 5);
+
+                // Actividad reciente (últimas 20 confirmaciones)
+                const actividadReciente = stats.votes
+                    .filter(v => v.voted && v.fechaConfirmacion)
+                    .sort((a, b) => new Date(b.fechaConfirmacion) - new Date(a.fechaConfirmacion))
+                    .slice(0, 20);
+
+                // Crear HTML del informe detallado
+                const informeHTML = `
+                    <div style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: white; color: #333;">
+                        
+                        <!-- PÁGINA DE TÍTULO -->
+                        <div style="text-align: center; margin-bottom: 40px; padding: 30px; border: 2px solid #667eea; border-radius: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <div style="font-size: 28px; font-weight: bold; margin-bottom: 10px;">📊</div>
+                            <h1 style="font-size: 32px; margin: 0 0 10px 0;">Informe Detallado de Estadísticas de Votación</h1>
+                            <h2 style="font-size: 20px; margin: 0 0 20px 0; font-weight: normal;">Análisis Integral de Registro y Participación en el Municipio</h2>
+                            <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 20px;">
+                                <p style="margin: 5px 0;"><strong>Período del Informe:</strong> Desde el inicio hasta ${fechaActual}</p>
+                                <p style="margin: 5px 0;"><strong>Fecha de Generación:</strong> ${fechaActual}</p>
+                                <p style="margin: 5px 0;"><strong>Preparado por:</strong> Sistema Automático de Estadísticas</p>
+                                <p style="margin: 5px 0;"><strong>Versión del Documento:</strong> 2.0</p>
+                            </div>
+                        </div>
+
+                        <!-- ÍNDICE -->
+                        <div style="margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                            <h3 style="color: #2c3e50; margin: 0 0 15px 0; border-bottom: 2px solid #667eea; padding-bottom: 10px;">📋 ÍNDICE</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                                <div>1. Resumen Ejecutivo</div>
+                                <div>2. Alcance y Metodología</div>
+                                <div>3. Análisis de Participación Geográfica</div>
+                                <div>4. Análisis Demográfico del Electorado</div>
+                                <div>5. Reporte de Confirmación por Hora</div>
+                                <div>6. Anexos</div>
+                            </div>
+                        </div>
+
+                        <!-- 1. RESUMEN EJECUTIVO -->
+                        <div style="margin-bottom: 30px;">
+                            <h3 style="color: #2c3e50; border-bottom: 2px solid #667eea; padding-bottom: 10px;">1. RESUMEN EJECUTIVO</h3>
+                            
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">1.1. Principales Indicadores (KPIs)</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #1976d2;">${totalRegistrados.toLocaleString()}</div>
+                                    <div style="font-size: 14px; color: #666;">👥 Total de Personas Registradas</div>
+                                </div>
+                                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #2e7d32;">${totalVotaron.toLocaleString()}</div>
+                                    <div style="font-size: 14px; color: #666;">✅ Total de Votos Confirmados</div>
+                                </div>
+                                <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #f57c00;">${porcentajeParticipacion}%</div>
+                                    <div style="font-size: 14px; color: #666;">📈 Porcentaje de Participación Global</div>
+                                </div>
+                                <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #7b1fa2;">${Object.keys(ubchStats).length}</div>
+                                    <div style="font-size: 14px; color: #666;">🏛️ Centros de Votación Monitoreados</div>
+                                </div>
+                                <div style="background: #e0f2f1; padding: 15px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #00695c;">${Object.keys(comunidadesStats).length}</div>
+                                    <div style="font-size: 14px; color: #666;">🏘️ Comunidades Monitoreadas</div>
+                                </div>
+                            </div>
+
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">1.2. Conclusiones Clave</h4>
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea;">
+                                <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                    La participación general se sitúa en un <strong>${porcentajeParticipacion}%</strong>, con una concentración notable de votos en las comunidades de 
+                                    <strong>${topComunidades.length > 0 ? topComunidades[0][0] : 'N/A'}</strong> y 
+                                    <strong>${topComunidades.length > 1 ? topComunidades[1][0] : 'N/A'}</strong>. 
+                                    El análisis demográfico muestra una distribución equilibrada entre géneros, con 
+                                    <strong>${votosMasculinos}</strong> votos masculinos y <strong>${votosFemeninos}</strong> votos femeninos.
+                                </p>
+                                <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                    Se observa una cobertura amplia del territorio con <strong>${Object.keys(ubchStats).length}</strong> centros de votación activos y 
+                                    <strong>${Object.keys(comunidadesStats).length}</strong> comunidades registradas. 
+                                    El sistema mantiene un registro detallado de todas las actividades de confirmación de votos para garantizar la transparencia del proceso.
+                                </p>
+                                <p style="margin: 0; line-height: 1.6;">
+                                    <strong>Recomendaciones:</strong> Continuar con el monitoreo en tiempo real y considerar estrategias específicas para aumentar la participación en comunidades con baja actividad electoral.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 2. ALCANCE Y METODOLOGÍA -->
+                        <div style="margin-bottom: 30px;">
+                            <h3 style="color: #2c3e50; border-bottom: 2px solid #667eea; padding-bottom: 10px;">2. ALCANCE Y METODOLOGÍA DEL INFORME</h3>
+                            
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">2.1. Fuente de Datos</h4>
+                            <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                La información presentada en este documento fue extraída directamente del sistema "Registro de Votos y Estadísticas 2025", 
+                                que mantiene un registro en tiempo real de todas las actividades de registro y confirmación de votos en el municipio.
+                            </p>
+
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">2.2. Período Analizado</h4>
+                            <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                Este informe cubre toda la data registrada desde el inicio de operaciones del sistema hasta la fecha y hora de su generación: 
+                                <strong>${fechaActual}</strong>
+                            </p>
+
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">2.3. Filtros Aplicados</h4>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                <p style="margin: 0 0 10px 0;"><strong>Los datos consolidados en este informe se generaron sin filtros específicos, abarcando todas las entidades disponibles:</strong></p>
+                                <ul style="margin: 0; padding-left: 20px;">
+                                    <li><strong>Comunidad:</strong> Todas las comunidades registradas</li>
+                                    <li><strong>Centro de Votación:</strong> Todos los centros de votación activos</li>
+                                    <li><strong>Período:</strong> Desde el inicio hasta la fecha actual</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- 3. ANÁLISIS DE PARTICIPACIÓN GEOGRÁFICA -->
+                        <div style="margin-bottom: 30px;">
+                            <h3 style="color: #2c3e50; border-bottom: 2px solid #667eea; padding-bottom: 10px;">3. ANÁLISIS DE PARTICIPACIÓN GEOGRÁFICA</h3>
+                            
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">3.1. Top 5 Comunidades con Mayor Participación</h4>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                ${topComunidades.map((comunidad, index) => `
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                        <div style="display: flex; align-items: center;">
+                                            <span style="background: #667eea; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; margin-right: 15px;">${index + 1}°</span>
+                                            <span style="font-weight: 600; font-size: 16px;">${comunidad[0]}</span>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: bold; color: #667eea; font-size: 18px;">${comunidad[1].votaron} votos</div>
+                                            <div style="font-size: 12px; color: #6c757d;">${comunidad[1].total} registrados</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">3.2. Top 5 Centros de Votación con Mayor Participación</h4>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                ${topUBCH.map((ubch, index) => `
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e9ecef;">
+                                        <div style="display: flex; align-items: center;">
+                                            <span style="background: #667eea; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; margin-right: 15px;">${index + 1}°</span>
+                                            <span style="font-weight: 600; font-size: 16px;">${ubch[0]}</span>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: bold; color: #667eea; font-size: 18px;">${ubch[1].votaron} votos</div>
+                                            <div style="font-size: 12px; color: #6c757d;">${ubch[1].total} registrados</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">3.3. Análisis y Observaciones Geográficas</h4>
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea;">
+                                <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                    <strong>Distribución Territorial:</strong> El análisis geográfico revela una distribución heterogénea de la participación electoral. 
+                                    Las comunidades con mayor actividad muestran una tendencia hacia áreas centrales y de fácil acceso.
+                                </p>
+                                <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                    <strong>Centros de Votación Activos:</strong> Los centros educativos han demostrado ser puntos clave de participación, 
+                                    facilitando el acceso de los votantes y garantizando la transparencia del proceso.
+                                </p>
+                                <p style="margin: 0; line-height: 1.6;">
+                                    <strong>Oportunidades de Mejora:</strong> Se identifican áreas con baja participación que requieren atención especial 
+                                    en futuras jornadas electorales, incluyendo estrategias de movilización específicas.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 4. ANÁLISIS DEMOGRÁFICO -->
+                        <div style="margin-bottom: 30px;">
+                            <h3 style="color: #2c3e50; border-bottom: 2px solid #667eea; padding-bottom: 10px;">4. ANÁLISIS DEMOGRÁFICO DEL ELECTORADO</h3>
+                            
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">4.1. Distribución por Sexo</h4>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+                                        <div style="font-size: 24px; font-weight: bold; color: #1976d2;">${votosMasculinos}</div>
+                                        <div style="font-size: 14px; color: #666;">Masculino</div>
+                                        <div style="font-size: 12px; color: #999;">${totalVotaron > 0 ? ((votosMasculinos / totalVotaron) * 100).toFixed(1) : 0}%</div>
+                                    </div>
+                                    <div style="text-align: center; padding: 15px; background: #fce4ec; border-radius: 8px;">
+                                        <div style="font-size: 24px; font-weight: bold; color: #c2185b;">${votosFemeninos}</div>
+                                        <div style="font-size: 14px; color: #666;">Femenino</div>
+                                        <div style="font-size: 12px; color: #999;">${totalVotaron > 0 ? ((votosFemeninos / totalVotaron) * 100).toFixed(1) : 0}%</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">4.2. Distribución por Grupos de Edad</h4>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                                    ${Object.entries(gruposEdad).map(([rango, cantidad]) => `
+                                        <div style="text-align: center; padding: 15px; background: #e8f5e8; border-radius: 8px;">
+                                            <div style="font-size: 20px; font-weight: bold; color: #2e7d32;">${cantidad}</div>
+                                            <div style="font-size: 14px; color: #666;">${rango} años</div>
+                                            <div style="font-size: 12px; color: #999;">${totalVotaron > 0 ? ((cantidad / totalVotaron) * 100).toFixed(1) : 0}%</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">4.3. Análisis y Observaciones Demográficas</h4>
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea;">
+                                <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                    <strong>Equilibrio de Género:</strong> La participación muestra un balance entre géneros, 
+                                    con ${votosMasculinos} votos masculinos y ${votosFemeninos} votos femeninos, 
+                                    representando una participación inclusiva y representativa de la población.
+                                </p>
+                                <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                    <strong>Distribución Etaria:</strong> Los datos por edad revelan la participación activa de diferentes grupos generacionales, 
+                                    con una distribución que refleja la composición demográfica del municipio.
+                                </p>
+                                <p style="margin: 0; line-height: 1.6;">
+                                    <strong>Implicaciones Estratégicas:</strong> Esta información demográfica permite diseñar campañas específicas 
+                                    y estrategias de movilización adaptadas a las características de la población votante.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 5. REPORTE DE CONFIRMACIÓN DE VOTOS POR HORA -->
+                        <div style="margin-bottom: 30px;">
+                            <h3 style="color: #2c3e50; border-bottom: 2px solid #667eea; padding-bottom: 10px;">5. REPORTE DE CONFIRMACIÓN DE VOTOS POR CENTRO DE VOTACIÓN Y HORA</h3>
+                            
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">5.1. Análisis de Flujo Electoral por Franjas Horarias</h4>
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin-bottom: 20px;">
+                                <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                    <strong>Objetivo del Reporte:</strong> Este análisis temporal permite identificar los patrones de participación electoral 
+                                    a lo largo del día de votación, facilitando la planificación logística y la identificación de picos de actividad.
+                                </p>
+                                <p style="margin: 0; line-height: 1.6;">
+                                    <strong>Metodología:</strong> Se contabilizan los votos confirmados por cada Centro de Votación en diferentes franjas horarias 
+                                    desde las 08:00 AM hasta las 09:00 PM, proporcionando una visión detallada del flujo electoral.
+                                </p>
+                            </div>
+
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">5.2. Tabla de Confirmación de Votos por Centro de Votación y Hora</h4>
+                            <div style="background: white; border: 1px solid #ddd; border-radius: 8px; overflow-x: auto; margin-bottom: 20px;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                    <thead>
+                                        <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 30px;">N°</th>
+                                            <th style="padding: 8px 6px; text-align: left; border: 1px solid #ddd; font-weight: bold; min-width: 200px;">Centro de Votación</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px;">08:00 AM</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px;">10:00 AM</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px;">12:00 M</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px;">02:00 PM</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px;">04:00 PM</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px;">06:00 PM</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px;">07:00 PM</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px;">08:00 PM</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px;">09:00 PM</th>
+                                            <th style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; min-width: 80px; background: #2ecc71; color: white;">TOTAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${generarFilasReporteHora(stats.votes)}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="background: #ecf0f1; font-weight: bold;">
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">-</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold;">TOTALES</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea;">${calcularTotalHora(stats.votes, '08:00')}</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea;">${calcularTotalHora(stats.votes, '10:00')}</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea;">${calcularTotalHora(stats.votes, '12:00')}</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea;">${calcularTotalHora(stats.votes, '14:00')}</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea;">${calcularTotalHora(stats.votes, '16:00')}</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea;">${calcularTotalHora(stats.votes, '18:00')}</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea;">${calcularTotalHora(stats.votes, '19:00')}</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea;">${calcularTotalHora(stats.votes, '20:00')}</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; color: #667eea;">${calcularTotalHora(stats.votes, '21:00')}</td>
+                                            <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; background: #2ecc71; color: white;">${calcularTotalGeneral(stats.votes)}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">5.3. Análisis de Patrones Temporales</h4>
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea;">
+                                <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                    <strong>Picos de Actividad:</strong> El análisis de las franjas horarias revela los momentos de mayor afluencia electoral, 
+                                    permitiendo optimizar la distribución de recursos y personal en futuras jornadas electorales.
+                                </p>
+                                <p style="margin: 0 0 15px 0; line-height: 1.6;">
+                                    <strong>Distribución por Centros:</strong> Cada Centro de Votación muestra patrones únicos de participación, 
+                                    reflejando las características demográficas y geográficas de su área de influencia.
+                                </p>
+                                <p style="margin: 0; line-height: 1.6;">
+                                    <strong>Implicaciones Operativas:</strong> Esta información temporal es fundamental para la planificación logística 
+                                    y la implementación de estrategias de movilización efectivas en próximas elecciones.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 6. ANEXOS -->
+                        <div style="margin-bottom: 30px;">
+                            <h3 style="color: #2c3e50; border-bottom: 2px solid #667eea; padding-bottom: 10px;">6. ANEXOS</h3>
+                            
+                            <h4 style="color: #667eea; margin: 20px 0 15px 0;">Anexo A: Registro Detallado de Actividad Reciente</h4>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <p style="margin: 0 0 15px 0; font-size: 14px; color: #666;">
+                                    La siguiente tabla contiene el registro de las últimas ${actividadReciente.length} confirmaciones de voto en el sistema para fines de auditoría y verificación.
+                                </p>
+                                <div style="overflow-x: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                        <thead>
+                                            <tr style="background: #667eea; color: white;">
+                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Nombre y Apellido</th>
+                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cédula</th>
+                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Fecha y Hora</th>
+                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Centro de Votación</th>
+                                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Comunidad</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${actividadReciente.map(voto => `
+                                                <tr style="border-bottom: 1px solid #e9ecef;">
+                                                    <td style="padding: 8px; border: 1px solid #ddd;">${voto.nombre || 'N/A'}</td>
+                                                    <td style="padding: 8px; border: 1px solid #ddd;">${voto.cedula || 'N/A'}</td>
+                                                    <td style="padding: 8px; border: 1px solid #ddd;">${voto.fechaConfirmacion ? new Date(voto.fechaConfirmacion).toLocaleString('es-VE') : 'N/A'}</td>
+                                                    <td style="padding: 8px; border: 1px solid #ddd;">${voto.ubch || 'N/A'}</td>
+                                                    <td style="padding: 8px; border: 1px solid #ddd;">${voto.comunidad || 'N/A'}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PIE DE PÁGINA -->
+                        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #667eea; color: #7f8c8d; font-size: 12px;">
+                            <p style="margin: 0 0 10px 0;">📊 Informe generado automáticamente por el Sistema de Registro de Votos 2025</p>
+                            <p style="margin: 0 0 10px 0;">Confidencial | Solo para uso interno</p>
+                            <p style="margin: 0;">© 2025 - Todos los derechos reservados</p>
+                        </div>
+                    </div>
+                `;
+
+                // Crear elemento temporal para el contenido
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = informeHTML;
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                document.body.appendChild(tempDiv);
+
+                // Generar PDF
+                try {
+                    console.log('🔄 Iniciando generación de PDF...');
+                    
+                    if (!window.jspdf) {
+                        throw new Error('jsPDF no está disponible');
+                    }
+                    
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    
+                    // Configurar fuente
+                    pdf.setFont('helvetica');
+                    
+                    console.log('🔄 Convirtiendo HTML a canvas...');
+                    
+                    // Convertir HTML a canvas
+                    const canvas = await html2canvas(tempDiv.firstElementChild, {
+                        scale: 1.5,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
+
+                    console.log('🔄 Procesando imagen del canvas...');
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = 210; // A4 width in mm
+                    const pageHeight = 295; // A4 height in mm
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    let heightLeft = imgHeight;
+
+                    let position = 0;
+
+                    console.log('🔄 Agregando imagen al PDF...');
+                    // Agregar primera página
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+
+                    // Agregar páginas adicionales si es necesario
+                    while (heightLeft >= 0) {
+                        position = heightLeft - imgHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+                    }
+
+                    // Descargar PDF
+                    const filename = `informe_detallado_votos_${new Date().toISOString().split('T')[0]}.pdf`;
+                    pdf.save(filename);
+
+                    // Limpiar
+                    document.body.removeChild(tempDiv);
+                    
+                    console.log('✅ Informe PDF detallado generado exitosamente');
+                    alert('✅ Informe PDF detallado generado y descargado exitosamente');
+                    
+                } catch (pdfError) {
+                    console.error('❌ Error en generación de PDF detallado:', pdfError);
+                    console.error('❌ Detalles del error:', {
+                        message: pdfError.message,
+                        stack: pdfError.stack,
+                        name: pdfError.name
+                    });
+                    console.log('🔄 Intentando generar PDF simple...');
+                    
+                    // Limpiar elemento temporal
+                    if (tempDiv.parentNode) {
+                        document.body.removeChild(tempDiv);
+                    }
+                    
+                    // Intentar generar PDF simple como respaldo
+                    generarPDFSimple(stats);
+                }
+
+            } catch (error) {
+                console.error('❌ Error generando PDF:', error);
+                alert('❌ Error generando el informe PDF. Intenta nuevamente.');
+            } finally {
+                // Restaurar botón
+                const btn = event.target;
+                btn.innerHTML = '📊 Generar Informe PDF';
+                btn.disabled = false;
+            }
+        }
+
+        // Función de respaldo para generar PDF simple
+        function generarPDFSimple(stats) {
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                
+                const fechaActual = new Date().toLocaleDateString('es-VE');
+                const totalRegistrados = stats.votes.length;
+                const totalVotaron = stats.votes.filter(v => v.voted).length;
+                const porcentajeParticipacion = totalRegistrados > 0 ? ((totalVotaron / totalRegistrados) * 100).toFixed(1) : 0;
+
+                // Agregar contenido al PDF
+                pdf.setFontSize(20);
+                pdf.text('INFORME DE VOTOS 2025', 20, 20);
+                
+                pdf.setFontSize(12);
+                pdf.text(`Fecha: ${fechaActual}`, 20, 35);
+                pdf.text(`Total Registrados: ${totalRegistrados}`, 20, 50);
+                pdf.text(`Total Votaron: ${totalVotaron}`, 20, 65);
+                pdf.text(`Participación: ${porcentajeParticipacion}%`, 20, 80);
+
+                // Descargar PDF
+                const filename = `informe_simple_${new Date().toISOString().split('T')[0]}.pdf`;
+                pdf.save(filename);
+                
+                console.log('✅ PDF simple generado exitosamente');
+                alert('✅ PDF simple generado y descargado exitosamente');
+                
+            } catch (error) {
+                console.error('❌ Error generando PDF simple:', error);
+                alert('❌ Error generando PDF. Verifica la conexión a internet.');
+            }
+        }
+
+        // Función para generar las filas de la tabla de reportes por hora
+        function generarFilasReporteHora(votes) {
+            // Obtener todos los 19 Centros de Votación
+            const todosLosCV = [
+                'CV 01 - Escuela Básica Nacional "Simón Bolívar"',
+                'CV 02 - Escuela Básica Nacional "Rómulo Gallegos"',
+                'CV 03 - Escuela Básica Nacional "Andrés Bello"',
+                'CV 04 - Escuela Básica Nacional "Juan Vicente González"',
+                'CV 05 - Escuela Básica Nacional "Rafael Urdaneta"',
+                'CV 06 - Escuela Básica Nacional "Antonio José de Sucre"',
+                'CV 07 - Escuela Básica Nacional "José Félix Ribas"',
+                'CV 08 - Escuela Básica Nacional "José Antonio Páez"',
+                'CV 09 - Escuela Básica Nacional "Francisco de Miranda"',
+                'CV 10 - Escuela Básica Nacional "José Gregorio Monagas"',
+                'CV 11 - Escuela Básica Nacional "Manuel Piar"',
+                'CV 12 - Escuela Básica Nacional "José Tadeo Monagas"',
+                'CV 13 - Escuela Básica Nacional "Ezequiel Zamora"',
+                'CV 14 - Escuela Básica Nacional "Juan Crisóstomo Falcón"',
+                'CV 15 - Escuela Básica Nacional "José María Vargas"',
+                'CV 16 - Escuela Básica Nacional "Carlos Soublette"',
+                'CV 17 - Escuela Básica Nacional "José Laurencio Silva"',
+                'CV 18 - Escuela Básica Nacional "Tomás Lander"',
+                'CV 19 - Escuela Básica Nacional "José Félix Blanco"'
+            ];
+            
+            // Función para verificar si un voto es del día actual
+            function esVotoDelDiaActual(fechaConfirmacion) {
+                if (!fechaConfirmacion) return false;
+                
+                const fechaVoto = new Date(fechaConfirmacion);
+                const hoy = new Date();
+                
+                return fechaVoto.getDate() === hoy.getDate() &&
+                       fechaVoto.getMonth() === hoy.getMonth() &&
+                       fechaVoto.getFullYear() === hoy.getFullYear();
+            }
+            
+            // Generar filas para cada centro de votación (todos los 19)
+            return todosLosCV.map((cv, index) => {
+                // Filtrar votos solo del día actual
+                const votosCV = votes.filter(vote => 
+                    vote.ubch === cv && 
+                    vote.voted && 
+                    esVotoDelDiaActual(vote.fechaConfirmacion)
+                );
+                
+                const votosPorHora = contarVotosPorHora(votosCV);
+                const total = votosCV.length;
+                
+                return `
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${index + 1}</td>
+                        <td style="padding: 8px 6px; text-align: left; border: 1px solid #ddd; font-weight: 500;">${cv}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${votosPorHora['08:00'] || 0}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${votosPorHora['10:00'] || 0}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${votosPorHora['12:00'] || 0}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${votosPorHora['14:00'] || 0}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${votosPorHora['16:00'] || 0}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${votosPorHora['18:00'] || 0}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${votosPorHora['19:00'] || 0}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${votosPorHora['20:00'] || 0}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd;">${votosPorHora['21:00'] || 0}</td>
+                        <td style="padding: 8px 6px; text-align: center; border: 1px solid #ddd; font-weight: bold; background: #e8f5e8; color: #2e7d32;">${total}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Función para contar votos por hora
+        function contarVotosPorHora(votos) {
+            const votosPorHora = {};
+            
+            votos.forEach(voto => {
+                if (voto.fechaConfirmacion) {
+                    const fecha = new Date(voto.fechaConfirmacion);
+                    const hora = fecha.getHours();
+                    
+                    // Mapear horas a franjas horarias
+                    let franja = '';
+                    if (hora >= 8 && hora < 10) franja = '08:00';
+                    else if (hora >= 10 && hora < 12) franja = '10:00';
+                    else if (hora >= 12 && hora < 14) franja = '12:00';
+                    else if (hora >= 14 && hora < 16) franja = '14:00';
+                    else if (hora >= 16 && hora < 18) franja = '16:00';
+                    else if (hora >= 18 && hora < 19) franja = '18:00';
+                    else if (hora >= 19 && hora < 20) franja = '19:00';
+                    else if (hora >= 20 && hora < 21) franja = '20:00';
+                    else if (hora >= 21 && hora < 22) franja = '21:00';
+                    
+                    if (franja) {
+                        votosPorHora[franja] = (votosPorHora[franja] || 0) + 1;
+                    }
+                }
+            });
+            
+            return votosPorHora;
+        }
+
+        // Función para calcular total por hora
+        function calcularTotalHora(votes, hora) {
+            return votes.filter(v => {
+                if (v.voted && v.fechaConfirmacion) {
+                    const fecha = new Date(v.fechaConfirmacion);
+                    const horaVoto = fecha.getHours();
+                    const hoy = new Date();
+                    
+                    // Verificar que sea del día actual
+                    const esDelDiaActual = fecha.getDate() === hoy.getDate() &&
+                                         fecha.getMonth() === hoy.getMonth() &&
+                                         fecha.getFullYear() === hoy.getFullYear();
+                    
+                    if (!esDelDiaActual) return false;
+                    
+                    if (hora === '08:00' && horaVoto >= 8 && horaVoto < 10) return true;
+                    if (hora === '10:00' && horaVoto >= 10 && horaVoto < 12) return true;
+                    if (hora === '12:00' && horaVoto >= 12 && horaVoto < 14) return true;
+                    if (hora === '14:00' && horaVoto >= 14 && horaVoto < 16) return true;
+                    if (hora === '16:00' && horaVoto >= 16 && horaVoto < 18) return true;
+                    if (hora === '18:00' && horaVoto >= 18 && horaVoto < 19) return true;
+                    if (hora === '19:00' && horaVoto >= 19 && horaVoto < 20) return true;
+                    if (hora === '20:00' && horaVoto >= 20 && horaVoto < 21) return true;
+                    if (hora === '21:00' && horaVoto >= 21 && horaVoto < 22) return true;
+                }
+                return false;
+            }).length;
+        }
+
+        // Función para calcular total general
+        function calcularTotalGeneral(votes) {
+            const hoy = new Date();
+            return votes.filter(v => {
+                if (v.voted && v.fechaConfirmacion) {
+                    const fecha = new Date(v.fechaConfirmacion);
+                    return fecha.getDate() === hoy.getDate() &&
+                           fecha.getMonth() === hoy.getMonth() &&
+                           fecha.getFullYear() === hoy.getFullYear();
+                }
+                return false;
+            }).length;
+        }
         </script>
     </div>
+
+    <!-- Modal de estadísticas detalladas -->
+    <div id="detalle-modal" class="modal" style="display:none;">
+        <div class="modal-content" id="detalle-modal-content">
+            <!-- Aquí se llenarán las estadísticas detalladas dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Herramientas de Análisis -->
+    <script src="herramientas-analisis.js"></script>
+    
+    <!-- Botón flotante para análisis -->
+    <div id="analysis-button" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+        <button onclick="runCompleteAnalysis()" class="btn btn-primary" style="padding: 10px 15px; border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            🔍 Análisis Sistema
+        </button>
+    </div>
+
+    <!-- Panel de resultados de análisis -->
+    <div id="analysis-panel" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 1001; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: #2c3e50;">📊 Análisis del Sistema</h3>
+            <button onclick="closeAnalysisPanel()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #666;">&times;</button>
+        </div>
+        <div id="analysis-results">
+            <div style="text-align: center; padding: 20px;">
+                <div class="spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                <p style="margin-top: 10px; color: #666;">Ejecutando análisis completo...</p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .analysis-metric {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .analysis-metric.good { border-left-color: #2ecc71; }
+        .analysis-metric.warning { border-left-color: #f39c12; }
+        .analysis-metric.critical { border-left-color: #e74c3c; }
+        
+        .metric-value {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+    </style>
+
+    <script>
+        // Función para mostrar panel de análisis
+        function showAnalysisPanel() {
+            document.getElementById('analysis-panel').style.display = 'block';
+        }
+        
+        // Función para cerrar panel de análisis
+        function closeAnalysisPanel() {
+            document.getElementById('analysis-panel').style.display = 'none';
+        }
+        
+        // Función para mostrar resultados
+        function displayAnalysisResults(results) {
+            const resultsDiv = document.getElementById('analysis-results');
+            
+            let html = `
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #2c3e50; margin-bottom: 15px;">📊 Resultados del Análisis</h4>
+                    
+                    <div class="analysis-metric ${results.pageReport.avgLoadTime < 2000 ? 'good' : results.pageReport.avgLoadTime < 5000 ? 'warning' : 'critical'}">
+                        <div class="metric-label">Tiempo de Carga Promedio</div>
+                        <div class="metric-value">${results.pageReport.avgLoadTime}</div>
+                    </div>
+                    
+                    <div class="analysis-metric ${results.pageReport.avgAPITime < 500 ? 'good' : results.pageReport.avgAPITime < 1000 ? 'warning' : 'critical'}">
+                        <div class="metric-label">Tiempo de API Promedio</div>
+                        <div class="metric-value">${results.pageReport.avgAPITime}</div>
+                    </div>
+                    
+                    <div class="analysis-metric ${results.pageReport.avgMemory < 100 ? 'good' : results.pageReport.avgMemory < 200 ? 'warning' : 'critical'}">
+                        <div class="metric-label">Memoria Promedio</div>
+                        <div class="metric-value">${results.pageReport.avgMemory}</div>
+                    </div>
+                    
+                    <div class="analysis-metric ${results.pageReport.errorRate < 5 ? 'good' : results.pageReport.errorRate < 10 ? 'warning' : 'critical'}">
+                        <div class="metric-label">Tasa de Errores</div>
+                        <div class="metric-value">${results.pageReport.errorRate}</div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #2c3e50; margin-bottom: 15px;">📋 Resumen</h4>
+                    <p style="color: #666; line-height: 1.5;">
+                        <strong>Estado del Sistema:</strong> ${getSystemStatus(results)}<br>
+                        <strong>Optimizaciones Recomendadas:</strong> ${getOptimizationRecommendations(results)}<br>
+                        <strong>Prioridad:</strong> ${getPriorityLevel(results)}
+                    </p>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button onclick="exportAnalysisReport(results)" class="btn btn-secondary" style="margin-right: 10px;">
+                        📄 Exportar Reporte
+                    </button>
+                    <button onclick="closeAnalysisPanel()" class="btn btn-primary">
+                        ✅ Entendido
+                    </button>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Función para determinar estado del sistema
+        function getSystemStatus(results) {
+            const loadTime = parseFloat(results.pageReport.avgLoadTime);
+            const apiTime = parseFloat(results.pageReport.avgAPITime);
+            const errorRate = parseFloat(results.pageReport.errorRate);
+            
+            if (loadTime < 2000 && apiTime < 500 && errorRate < 5) {
+                return "✅ EXCELENTE";
+            } else if (loadTime < 5000 && apiTime < 1000 && errorRate < 10) {
+                return "🟡 ACEPTABLE";
+            } else {
+                return "❌ NECESITA OPTIMIZACIÓN";
+            }
+        }
+        
+        // Función para obtener recomendaciones
+        function getOptimizationRecommendations(results) {
+            const recommendations = [];
+            const loadTime = parseFloat(results.pageReport.avgLoadTime);
+            const apiTime = parseFloat(results.pageReport.avgAPITime);
+            
+            if (loadTime > 2000) recommendations.push("Paginación Virtual");
+            if (apiTime > 500) recommendations.push("Índices Firebase");
+            if (parseFloat(results.pageReport.avgMemory) > 100) recommendations.push("Cache Inteligente");
+            
+            return recommendations.length > 0 ? recommendations.join(", ") : "Ninguna crítica";
+        }
+        
+        // Función para determinar prioridad
+        function getPriorityLevel(results) {
+            const loadTime = parseFloat(results.pageReport.avgLoadTime);
+            const apiTime = parseFloat(results.pageReport.avgAPITime);
+            const errorRate = parseFloat(results.pageReport.errorRate);
+            
+            if (loadTime > 5000 || apiTime > 1000 || errorRate > 10) {
+                return "🔴 ALTA - Optimizaciones críticas necesarias";
+            } else if (loadTime > 2000 || apiTime > 500 || errorRate > 5) {
+                return "🟡 MEDIA - Mejoras recomendadas";
+            } else {
+                return "🟢 BAJA - Sistema funcionando bien";
+            }
+        }
+        
+        // Función para exportar reporte
+        function exportAnalysisReport(results) {
+            const report = {
+                timestamp: new Date().toISOString(),
+                results: results,
+                systemStatus: getSystemStatus(results),
+                recommendations: getOptimizationRecommendations(results),
+                priority: getPriorityLevel(results)
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analisis-sistema-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // === FUNCIONES DE CUENTA ATRÁS ===
+        
+        let countdownInterval;
+        let targetDate = null;
+        
+        // Función para alternar el acordeón de la cuenta atrás
+        function toggleCountdownAccordion() {
+            const content = document.getElementById('countdown-accordion-content');
+            const icon = document.getElementById('countdown-accordion-icon');
+            
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+                icon.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+                icon.textContent = '▼';
+            }
+        }
+        
+        // Función para establecer la fecha objetivo
+        function setCountdownDate() {
+            const dateInput = document.getElementById('countdown-date');
+            const selectedDate = dateInput.value;
+            
+            if (!selectedDate) {
+                alert('Por favor selecciona una fecha y hora objetivo');
+                return;
+            }
+            
+            targetDate = new Date(selectedDate);
+            localStorage.setItem('countdownTargetDate', targetDate.toISOString());
+            
+            // Iniciar cuenta atrás
+            startCountdown();
+            
+            // Actualizar mensaje
+            document.getElementById('countdown-message').innerHTML = `
+                <span style="color: #43e97b; font-weight: 600;">✅ Cuenta atrás iniciada para: ${targetDate.toLocaleString('es-ES')}</span>
+            `;
+            
+            console.log('⏰ Cuenta atrás establecida para:', targetDate);
+        }
+        
+        // Función para reiniciar la cuenta atrás
+        function resetCountdown() {
+            // Limpiar intervalo
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            // Limpiar fecha objetivo
+            targetDate = null;
+            localStorage.removeItem('countdownTargetDate');
+            
+            // Resetear display
+            document.getElementById('countdown-days').textContent = '00';
+            document.getElementById('countdown-hours').textContent = '00';
+            document.getElementById('countdown-minutes').textContent = '00';
+            document.getElementById('countdown-seconds').textContent = '00';
+            
+            // Resetear mensaje
+            document.getElementById('countdown-message').textContent = 'Establece una fecha objetivo para comenzar la cuenta atrás';
+            
+            // Limpiar input
+            document.getElementById('countdown-date').value = '';
+            
+            console.log('🔄 Cuenta atrás reiniciada');
+        }
+        
+        // Función para iniciar la cuenta atrás
+        function startCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            countdownInterval = setInterval(updateCountdown, 1000);
+            updateCountdown(); // Actualizar inmediatamente
+        }
+        
+        // Función para actualizar la cuenta atrás
+        function updateCountdown() {
+            if (!targetDate) return;
+            
+            const now = new Date();
+            const timeDifference = targetDate - now;
+            
+            if (timeDifference <= 0) {
+                // Tiempo agotado
+                clearInterval(countdownInterval);
+                document.getElementById('countdown-days').textContent = '00';
+                document.getElementById('countdown-hours').textContent = '00';
+                document.getElementById('countdown-minutes').textContent = '00';
+                document.getElementById('countdown-seconds').textContent = '00';
+                
+                document.getElementById('countdown-message').innerHTML = `
+                    <span style="color: #e74c3c; font-weight: 600; font-size: 1.2em;">🎉 ¡TIEMPO AGOTADO! ¡Las elecciones han comenzado!</span>
+                `;
+                
+                // Reproducir sonido de alerta (opcional)
+                playCountdownAlert();
+                
+                return;
+            }
+            
+            // Calcular tiempo restante
+            const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+            
+            // Actualizar display
+            document.getElementById('countdown-days').textContent = days.toString().padStart(2, '0');
+            document.getElementById('countdown-hours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+            
+            // Cambiar color cuando queden menos de 24 horas
+            if (days === 0 && hours < 24) {
+                document.querySelector('.countdown-container').style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+                document.getElementById('countdown-message').innerHTML = `
+                    <span style="color: #ffeb3b; font-weight: 600;">⚠️ ¡MENOS DE 24 HORAS! ¡Prepárate para las elecciones!</span>
+                `;
+            } else if (days === 0 && hours < 1) {
+                document.querySelector('.countdown-container').style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
+                document.getElementById('countdown-message').innerHTML = `
+                    <span style="color: #fff; font-weight: 600;">🚨 ¡MENOS DE 1 HORA! ¡Últimos preparativos!</span>
+                `;
+            }
+        }
+        
+        // Función para reproducir alerta (opcional)
+        function playCountdownAlert() {
+            // Crear un beep simple usando Web Audio API
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (error) {
+                console.log('No se pudo reproducir alerta de audio');
+            }
+        }
+        
+        // Función para cargar cuenta atrás guardada al cargar la página
+        function loadSavedCountdown() {
+            const savedDate = localStorage.getItem('countdownTargetDate');
+            if (savedDate) {
+                targetDate = new Date(savedDate);
+                const dateInput = document.getElementById('countdown-date');
+                dateInput.value = savedDate.slice(0, 16); // Formato para datetime-local
+                
+                startCountdown();
+                
+                document.getElementById('countdown-message').innerHTML = `
+                    <span style="color: #43e97b; font-weight: 600;">✅ Cuenta atrás activa para: ${targetDate.toLocaleString('es-ES')}</span>
+                `;
+                
+                // Abrir automáticamente el acordeón si hay cuenta atrás activa
+                const content = document.getElementById('countdown-accordion-content');
+                const icon = document.getElementById('countdown-accordion-icon');
+                if (content && icon) {
+                    content.style.display = 'block';
+                    icon.style.transform = 'rotate(180deg)';
+                    icon.textContent = '▲';
+                }
+                
+                console.log('⏰ Cuenta atrás cargada desde localStorage');
+            }
+        }
+        
+        // Función para mostrar el contenido cuando esté listo
+        function showContent() {
+            const mainContent = document.querySelector('.main-content');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+            
+            if (mainContent) {
+                mainContent.classList.remove('content-hidden');
+                mainContent.classList.add('content-visible');
+            }
+            
+            // Mostrar las tarjetas del dashboard con animación
+            const dashboardCards = document.querySelectorAll('.dashboard-card');
+            dashboardCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('loaded');
+                }, index * 100); // Animación escalonada
+            });
+        }
+        
+        // Función para inicializar la página
+        function initializePage() {
+            console.log('🚀 Inicializando página de estadísticas avanzadas...');
+            
+            // Cargar cuenta atrás
+            loadSavedCountdown();
+            
+            // Configurar navegación específica para esta página
+            configurePageNavigation();
+            
+            // Simular tiempo de carga (puedes ajustar esto según tus necesidades)
+            setTimeout(() => {
+                showContent();
+                console.log('✅ Página inicializada correctamente');
+            }, 800); // 800ms de carga
+        }
+        
+        // Función para configurar navegación específica de esta página
+        function configurePageNavigation() {
+            // Obtener usuario actual del localStorage
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            if (currentUser && currentUser.rol) {
+                console.log('👤 Configurando navegación para:', currentUser.rol);
+                
+                // Ocultar todos los botones específicos de roles por defecto
+                const specificButtons = [
+                    'nav-verifier-dashboard',
+                    'nav-verifier-history', 
+                    'nav-registrator-dashboard',
+                    'nav-registrator-history'
+                ];
+                
+                specificButtons.forEach(btnId => {
+                    const btn = document.getElementById(btnId);
+                    if (btn) {
+                        btn.style.display = 'none';
+                        console.log('🚫 Ocultando botón específico:', btnId);
+                    }
+                });
+                
+                // Solo mostrar botones específicos si el usuario tiene el rol correspondiente
+                if (currentUser.rol === 'verificador') {
+                    const verifierButtons = ['nav-verifier-dashboard', 'nav-verifier-history'];
+                    verifierButtons.forEach(btnId => {
+                        const btn = document.getElementById(btnId);
+                        if (btn) {
+                            btn.style.display = 'inline-block';
+                            console.log('✅ Mostrando botón verificador:', btnId);
+                        }
+                    });
+                } else if (currentUser.rol === 'registrador') {
+                    const registratorButtons = ['nav-registrator-dashboard', 'nav-registrator-history'];
+                    registratorButtons.forEach(btnId => {
+                        const btn = document.getElementById(btnId);
+                        if (btn) {
+                            btn.style.display = 'inline-block';
+                            console.log('✅ Mostrando botón registrador:', btnId);
+                        }
+                    });
+                }
+                // Para superusuarios y admins, los botones específicos permanecen ocultos
+            }
+        }
+        
+        // Función para cerrar sesión
+        function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('sessionTime');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Inicializar cuenta atrás al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+        });
+        
+        // Función global para ejecutar análisis
+        window.runCompleteAnalysis = async function() {
+            showAnalysisPanel();
+            
+            try {
+                console.log('🔍 INICIANDO ANÁLISIS COMPLETO DEL SISTEMA');
+                console.log('==========================================');
+                
+                // Ejecutar análisis
+                const results = await window.runCompleteAnalysis();
+                
+                // Mostrar resultados
+                displayAnalysisResults(results);
+                
+                console.log('✅ Análisis completado exitosamente');
+                
+            } catch (error) {
+                console.error('❌ Error durante el análisis:', error);
+                document.getElementById('analysis-results').innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #e74c3c;">
+                        <h4>❌ Error en el Análisis</h4>
+                        <p>${error.message}</p>
+                        <button onclick="closeAnalysisPanel()" class="btn btn-primary">Cerrar</button>
+                    </div>
+                `;
+            }
+        };
+    </script>
 </body>
 </html> 

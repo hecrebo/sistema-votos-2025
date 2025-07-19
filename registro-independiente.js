@@ -1,5 +1,4 @@
-// Choices.js solo debe cargarse en la página de registro si se usa autocompletado avanzado. No cargarlo globalmente.
-// --- REGISTRO UBCH/COMUNIDAD AISLADO ---
+// --- REGISTRO CENTRO DE VOTACIÓN/COMUNIDAD AISLADO ---
 
 // Configuración estática (puedes cargarla dinámicamente si lo prefieres)
 const UBCH_TO_COMMUNITY = {
@@ -9,7 +8,7 @@ const UBCH_TO_COMMUNITY = {
     "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "COMUNIDAD NO DEFINIDA"],
     "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "COMUNIDAD NO DEFINIDA"],
     "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "COMUNIDAD NO DEFINIDA"],
-    "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "BARRIO SOLIDARIO", "COMUNIDAD FUTURO", "COMUNIDAD NO DEFINIDA"],
+    "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "COMUNIDAD NO DEFINIDA"],
     "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "COMUNIDAD NO DEFINIDA"],
     "CASA COMUNAL": ["LOS JABILLOS", "COMUNIDAD NO DEFINIDA"],
     "UNIDAD EDUCATIVA MONSEÑOR JACINTO SOTO LAYERA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "COMUNIDAD NO DEFINIDA"],
@@ -84,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ubch = document.getElementById('ubch-ind').value;
         const comunidad = document.getElementById('community-ind').value;
         if (!ubch || !comunidad) {
-            document.getElementById('msg-registro-independiente').textContent = 'Debes seleccionar UBCH y comunidad.';
+            document.getElementById('msg-registro-independiente').textContent = 'Debes seleccionar Centro de Votación y comunidad.';
             document.getElementById('msg-registro-independiente').style.color = 'red';
             return;
         }

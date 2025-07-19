@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba Exportación CSV - Verificador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .csv-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Prueba de Exportación CSV - Verificador</h1>
+        
+        <div class="test-section">
+            <h3>📋 Datos de Prueba</h3>
+            <p>Generando datos de prueba para verificar la exportación CSV...</p>
+            <button class="btn" onclick="generateTestData()">Generar Datos de Prueba</button>
+            <button class="btn" onclick="testCSVExport()">Probar Exportación CSV</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Vista Previa del CSV</h3>
+            <div id="csv-preview" class="csv-preview">Haz clic en "Generar Datos de Prueba" para ver el CSV...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Resultados de la Prueba</h3>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de prueba para el verificador
+        let testConfirmations = [];
+
+        function generateTestData() {
+            const testData = [
+                {
+                    fechaConfirmacion: '2024-12-15T09:30:00Z',
+                    name: 'Juan Pérez',
+                    cedula: '12345678',
+                    ubch: 'ESCUELA GRADUADA PEDRO GUAL',
+                    community: '10 DE AGOSTO'
+                },
+                {
+                    fechaConfirmacion: '2024-12-15T10:15:00Z',
+                    name: 'María González',
+                    cedula: '87654321',
+                    ubch: 'COLEGIO ASUNCION BELTRAN',
+                    community: 'EL VALLE'
+                },
+                {
+                    fechaConfirmacion: '2024-12-15T11:45:00Z',
+                    name: 'Carlos Rodríguez',
+                    cedula: '11223344',
+                    ubch: 'LICEO JOSE FELIX RIBAS',
+                    community: 'EL CUJINAL'
+                },
+                {
+                    fechaConfirmacion: '2024-12-15T14:20:00Z',
+                    name: 'Ana López',
+                    cedula: '55667788',
+                    ubch: 'ESCUELA PRIMARIA BOLIVARIANA LA PRADERA',
+                    community: 'EL SAMAN'
+                },
+                {
+                    fechaConfirmacion: '2024-12-15T16:45:00Z',
+                    name: 'Pedro Martínez',
+                    cedula: '99887766',
+                    ubch: 'CASA COMUNAL JOSE TOMAS GALLARDO',
+                    community: 'JOSE TOMAS GALLARDO A'
+                }
+            ];
+
+            testConfirmations = testData;
+            document.getElementById('test-results').innerHTML = 
+                '<span class="success">✅ Datos de prueba generados: ' + testData.length + ' confirmaciones</span>';
+        }
+
+        function generateVerifierHistoryCSV(confirmations) {
+            const headers = ['Fecha', 'Hora', 'Nombre', 'Cédula', 'Centro de Votación', 'Comunidad', 'Estado'];
+            
+            const rows = confirmations.map(conf => {
+                const confDate = new Date(conf.fechaConfirmacion);
+                return [
+                    `"${(confDate.toLocaleDateString('es-VE') || '').replace(/"/g, '""')}"`,
+                    `"${(confDate.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' }) || '').replace(/"/g, '""')}"`,
+                    `"${(conf.name || '').replace(/"/g, '""')}"`,
+                    `"${(conf.cedula || '').replace(/"/g, '""')}"`,
+                    `"${(conf.ubch || '').replace(/"/g, '""')}"`,
+                    `"${(conf.community || '').replace(/"/g, '""')}"`,
+                    `"Confirmado"`
+                ];
+            });
+            
+            let csvContent = headers.join(';') + '\r\n';
+            rows.forEach(row => {
+                csvContent += row.join(';') + '\r\n';
+            });
+            
+            return csvContent;
+        }
+
+        function testCSVExport() {
+            if (testConfirmations.length === 0) {
+                document.getElementById('test-results').innerHTML = 
+                    '<span class="error">❌ Primero genera datos de prueba</span>';
+                return;
+            }
+
+            try {
+                // Generar CSV
+                const csvContent = generateVerifierHistoryCSV(testConfirmations);
+                
+                // Mostrar vista previa
+                document.getElementById('csv-preview').textContent = csvContent;
+                
+                // Crear CSV con BOM para Excel
+                const BOM = '\uFEFF'; // Byte Order Mark para Excel
+                const csvWithBOM = BOM + csvContent;
+                
+                // Crear blob con tipo MIME específico para CSV
+                const blob = new Blob([csvWithBOM], { 
+                    type: 'text/csv;charset=utf-8'
+                });
+                
+                // Crear enlace de descarga
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                // Configurar descarga
+                link.setAttribute('href', url);
+                link.setAttribute('download', `test_historial_verificador_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                
+                // Descargar archivo
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Limpiar URL
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                }, 100);
+
+                document.getElementById('test-results').innerHTML = 
+                    '<span class="success">✅ CSV exportado correctamente con formato del listado (punto y coma)</span>';
+                
+            } catch (error) {
+                document.getElementById('test-results').innerHTML = 
+                    '<span class="error">❌ Error al exportar CSV: ' + error.message + '</span>';
+            }
+        }
+    </script>
+</body>
+</html> 

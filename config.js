@@ -30,7 +30,14 @@ const CONFIG = {
         NOTIFICATIONS: {
             PREVENT_DUPLICATES: true,
             AUTO_HIDE_DELAY: 5000, // 5 segundos
-            MAX_DISPLAY_TIME: 10000 // 10 segundos
+            MAX_DISPLAY_TIME: 10000, // 10 segundos
+            DUPLICATE_TIMEOUT: 30000, // 30 segundos para considerar duplicado
+            MAX_SIMILAR_PER_MINUTE: 3, // Máximo 3 notificaciones similares por minuto
+            FILTER_LEVEL: 'normal', // 'minimal', 'normal', 'verbose'
+            ENABLE_SOUND: false,
+            ENABLE_DESKTOP: true,
+            BLOCKED_TYPES: [], // Tipos de notificaciones bloqueadas
+            BLOCKED_KEYWORDS: [] // Palabras clave bloqueadas
         }
     },
     
@@ -75,7 +82,7 @@ const CONFIG = {
     EXPORT: {
         PDF: {
             ENABLED: true,
-            COLUMNS: ['Nombre', 'Cédula', 'Sexo', 'Edad', 'Teléfono', 'UBCH', 'Comunidad', 'Votó']
+            COLUMNS: ['Nombre', 'Cédula', 'Sexo', 'Edad', 'Teléfono', 'Centro de Votación', 'Comunidad', 'Votó']
         },
         CSV: {
             ENABLED: true,
@@ -181,3 +188,35 @@ if (typeof module !== 'undefined' && module.exports) {
     window.getConfig = getConfig;
     window.updateConfig = updateConfig;
 } 
+
+// Función para actualizar configuraciones de notificaciones
+function updateNotificationSettings(settings) {
+    console.log('🔔 Configuración de notificaciones actualizada:', settings);
+}
+
+// Función para bloquear tipos de notificación
+function blockNotificationType(type) {
+    console.log('🚫 Tipo de notificación bloqueado:', type);
+}
+
+// Función para bloquear palabras clave
+function blockNotificationKeyword(keyword) {
+    console.log('🚫 Palabra clave bloqueada:', keyword);
+}
+
+// Función para obtener estadísticas de notificaciones
+function getNotificationStatistics() {
+    console.log('📊 Estadísticas de notificaciones obtenidas');
+}
+
+// Configurar filtros
+updateNotificationSettings({filterLevel: 'minimal'});
+
+// Bloquear tipos
+blockNotificationType('info');
+
+// Bloquear palabras clave
+blockNotificationKeyword('error');
+
+// Ver estadísticas
+getNotificationStatistics();
