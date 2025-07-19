@@ -158,6 +158,36 @@
             border-radius: 4px;
         }
         
+        /* Estilos para avatares editables */
+        .avatar-preset:hover {
+            border-color: #667eea !important;
+            background-color: rgba(102, 126, 234, 0.05) !important;
+            transform: scale(1.05);
+        }
+        
+        .avatar-preset img {
+            transition: all 0.2s ease;
+        }
+        
+        .avatar-preset:hover img {
+            transform: scale(1.1);
+        }
+        
+        .avatar-edit-btn {
+            transition: all 0.2s ease;
+            opacity: 0.7;
+        }
+        
+        .avatar-edit-btn:hover {
+            opacity: 1;
+            transform: scale(1.2);
+            background: #10b981 !important;
+        }
+        
+        .avatar-preset:hover .avatar-edit-btn {
+            opacity: 1;
+        }
+        
         /* Responsive design */
         @media (max-width: 768px) {
             .control-group {
@@ -178,6 +208,11 @@
                 flex-direction: column;
                 gap: 8px;
                 text-align: center;
+            }
+            
+            .avatar-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+                max-width: 100% !important;
             }
         }
     </style>
@@ -357,6 +392,132 @@
                         </div>
                     </div>
                     <button class="btn btn-secondary" onclick="resetBlockedTypes()">🔄 Resetear</button>
+                </div>
+            </div>
+
+            <!-- Nueva sección: Avatar Personalizable -->
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>🖼️ Avatar de Notificaciones</h3>
+                    <div class="avatar-controls" style="margin-top: 20px;">
+                        <div class="avatar-preview" style="text-align: center; margin-bottom: 20px;">
+                            <img id="avatar-preview" src="logo 2.png" alt="Avatar Preview" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #667eea; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                            <p style="margin-top: 10px; font-size: 0.9em; color: #666;">Vista previa del avatar</p>
+                        </div>
+                        
+                        <div class="avatar-upload" style="margin-bottom: 15px;">
+                            <input type="file" id="avatar-upload" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
+                            <button class="btn btn-primary" onclick="document.getElementById('avatar-upload').click()">
+                                📁 Seleccionar Imagen
+                            </button>
+                            <small style="display: block; margin-top: 5px; color: #666; font-size: 0.8em;">
+                                Formatos: JPG, PNG, GIF. Tamaño máximo: 2MB
+                            </small>
+                        </div>
+                        
+                        <div class="avatar-presets" style="margin-bottom: 15px;">
+                            <h4 style="margin-bottom: 10px; font-size: 0.9em; color: #666;">🎨 Avatares Editables:</h4>
+                            <div class="avatar-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; max-width: 400px;">
+                                <div class="avatar-preset" data-avatar-id="1" onclick="selectEditableAvatar(1)" style="cursor: pointer; text-align: center; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px; transition: all 0.2s; position: relative;">
+                                    <img src="logo 2.png" alt="Avatar 1" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div style="font-size: 0.7em; margin-top: 4px; color: #666;">Avatar 1</div>
+                                    <div class="avatar-edit-btn" onclick="editAvatar(1, event)" style="position: absolute; top: -5px; right: -5px; background: #667eea; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">✏️</div>
+                                </div>
+                                <div class="avatar-preset" data-avatar-id="2" onclick="selectEditableAvatar(2)" style="cursor: pointer; text-align: center; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px; transition: all 0.2s; position: relative;">
+                                    <img src="logo.jpg" alt="Avatar 2" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div style="font-size: 0.7em; margin-top: 4px; color: #666;">Avatar 2</div>
+                                    <div class="avatar-edit-btn" onclick="editAvatar(2, event)" style="position: absolute; top: -5px; right: -5px; background: #667eea; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">✏️</div>
+                                </div>
+                                <div class="avatar-preset" data-avatar-id="3" onclick="selectEditableAvatar(3)" style="cursor: pointer; text-align: center; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px; transition: all 0.2s; position: relative;">
+                                    <img src="https://placehold.co/128x128/667eea/ffffff?text=DC" alt="Avatar 3" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div style="font-size: 0.7em; margin-top: 4px; color: #666;">Avatar 3</div>
+                                    <div class="avatar-edit-btn" onclick="editAvatar(3, event)" style="position: absolute; top: -5px; right: -5px; background: #667eea; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">✏️</div>
+                                </div>
+                                <div class="avatar-preset" data-avatar-id="4" onclick="selectEditableAvatar(4)" style="cursor: pointer; text-align: center; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px; transition: all 0.2s; position: relative;">
+                                    <img src="https://placehold.co/128x128/10b981/ffffff?text=DC" alt="Avatar 4" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div style="font-size: 0.7em; margin-top: 4px; color: #666;">Avatar 4</div>
+                                    <div class="avatar-edit-btn" onclick="editAvatar(4, event)" style="position: absolute; top: -5px; right: -5px; background: #667eea; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">✏️</div>
+                                </div>
+                                <div class="avatar-preset" data-avatar-id="5" onclick="selectEditableAvatar(5)" style="cursor: pointer; text-align: center; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px; transition: all 0.2s; position: relative;">
+                                    <img src="https://placehold.co/128x128/f59e0b/ffffff?text=DC" alt="Avatar 5" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div style="font-size: 0.7em; margin-top: 4px; color: #666;">Avatar 5</div>
+                                    <div class="avatar-edit-btn" onclick="editAvatar(5, event)" style="position: absolute; top: -5px; right: -5px; background: #667eea; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">✏️</div>
+                                </div>
+                                <div class="avatar-preset" data-avatar-id="6" onclick="selectEditableAvatar(6)" style="cursor: pointer; text-align: center; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px; transition: all 0.2s; position: relative;">
+                                    <img src="https://placehold.co/128x128/ef4444/ffffff?text=DC" alt="Avatar 6" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div style="font-size: 0.7em; margin-top: 4px; color: #666;">Avatar 6</div>
+                                    <div class="avatar-edit-btn" onclick="editAvatar(6, event)" style="position: absolute; top: -5px; right: -5px; background: #667eea; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">✏️</div>
+                                </div>
+                                <div class="avatar-preset" data-avatar-id="7" onclick="selectEditableAvatar(7)" style="cursor: pointer; text-align: center; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px; transition: all 0.2s; position: relative;">
+                                    <img src="https://placehold.co/128x128/8b5cf6/ffffff?text=DC" alt="Avatar 7" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div style="font-size: 0.7em; margin-top: 4px; color: #666;">Avatar 7</div>
+                                    <div class="avatar-edit-btn" onclick="editAvatar(7, event)" style="position: absolute; top: -5px; right: -5px; background: #667eea; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">✏️</div>
+                                </div>
+                                <div class="avatar-preset" data-avatar-id="8" onclick="selectEditableAvatar(8)" style="cursor: pointer; text-align: center; padding: 8px; border: 2px solid #e5e7eb; border-radius: 8px; transition: all 0.2s; position: relative;">
+                                    <img src="https://placehold.co/128x128/06b6d4/ffffff?text=DC" alt="Avatar 8" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <div style="font-size: 0.7em; margin-top: 4px; color: #666;">Avatar 8</div>
+                                    <div class="avatar-edit-btn" onclick="editAvatar(8, event)" style="position: absolute; top: -5px; right: -5px; background: #667eea; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer;">✏️</div>
+                                </div>
+                            </div>
+                            <small style="display: block; margin-top: 10px; color: #666; font-size: 0.8em;">
+                                💡 Haz clic en el avatar para seleccionarlo, o en el botón ✏️ para editarlo
+                            </small>
+                        </div>
+                        
+                        <div class="avatar-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-success" onclick="saveAvatar()">💾 Guardar Avatar</button>
+                            <button class="btn btn-warning" onclick="resetAvatar()">🔄 Restaurar Original</button>
+                            <button class="btn btn-danger" onclick="removeAvatar()">🗑️ Eliminar Avatar</button>
+                        </div>
+                        
+                        <div class="avatar-info" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #667eea;">
+                            <small style="color: #666;">
+                                <strong>💡 Información:</strong> El avatar se mostrará en todas las notificaciones del sistema. 
+                                Se recomienda usar una imagen cuadrada de 128x128 píxeles para mejor calidad.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>🎨 Configuración del Avatar</h3>
+                    <div class="avatar-settings" style="margin-top: 20px;">
+                        <div class="setting-group" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Tamaño del avatar:</label>
+                            <select id="avatar-size" onchange="updateAvatarSize()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="small">Pequeño (32px)</option>
+                                <option value="medium" selected>Mediano (48px)</option>
+                                <option value="large">Grande (64px)</option>
+                                <option value="xlarge">Extra Grande (80px)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-group" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Forma del avatar:</label>
+                            <select id="avatar-shape" onchange="updateAvatarShape()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="circle" selected>Círculo</option>
+                                <option value="square">Cuadrado</option>
+                                <option value="rounded">Redondeado</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-group" style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Borde del avatar:</label>
+                            <select id="avatar-border" onchange="updateAvatarBorder()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="none">Sin borde</option>
+                                <option value="solid" selected>Borde sólido</option>
+                                <option value="dashed">Borde punteado</option>
+                                <option value="shadow">Solo sombra</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">
+                                <input type="checkbox" id="avatar-enabled" checked onchange="toggleAvatarEnabled()">
+                                Mostrar avatar en notificaciones
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -789,9 +950,489 @@
             refreshNotificationStats();
         }
 
+        // ===== SISTEMA DE AVATAR PERSONALIZABLE =====
+        
+        // Variables globales para el avatar
+        let currentAvatarData = null;
+        let avatarSettings = {
+            size: 'medium',
+            shape: 'circle',
+            border: 'solid',
+            enabled: true
+        };
+
+        // Función para manejar la carga de imagen
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validar tipo de archivo
+            if (!file.type.startsWith('image/')) {
+                showNotification('❌ Por favor, selecciona un archivo de imagen válido', 'error', true);
+                return;
+            }
+
+            // Validar tamaño (2MB máximo)
+            if (file.size > 2 * 1024 * 1024) {
+                showNotification('❌ La imagen es demasiado grande. Máximo 2MB', 'error', true);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Crear canvas para redimensionar si es necesario
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Tamaño recomendado: 128x128
+                    const maxSize = 128;
+                    let { width, height } = img;
+                    
+                    // Mantener proporción si es necesario
+                    if (width > maxSize || height > maxSize) {
+                        if (width > height) {
+                            height = (height * maxSize) / width;
+                            width = maxSize;
+                        } else {
+                            width = (width * maxSize) / height;
+                            height = maxSize;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Dibujar imagen redimensionada
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Convertir a base64
+                    const resizedImageData = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    // Actualizar vista previa
+                    updateAvatarPreview(resizedImageData);
+                    
+                    // Guardar datos
+                    currentAvatarData = {
+                        data: resizedImageData,
+                        originalName: file.name,
+                        uploadTime: new Date().toISOString()
+                    };
+                    
+                    showNotification('✅ Imagen cargada correctamente', 'success', true);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Función para actualizar la vista previa del avatar
+        function updateAvatarPreview(imageData) {
+            const preview = document.getElementById('avatar-preview');
+            if (preview) {
+                preview.src = imageData;
+                applyAvatarSettings();
+            }
+        }
+
+        // Función para aplicar configuraciones del avatar
+        function applyAvatarSettings() {
+            const preview = document.getElementById('avatar-preview');
+            if (!preview) return;
+
+            // Aplicar tamaño
+            const sizeMap = {
+                small: '32px',
+                medium: '48px',
+                large: '64px',
+                xlarge: '80px'
+            };
+            const size = sizeMap[avatarSettings.size] || '48px';
+            preview.style.width = size;
+            preview.style.height = size;
+
+            // Aplicar forma
+            const shapeMap = {
+                circle: '50%',
+                square: '0%',
+                rounded: '12px'
+            };
+            const borderRadius = shapeMap[avatarSettings.shape] || '50%';
+            preview.style.borderRadius = borderRadius;
+
+            // Aplicar borde
+            const borderMap = {
+                none: 'none',
+                solid: `3px solid #667eea`,
+                dashed: `3px dashed #667eea`,
+                shadow: 'none'
+            };
+            const border = borderMap[avatarSettings.border] || '3px solid #667eea';
+            preview.style.border = border;
+
+            // Aplicar sombra si es necesario
+            if (avatarSettings.border === 'shadow') {
+                preview.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+            } else {
+                preview.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+            }
+        }
+
+        // Función para guardar el avatar
+        function saveAvatar() {
+            if (!currentAvatarData) {
+                showNotification('⚠️ No hay imagen para guardar', 'warning', true);
+                return;
+            }
+
+            try {
+                // Guardar en localStorage
+                localStorage.setItem('notificationAvatar', JSON.stringify(currentAvatarData));
+                localStorage.setItem('avatarSettings', JSON.stringify(avatarSettings));
+                
+                // Actualizar configuración global del sistema
+                if (window.updateNotificationAvatar) {
+                    window.updateNotificationAvatar(currentAvatarData.data, avatarSettings);
+                }
+                
+                showNotification('✅ Avatar guardado correctamente', 'success', true);
+                log('Avatar personalizado guardado', 'info');
+                
+            } catch (error) {
+                console.error('Error al guardar avatar:', error);
+                showNotification('❌ Error al guardar el avatar', 'error', true);
+            }
+        }
+
+        // Función para restaurar avatar original
+        function resetAvatar() {
+            try {
+                // Limpiar localStorage
+                localStorage.removeItem('notificationAvatar');
+                localStorage.removeItem('avatarSettings');
+                
+                // Restaurar vista previa
+                const preview = document.getElementById('avatar-preview');
+                if (preview) {
+                    preview.src = 'logo 2.png';
+                }
+                
+                // Resetear configuraciones
+                avatarSettings = {
+                    size: 'medium',
+                    shape: 'circle',
+                    border: 'solid',
+                    enabled: true
+                };
+                
+                // Actualizar controles
+                updateAvatarControls();
+                
+                // Limpiar datos
+                currentAvatarData = null;
+                
+                // Actualizar sistema
+                if (window.updateNotificationAvatar) {
+                    window.updateNotificationAvatar('logo 2.png', avatarSettings);
+                }
+                
+                showNotification('🔄 Avatar restaurado al original', 'info', true);
+                log('Avatar restaurado al original', 'info');
+                
+            } catch (error) {
+                console.error('Error al restaurar avatar:', error);
+                showNotification('❌ Error al restaurar el avatar', 'error', true);
+            }
+        }
+
+        // Función para eliminar avatar
+        function removeAvatar() {
+            if (confirm('¿Estás seguro de que quieres eliminar el avatar personalizado?')) {
+                resetAvatar();
+            }
+        }
+
+        // Funciones para actualizar configuraciones
+        function updateAvatarSize() {
+            const size = document.getElementById('avatar-size').value;
+            avatarSettings.size = size;
+            applyAvatarSettings();
+            showNotification(`✅ Tamaño del avatar actualizado a: ${size}`, 'success', true);
+        }
+
+        function updateAvatarShape() {
+            const shape = document.getElementById('avatar-shape').value;
+            avatarSettings.shape = shape;
+            applyAvatarSettings();
+            showNotification(`✅ Forma del avatar actualizada a: ${shape}`, 'success', true);
+        }
+
+        function updateAvatarBorder() {
+            const border = document.getElementById('avatar-border').value;
+            avatarSettings.border = border;
+            applyAvatarSettings();
+            showNotification(`✅ Borde del avatar actualizado a: ${border}`, 'success', true);
+        }
+
+        function toggleAvatarEnabled() {
+            const enabled = document.getElementById('avatar-enabled').checked;
+            avatarSettings.enabled = enabled;
+            const status = enabled ? 'habilitado' : 'deshabilitado';
+            showNotification(`✅ Avatar ${status} en notificaciones`, 'success', true);
+        }
+
+        // Función para actualizar controles del avatar
+        function updateAvatarControls() {
+            const sizeSelect = document.getElementById('avatar-size');
+            const shapeSelect = document.getElementById('avatar-shape');
+            const borderSelect = document.getElementById('avatar-border');
+            const enabledCheckbox = document.getElementById('avatar-enabled');
+            
+            if (sizeSelect) sizeSelect.value = avatarSettings.size;
+            if (shapeSelect) shapeSelect.value = avatarSettings.shape;
+            if (borderSelect) borderSelect.value = avatarSettings.border;
+            if (enabledCheckbox) enabledCheckbox.checked = avatarSettings.enabled;
+        }
+
+        // Variables para avatares editables
+        let editableAvatars = {
+            1: { src: 'logo 2.png', name: 'Avatar 1' },
+            2: { src: 'logo.jpg', name: 'Avatar 2' },
+            3: { src: 'https://placehold.co/128x128/667eea/ffffff?text=DC', name: 'Avatar 3' },
+            4: { src: 'https://placehold.co/128x128/10b981/ffffff?text=DC', name: 'Avatar 4' },
+            5: { src: 'https://placehold.co/128x128/f59e0b/ffffff?text=DC', name: 'Avatar 5' },
+            6: { src: 'https://placehold.co/128x128/ef4444/ffffff?text=DC', name: 'Avatar 6' },
+            7: { src: 'https://placehold.co/128x128/8b5cf6/ffffff?text=DC', name: 'Avatar 7' },
+            8: { src: 'https://placehold.co/128x128/06b6d4/ffffff?text=DC', name: 'Avatar 8' }
+        };
+
+        // Función para seleccionar avatar editable
+        function selectEditableAvatar(avatarId) {
+            const avatar = editableAvatars[avatarId];
+            if (!avatar) return;
+            
+            // Actualizar vista previa
+            updateAvatarPreview(avatar.src);
+            
+            // Guardar datos del avatar editable
+            currentAvatarData = {
+                data: avatar.src,
+                originalName: avatar.name,
+                uploadTime: new Date().toISOString(),
+                avatarId: avatarId,
+                isEditable: true
+            };
+            
+            // Aplicar configuraciones actuales
+            applyAvatarSettings();
+            
+            // Mostrar notificación
+            showNotification(`✅ ${avatar.name} seleccionado`, 'success', true);
+            
+            // Resaltar el avatar seleccionado
+            highlightSelectedEditableAvatar(avatarId);
+        }
+
+        // Función para editar avatar
+        function editAvatar(avatarId, event) {
+            event.stopPropagation(); // Evitar que se seleccione el avatar
+            
+            // Crear input file oculto
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Validar tipo de archivo
+                if (!file.type.startsWith('image/')) {
+                    showNotification('❌ Por favor, selecciona un archivo de imagen válido', 'error', true);
+                    return;
+                }
+
+                // Validar tamaño (2MB máximo)
+                if (file.size > 2 * 1024 * 1024) {
+                    showNotification('❌ La imagen es demasiado grande. Máximo 2MB', 'error', true);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        // Crear canvas para redimensionar
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Tamaño recomendado: 128x128
+                        const maxSize = 128;
+                        let { width, height } = img;
+                        
+                        // Mantener proporción si es necesario
+                        if (width > maxSize || height > maxSize) {
+                            if (width > height) {
+                                height = (height * maxSize) / width;
+                                width = maxSize;
+                            } else {
+                                width = (width * maxSize) / height;
+                                height = maxSize;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // Dibujar imagen redimensionada
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Convertir a base64
+                        const resizedImageData = canvas.toDataURL('image/jpeg', 0.8);
+                        
+                        // Actualizar avatar editable
+                        editableAvatars[avatarId] = {
+                            src: resizedImageData,
+                            name: `Avatar ${avatarId} (Personalizado)`
+                        };
+                        
+                        // Actualizar imagen en el grid
+                        const avatarElement = document.querySelector(`[data-avatar-id="${avatarId}"] img`);
+                        if (avatarElement) {
+                            avatarElement.src = resizedImageData;
+                        }
+                        
+                        // Actualizar nombre en el grid
+                        const nameElement = document.querySelector(`[data-avatar-id="${avatarId}"] div`);
+                        if (nameElement) {
+                            nameElement.textContent = `Avatar ${avatarId} (Personalizado)`;
+                        }
+                        
+                        // Si este avatar está seleccionado, actualizar vista previa
+                        if (currentAvatarData && currentAvatarData.avatarId === avatarId) {
+                            updateAvatarPreview(resizedImageData);
+                            currentAvatarData.data = resizedImageData;
+                        }
+                        
+                        showNotification(`✅ Avatar ${avatarId} actualizado`, 'success', true);
+                        
+                        // Guardar avatares editables en localStorage
+                        saveEditableAvatars();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+            
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            document.body.removeChild(fileInput);
+        }
+
+        // Función para resaltar avatar editable seleccionado
+        function highlightSelectedEditableAvatar(avatarId) {
+            // Remover resaltado anterior
+            document.querySelectorAll('.avatar-preset').forEach(preset => {
+                preset.style.border = '2px solid #e5e7eb';
+                preset.style.backgroundColor = 'transparent';
+            });
+            
+            // Resaltar el seleccionado
+            const selectedAvatar = document.querySelector(`[data-avatar-id="${avatarId}"]`);
+            if (selectedAvatar) {
+                selectedAvatar.style.border = '2px solid #667eea';
+                selectedAvatar.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
+            }
+        }
+
+        // Función para guardar avatares editables
+        function saveEditableAvatars() {
+            try {
+                localStorage.setItem('editableAvatars', JSON.stringify(editableAvatars));
+            } catch (error) {
+                console.error('Error al guardar avatares editables:', error);
+            }
+        }
+
+        // Función para cargar avatares editables
+        function loadEditableAvatars() {
+            try {
+                const saved = localStorage.getItem('editableAvatars');
+                if (saved) {
+                    editableAvatars = { ...editableAvatars, ...JSON.parse(saved) };
+                    
+                    // Actualizar imágenes en el grid
+                    Object.keys(editableAvatars).forEach(avatarId => {
+                        const avatar = editableAvatars[avatarId];
+                        const avatarElement = document.querySelector(`[data-avatar-id="${avatarId}"] img`);
+                        const nameElement = document.querySelector(`[data-avatar-id="${avatarId}"] div`);
+                        
+                        if (avatarElement) {
+                            avatarElement.src = avatar.src;
+                        }
+                        if (nameElement) {
+                            nameElement.textContent = avatar.name;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error al cargar avatares editables:', error);
+            }
+        }
+        
+        // Función para resaltar el avatar seleccionado
+        function highlightSelectedAvatar(imageUrl) {
+            // Remover resaltado anterior
+            document.querySelectorAll('.avatar-preset').forEach(preset => {
+                preset.style.border = '2px solid #e5e7eb';
+                preset.style.backgroundColor = 'transparent';
+            });
+            
+            // Resaltar el seleccionado
+            document.querySelectorAll('.avatar-preset').forEach(preset => {
+                const img = preset.querySelector('img');
+                if (img && img.src === imageUrl) {
+                    preset.style.border = '2px solid #667eea';
+                    preset.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
+                }
+            });
+        }
+        
+        // Función para cargar avatar guardado
+        function loadAvatarSettings() {
+            try {
+                // Cargar datos del avatar
+                const savedAvatar = localStorage.getItem('notificationAvatar');
+                if (savedAvatar) {
+                    currentAvatarData = JSON.parse(savedAvatar);
+                    updateAvatarPreview(currentAvatarData.data);
+                    
+                    // Resaltar avatar guardado si es un preset
+                    if (currentAvatarData.isPreset) {
+                        highlightSelectedAvatar(currentAvatarData.data);
+                    }
+                }
+                
+                // Cargar configuraciones
+                const savedSettings = localStorage.getItem('avatarSettings');
+                if (savedSettings) {
+                    avatarSettings = { ...avatarSettings, ...JSON.parse(savedSettings) };
+                    updateAvatarControls();
+                    applyAvatarSettings();
+                }
+                
+            } catch (error) {
+                console.error('Error al cargar configuración del avatar:', error);
+            }
+        }
+
         // Inicializar configuración cuando se carga la página
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(loadNotificationSettings, 1000); // Esperar a que el sistema se inicialice
+            loadAvatarSettings(); // Cargar configuración del avatar
+            loadEditableAvatars(); // Cargar avatares editables
         });
     </script>
     
