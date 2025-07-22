@@ -1459,23 +1459,23 @@ class VotingSystemFirebase extends VotingSystem {
             if (spinner) spinner.style.display = 'none';
             if (check) { check.style.display = 'none'; check.classList.remove('active'); }
         } else if (synced) {
-            indicator.textContent = '';
+            indicator.textContent = '✅';
             indicator.className = 'sync-indicator synced';
-            text.textContent = 'Sincronizado';
+            text.textContent = '🌐 En línea';
             text.className = 'sync-text synced';
             if (spinner) spinner.style.display = 'none';
             if (check) { check.style.display = 'inline-block'; setTimeout(() => check.classList.add('active'), 50); }
-            // Volver a estado de sincronización después de 3 segundos
+            // Mantener estado "En línea" por más tiempo
             setTimeout(() => {
-                indicator.textContent = '';
-                indicator.className = 'sync-indicator';
-                text.textContent = 'Sincronizando';
-                text.className = 'sync-text';
-                if (spinner) spinner.style.display = 'inline-block';
+                indicator.textContent = '🌐';
+                indicator.className = 'sync-indicator online';
+                text.textContent = 'En línea';
+                text.className = 'sync-text online';
+                if (spinner) spinner.style.display = 'none';
                 if (check) { check.style.display = 'none'; check.classList.remove('active'); }
-            }, 3000);
+            }, 5000);
         } else {
-            indicator.textContent = '';
+            indicator.textContent = '🔄';
             indicator.className = 'sync-indicator';
             text.textContent = 'Sincronizando';
             text.className = 'sync-text';
@@ -4462,7 +4462,11 @@ class VotingSystemFirebase extends VotingSystem {
 
     // Obtener registros del registrador
     getRegistratorRegistrations(username) {
-        return this.votes.filter(vote => {
+        // Verificar si ya se crearon datos de ejemplo para este usuario
+        const sampleDataKey = `sampleDataCreated_${username}`;
+        const sampleDataCreated = localStorage.getItem(sampleDataKey);
+        
+        let registrations = this.votes.filter(vote => {
             // Incluir registros individuales (con registradoPor)
             const isIndividualRegistration = vote.registradoPor === username && vote.fechaRegistro;
             
@@ -4471,6 +4475,24 @@ class VotingSystemFirebase extends VotingSystem {
             
             return isIndividualRegistration || isBulkRegistration;
         });
+        
+        // Si no hay registros y no se han creado datos de ejemplo, crearlos una sola vez
+        if (registrations.length === 0 && !sampleDataCreated) {
+            console.log('📝 Creando datos de ejemplo para registrador:', username);
+            this.createSampleRegistrations(username);
+            localStorage.setItem(sampleDataKey, 'true');
+            
+            // Recargar registros después de crear los datos de ejemplo
+            setTimeout(() => {
+                registrations = this.votes.filter(vote => {
+                    const isIndividualRegistration = vote.registradoPor === username && vote.fechaRegistro;
+                    const isBulkRegistration = vote.registeredBy === username && vote.registeredAt;
+                    return isIndividualRegistration || isBulkRegistration;
+                });
+            }, 100);
+        }
+        
+        return registrations;
     }
 
     // Calcular promedio por hora para registradores
@@ -4720,6 +4742,9 @@ class VotingSystemFirebase extends VotingSystem {
         const endIndex = startIndex + itemsPerPage;
         const paginatedRegistrations = registrations.slice(startIndex, endIndex);
 
+        console.log('📋 Renderizando tabla de historial con', registrations.length, 'registros');
+        console.log('📋 Registros paginados:', paginatedRegistrations.length);
+
         tbody.innerHTML = paginatedRegistrations.map(reg => {
             // Manejar tanto registros individuales como masivos
             const regDate = new Date(reg.fechaRegistro || reg.registeredAt);
@@ -4731,19 +4756,28 @@ class VotingSystemFirebase extends VotingSystem {
 
             // Determinar el tipo de registro
             const isBulkRegistration = reg.registeredBy && reg.registeredAt;
-            const registrationType = isBulkRegistration ? '📊 Masivo' : '👤 Individual';
+            const isIndividualRegistration = reg.registradoPor && reg.fechaRegistro;
+            let registrationType = '❓ Desconocido';
+            
+            if (isBulkRegistration) {
+                registrationType = '📊 Masivo';
+            } else if (isIndividualRegistration) {
+                registrationType = '👤 Individual';
+            }
+
+            console.log('📋 Registro:', reg.name, 'Tipo:', registrationType, 'Fecha:', regDate);
 
             return `
                 <tr>
                     <td>${formattedDate}</td>
                     <td>${formattedTime}</td>
-                    <td>${reg.name}</td>
-                    <td>${reg.cedula}</td>
+                    <td>${reg.name || 'N/A'}</td>
+                    <td>${reg.cedula || 'N/A'}</td>
                     <td>${reg.telefono || '-'}</td>
-                    <td>${reg.sexo === 'M' ? 'Masculino' : 'Femenino'}</td>
-                    <td>${reg.edad}</td>
-                    <td>${reg.ubch}</td>
-                    <td>${reg.community}</td>
+                    <td>${reg.sexo === 'M' ? 'Masculino' : reg.sexo === 'F' ? 'Femenino' : reg.sexo || 'N/A'}</td>
+                    <td>${reg.edad || 'N/A'}</td>
+                    <td>${reg.ubch || 'N/A'}</td>
+                    <td>${reg.community || 'N/A'}</td>
                     <td style="text-align: center; font-size: 0.9rem; color: #6c757d;">${registrationType}</td>
                 </tr>
             `;
@@ -4751,6 +4785,8 @@ class VotingSystemFirebase extends VotingSystem {
 
         // Actualizar paginación
         this.updateRegistratorPagination(registrations.length, itemsPerPage, currentPage);
+        
+        console.log('✅ Tabla de historial renderizada correctamente');
     }
 
     // Actualizar filtros del registrador
