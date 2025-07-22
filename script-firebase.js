@@ -989,6 +989,8 @@ async function procesarRegistrosMasivos() {
 
 // Función para limpiar toda la tabla
 window.limpiarTablaMasiva = function() {
+    console.log('🧹 Iniciando limpieza de tabla masiva...');
+    
     // Evitar múltiples ejecuciones simultáneas
     if (window.limpiandoTabla) {
         console.log('⚠️ Ya se está limpiando la tabla, espera...');
@@ -1000,20 +1002,53 @@ window.limpiarTablaMasiva = function() {
     try {
         const pasteTableBody = document.getElementById('paste-table-body');
         const importStatus = document.getElementById('import-massive-status');
+        const progressContainer = document.getElementById('progress-container');
         
-        if (pasteTableBody) {
-            pasteTableBody.innerHTML = '<tr style="background: #fff;"><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 100px; text-align: center; color: #6c757d;">Pendiente</td></tr>';
-            if (importStatus) {
-                importStatus.style.display = 'none';
-            }
-            updateBulkStats();
-            console.log('✅ Tabla limpiada correctamente');
+        if (!pasteTableBody) {
+            console.error('❌ Tabla no encontrada');
+            alert('Error: Tabla no encontrada');
+            return;
         }
+        
+        // Confirmar limpieza
+        if (!confirm('¿Estás seguro de que quieres limpiar toda la tabla? Esta acción no se puede deshacer.')) {
+            console.log('❌ Limpieza cancelada por el usuario');
+            return;
+        }
+        
+        // Limpiar tabla
+        pasteTableBody.innerHTML = '<tr style="background: #fff;"><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 100px; text-align: center; color: #6c757d;">Pendiente</td></tr>';
+        
+        // Ocultar elementos de estado
+        if (importStatus) {
+            importStatus.style.display = 'none';
+            importStatus.textContent = '';
+            importStatus.className = 'import-status';
+        }
+        
+        if (progressContainer) {
+            progressContainer.style.display = 'none';
+        }
+        
+        // Actualizar estadísticas
+        if (typeof updateBulkStats === 'function') {
+            updateBulkStats(0, 0, 0);
+        }
+        
+        console.log('✅ Tabla limpiada correctamente');
+        
+        // Mostrar mensaje de éxito
+        if (window.votingSystem && typeof window.votingSystem.showMessage === 'function') {
+            window.votingSystem.showMessage('Tabla limpiada correctamente', 'success', 'registration');
+        }
+        
     } catch (error) {
         console.error('❌ Error limpiando tabla:', error);
+        alert('Error al limpiar la tabla: ' + error.message);
     } finally {
         // Limpiar flag de limpieza
         window.limpiandoTabla = false;
+        console.log('🧹 Limpieza de tabla completada');
     }
 };
 
@@ -5731,4 +5766,49 @@ window.actualizarConfiguracionMasivo = function() {
 
 // Hacer la función procesarRegistrosMasivos disponible globalmente
 window.procesarRegistrosMasivos = procesarRegistrosMasivos;
+
+// Función de inicialización para asegurar que todas las funciones estén disponibles
+window.inicializarFuncionesRegistroMasivo = function() {
+    console.log('🔧 Inicializando funciones de registro masivo...');
+    
+    // Verificar que las funciones estén disponibles
+    if (typeof procesarRegistrosMasivos === 'function') {
+        window.procesarRegistrosMasivos = procesarRegistrosMasivos;
+        console.log('✅ procesarRegistrosMasivos disponible');
+    } else {
+        console.error('❌ procesarRegistrosMasivos no está definida');
+    }
+    
+    if (typeof limpiarTablaMasiva === 'function') {
+        window.limpiarTablaMasiva = limpiarTablaMasiva;
+        console.log('✅ limpiarTablaMasiva disponible');
+    } else {
+        console.error('❌ limpiarTablaMasiva no está definida');
+    }
+    
+    // Verificar elementos del DOM
+    const pasteTableBody = document.getElementById('paste-table-body');
+    const importStatus = document.getElementById('import-massive-status');
+    
+    if (pasteTableBody) {
+        console.log('✅ Tabla de registro masivo encontrada');
+    } else {
+        console.error('❌ Tabla de registro masivo no encontrada');
+    }
+    
+    if (importStatus) {
+        console.log('✅ Status de importación encontrado');
+    } else {
+        console.error('❌ Status de importación no encontrado');
+    }
+    
+    console.log('🎯 Funciones de registro masivo inicializadas');
+};
+
+// Ejecutar inicialización cuando el DOM esté listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.inicializarFuncionesRegistroMasivo);
+} else {
+    window.inicializarFuncionesRegistroMasivo();
+}
 
