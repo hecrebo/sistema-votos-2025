@@ -708,23 +708,54 @@ async function procesarRegistrosMasivos() {
             return;
         }
 
-        // Contar registros válidos
+        // Contar registros válidos y mostrar estadísticas previas
         let validCount = 0;
+        let invalidCount = 0;
+        let duplicateCount = 0;
+        
         for (let tr of pasteTableBody.rows) {
             const cells = Array.from(tr.cells);
             if (cells.length < 7) continue;
             
             const [ubch, community, name, cedula, telefono, sexo, edad] = cells.map(td => td.textContent.trim());
-            if (ubch && community && name && cedula && sexo && edad && 
-                /^\d{6,10}$/.test(cedula) && 
-                ['M','F','m','f'].includes(sexo) && 
-                !isNaN(edad) && edad >= 16 && edad <= 120) {
-                validCount++;
+            
+            // Validación básica
+            if (!ubch || !community || !name || !cedula || !sexo || !edad) {
+                invalidCount++;
+                continue;
             }
+            
+            // Validación de formato
+            if (!/^\d{6,10}$/.test(cedula) || 
+                !['M','F','m','f'].includes(sexo) || 
+                isNaN(edad) || edad < 16 || edad > 120) {
+                invalidCount++;
+                continue;
+            }
+            
+            // Verificar duplicados locales
+            const existingLocal = window.votingSystem.votes.find(v => v.cedula === cedula.replace(/\D/g, ''));
+            if (existingLocal) {
+                duplicateCount++;
+                continue;
+            }
+            
+            validCount++;
         }
 
+        console.log(`📊 ANÁLISIS PREVIO:`);
+        console.log(`✅ Registros válidos: ${validCount}`);
+        console.log(`❌ Registros inválidos: ${invalidCount}`);
+        console.log(`🔄 Registros duplicados: ${duplicateCount}`);
+
         if (validCount === 0) {
-            alert('No hay registros válidos para procesar. Verifica los datos.');
+            alert(`No hay registros válidos para procesar.\n\nVálidos: ${validCount}\nInválidos: ${invalidCount}\nDuplicados: ${duplicateCount}\n\nVerifica los datos e intenta de nuevo.`);
+            return;
+        }
+        
+        // Confirmar procesamiento
+        const confirmMessage = `¿Procesar ${validCount} registros válidos?\n\nVálidos: ${validCount}\nInválidos: ${invalidCount}\nDuplicados: ${duplicateCount}`;
+        if (!confirm(confirmMessage)) {
             return;
         }
 
@@ -817,27 +848,58 @@ async function procesarRegistrosMasivos() {
                     createdAt: new Date().toISOString()
                 };
                 
-                // Verificar duplicados por cédula (solo en la misma sesión)
-                const existing = await window.firebaseDB.votesCollection.where('cedula','==',data.cedula).get();
-                if (!existing.empty) {
+                // Verificar duplicados por cédula (verificar en datos locales primero)
+                const existingLocal = window.votingSystem.votes.find(v => v.cedula === data.cedula);
+                if (existingLocal) {
                     duplicates++;
                     tr.style.background = '#fff3cd'; // Amarillo para duplicados
                     updateCellStatus(statusCell, '🔄 Duplicado', '#856404');
-                    console.log(`🔄 Registro ${i + 1} duplicado: cédula ${data.cedula} ya existe`);
+                    console.log(`🔄 Registro ${i + 1} duplicado: cédula ${data.cedula} ya existe localmente`);
                     continue;
                 }
                 
+                // Verificar duplicados en Firebase (solo si es necesario)
+                try {
+                    const existingFirebase = await window.firebaseDB.votesCollection.where('cedula','==',data.cedula).get();
+                    if (!existingFirebase.empty) {
+                        duplicates++;
+                        tr.style.background = '#fff3cd'; // Amarillo para duplicados
+                        updateCellStatus(statusCell, '🔄 Duplicado', '#856404');
+                        console.log(`🔄 Registro ${i + 1} duplicado: cédula ${data.cedula} ya existe en Firebase`);
+                        continue;
+                    }
+                } catch (firebaseError) {
+                    console.warn('⚠️ Error verificando duplicados en Firebase:', firebaseError);
+                    // Continuar con el registro si no se puede verificar
+                }
+                
                 // Guardar en Firebase (como registro individual)
-                await window.firebaseDB.votesCollection.add(data);
-                count++;
-                
-                // Marcar como exitoso (azul para éxito)
-                tr.style.background = '#e3f2fd'; // Azul claro para éxito
-                updateCellStatus(statusCell, '✅ Enviado', '#1976d2');
-                console.log(`✅ Registro ${i + 1} enviado exitosamente: ${data.name} (${data.cedula})`);
-                
-                // Marcar fila para eliminar (se procesó exitosamente)
-                rowsToRemove.push(tr);
+                try {
+                    const docRef = await window.firebaseDB.votesCollection.add(data);
+                    count++;
+                    
+                    // Agregar a datos locales para evitar duplicados futuros
+                    if (window.votingSystem && window.votingSystem.votes) {
+                        window.votingSystem.votes.push({
+                            id: docRef.id,
+                            ...data
+                        });
+                    }
+                    
+                    // Marcar como exitoso (azul para éxito)
+                    tr.style.background = '#e3f2fd'; // Azul claro para éxito
+                    updateCellStatus(statusCell, '✅ Enviado', '#1976d2');
+                    console.log(`✅ Registro ${i + 1} enviado exitosamente: ${data.name} (${data.cedula})`);
+                    
+                    // Marcar fila para eliminar (se procesó exitosamente)
+                    rowsToRemove.push(tr);
+                    
+                } catch (saveError) {
+                    console.error(`❌ Error guardando registro ${i + 1}:`, saveError);
+                    errors++;
+                    tr.style.background = '#ffebee'; // Rojo claro para errores
+                    updateCellStatus(statusCell, '❌ Error al guardar', '#d32f2f');
+                }
                 
             } catch (error) {
                 errors++;
@@ -904,6 +966,15 @@ async function procesarRegistrosMasivos() {
                 setTimeout(() => {
                     window.votingSystem.loadDataFromFirebase();
                 }, 1000);
+            }
+            
+            // Mostrar notificación de éxito
+            if (window.realtimeNotifications) {
+                window.realtimeNotifications.sendNotification(
+                    `Se procesaron ${count} registros masivamente`,
+                    'success',
+                    'global'
+                );
             }
         }
         
