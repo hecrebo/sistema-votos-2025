@@ -672,7 +672,15 @@ function updateCellStatus(cell, message, color) {
 }
 
 // Nueva función para procesar registros masivos (como registro individual)
-function procesarRegistrosMasivos() {
+async function procesarRegistrosMasivos() {
+    // Evitar múltiples ejecuciones simultáneas
+    if (window.procesandoRegistros) {
+        console.log('⚠️ Ya se están procesando registros, espera...');
+        return;
+    }
+    
+    window.procesandoRegistros = true;
+    
     try {
         const pasteTableBody = document.getElementById('paste-table-body');
         const importStatus = document.getElementById('import-massive-status');
@@ -688,7 +696,15 @@ function procesarRegistrosMasivos() {
 
         // Verificar que Firebase esté disponible
         if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+            console.error('❌ Firebase no está disponible');
             alert('Error: Firebase no está disponible. Intenta recargar la página.');
+            return;
+        }
+
+        // Verificar que el sistema de votos esté disponible
+        if (!window.votingSystem) {
+            console.error('❌ Sistema de votos no está disponible');
+            alert('Error: Sistema de votos no está disponible. Intenta recargar la página.');
             return;
         }
 
@@ -894,20 +910,39 @@ function procesarRegistrosMasivos() {
     } catch (error) {
         console.error('❌ Error general en procesarRegistrosMasivos:', error);
         alert('Error al procesar registros. Revisa la consola para más detalles.');
+    } finally {
+        // Limpiar flag de procesamiento
+        window.procesandoRegistros = false;
     }
 };
 
 // Función para limpiar toda la tabla
 window.limpiarTablaMasiva = function() {
-    const pasteTableBody = document.getElementById('paste-table-body');
-    const importStatus = document.getElementById('import-massive-status');
+    // Evitar múltiples ejecuciones simultáneas
+    if (window.limpiandoTabla) {
+        console.log('⚠️ Ya se está limpiando la tabla, espera...');
+        return;
+    }
     
-    if (pasteTableBody) {
-        pasteTableBody.innerHTML = '<tr style="background: #fff;"><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 100px; text-align: center; color: #6c757d;">Pendiente</td></tr>';
-        if (importStatus) {
-            importStatus.style.display = 'none';
+    window.limpiandoTabla = true;
+    
+    try {
+        const pasteTableBody = document.getElementById('paste-table-body');
+        const importStatus = document.getElementById('import-massive-status');
+        
+        if (pasteTableBody) {
+            pasteTableBody.innerHTML = '<tr style="background: #fff;"><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 100px; text-align: center; color: #6c757d;">Pendiente</td></tr>';
+            if (importStatus) {
+                importStatus.style.display = 'none';
+            }
+            updateBulkStats();
+            console.log('✅ Tabla limpiada correctamente');
         }
-        updateBulkStats();
+    } catch (error) {
+        console.error('❌ Error limpiando tabla:', error);
+    } finally {
+        // Limpiar flag de limpieza
+        window.limpiandoTabla = false;
     }
 };
 
