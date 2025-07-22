@@ -1216,6 +1216,43 @@
                 <div class="log-container" id="maintenance-logs"></div>
             </div>
 
+            <!-- Limpieza del Sistema para Producción -->
+            <div class="admin-card mantenimiento">
+                <h3>
+                    <span class="status-indicator status-danger" id="cleanup-status">⚠️</span>
+                    🧹 Limpieza del Sistema para Producción
+                </h3>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                    <p style="margin: 0; color: #856404; font-weight: 500;">
+                        <strong>⚠️ ADVERTENCIA:</strong> Esta sección permite limpiar completamente el sistema para dejarlo en estado inicial para producción.
+                    </p>
+                </div>
+                <div class="service-controls">
+                    <button class="btn btn-danger" onclick="limpiarSistemaCompleto()" style="background: #dc3545; border-color: #dc3545;">
+                        🗑️ LIMPIAR SISTEMA COMPLETO
+                    </button>
+                    <button class="btn btn-warning" onclick="verificarEstadoSistema()">
+                        📊 Verificar Estado del Sistema
+                    </button>
+                </div>
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: #495057;">¿Qué hace la limpieza completa?</h4>
+                    <ul style="margin: 0; padding-left: 20px; color: #6c757d;">
+                        <li>Elimina TODOS los registros de votos de Firebase</li>
+                        <li>Limpia todos los datos locales y de ejemplo</li>
+                        <li>Vacía la cola offline</li>
+                        <li>Elimina configuraciones temporales</li>
+                        <li>Deja el sistema en estado inicial</li>
+                    </ul>
+                    <p style="margin: 10px 0 0 0; color: #dc3545; font-weight: 500;">
+                        <strong>⚠️ Esta acción NO SE PUEDE DESHACER</strong>
+                    </p>
+                </div>
+                <div class="log-container" id="cleanup-logs">
+                    <div class="log-entry log-info">Sistema de limpieza listo</div>
+                </div>
+            </div>
+
             <!-- Sistema de Notificaciones -->
             <div class="admin-card notification-panel">
                 <h3>
@@ -2166,6 +2203,181 @@
         // Inicializar sistema automático
         if (typeof AutoInitSystem !== 'undefined') {
             window.autoInitSystem = new AutoInitSystem();
+        }
+
+        // === FUNCIÓN DE LIMPIEZA COMPLETA DEL SISTEMA ===
+        
+        // Función para limpiar completamente el sistema y dejarlo en estado inicial
+        async function limpiarSistemaCompleto() {
+            if (!confirm('⚠️ ADVERTENCIA CRÍTICA:\n\nEsta acción eliminará TODOS los datos del sistema:\n• Todos los registros de votos\n• Todos los datos de ejemplo\n• Configuraciones temporales\n• Datos de prueba\n\n¿Estás SEGURO de que quieres proceder?\n\nEsta acción NO SE PUEDE DESHACER.')) {
+                return;
+            }
+
+            if (!confirm('🔴 CONFIRMACIÓN FINAL:\n\n¿Estás 100% seguro de que quieres eliminar TODOS los datos?\n\nEsta acción dejará el sistema completamente vacío.')) {
+                return;
+            }
+
+            try {
+                showNotification('🧹 Iniciando limpieza completa del sistema...', 'warning', true);
+                log('🧹 Iniciando limpieza completa del sistema...', 'warning');
+
+                // 1. Limpiar datos de Firebase
+                if (window.firebaseDB && window.firebaseDB.votesCollection) {
+                    log('🗑️ Eliminando todos los registros de Firebase...', 'info');
+                    
+                    // Obtener todos los documentos
+                    const snapshot = await window.firebaseDB.votesCollection.get();
+                    const batch = window.firebaseDB.db.batch();
+                    
+                    snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    
+                    await batch.commit();
+                    log(`✅ ${snapshot.docs.length} registros eliminados de Firebase`, 'success');
+                }
+
+                // 2. Limpiar datos locales
+                log('🗑️ Limpiando datos locales...', 'info');
+                
+                // Limpiar localStorage
+                const keysToKeep = ['currentUser', 'sessionTime', 'configuracionLimpia'];
+                const keysToRemove = [];
+                
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && !keysToKeep.includes(key)) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                log(`✅ ${keysToRemove.length} elementos eliminados del localStorage`, 'success');
+
+                // 3. Limpiar cola offline si existe
+                if (window.offlineQueueManager && typeof window.offlineQueueManager.limpiarColaLocal === 'function') {
+                    window.offlineQueueManager.limpiarColaLocal();
+                    log('✅ Cola offline limpiada', 'success');
+                }
+
+                // 4. Limpiar datos de ejemplo
+                if (window.votingSystem && window.votingSystem.votes) {
+                    window.votingSystem.votes = [];
+                    log('✅ Datos de ejemplo eliminados del sistema', 'success');
+                }
+
+                // 5. Limpiar configuraciones temporales
+                const configKeys = [
+                    'sampleDataCreated_',
+                    'registrationDraft',
+                    'misRegistrosLocales',
+                    'bulkRegistrations',
+                    'pasteTableData'
+                ];
+                
+                configKeys.forEach(key => {
+                    if (localStorage.getItem(key)) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                log('✅ Configuraciones temporales eliminadas', 'success');
+
+                // 6. Limpiar datos de prueba
+                const testKeys = [
+                    'testData',
+                    'sampleRegistrations',
+                    'bulkTestData',
+                    'importTestData'
+                ];
+                
+                testKeys.forEach(key => {
+                    if (localStorage.getItem(key)) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                log('✅ Datos de prueba eliminados', 'success');
+
+                // 7. Reinicializar sistema
+                log('🔄 Reinicializando sistema...', 'info');
+                
+                if (window.votingSystem) {
+                    await window.votingSystem.loadDataFromFirebase();
+                    window.votingSystem.updateAllDataDisplays();
+                }
+
+                // 8. Mostrar resumen final
+                const resumen = `
+✅ LIMPIEZA COMPLETA EXITOSA
+
+📊 Resumen de la limpieza:
+• Registros de Firebase: Eliminados
+• Datos locales: Limpiados
+• Cola offline: Vacía
+• Datos de ejemplo: Eliminados
+• Configuraciones temporales: Limpiadas
+• Datos de prueba: Eliminados
+
+🎯 El sistema está ahora en estado inicial
+🚀 Listo para producción con datos reales
+
+⚠️ Recuerda: Esta acción no se puede deshacer
+`;
+
+                showNotification('✅ Limpieza completa exitosa', 'success', true);
+                log(resumen, 'success');
+                
+                // Mostrar alerta final
+                setTimeout(() => {
+                    alert('🎉 LIMPIEZA COMPLETA EXITOSA\n\nEl sistema ha sido completamente limpiado y está listo para producción.\n\nTodos los datos de prueba han sido eliminados.\n\nEl sistema está ahora en estado inicial.');
+                }, 1000);
+
+            } catch (error) {
+                log('❌ Error durante la limpieza: ' + error.message, 'error');
+                showNotification('❌ Error durante la limpieza: ' + error.message, 'error', true);
+            }
+        }
+
+        // Función para verificar estado del sistema
+        function verificarEstadoSistema() {
+            let resumen = '📊 ESTADO DEL SISTEMA:\n\n';
+            
+            // Verificar Firebase
+            if (window.firebaseDB && window.firebaseDB.votesCollection) {
+                window.firebaseDB.votesCollection.get().then(snapshot => {
+                    resumen += `📋 Registros en Firebase: ${snapshot.docs.length}\n`;
+                    
+                    // Verificar localStorage
+                    const localKeys = Object.keys(localStorage);
+                    const relevantKeys = localKeys.filter(key => 
+                        key.includes('sample') || 
+                        key.includes('test') || 
+                        key.includes('bulk') || 
+                        key.includes('registration')
+                    );
+                    
+                    resumen += `💾 Datos locales relevantes: ${relevantKeys.length}\n`;
+                    
+                    // Verificar cola offline
+                    if (window.offlineQueueManager) {
+                        const colaLocal = window.offlineQueueManager.obtenerColaLocal();
+                        resumen += `📦 Elementos en cola offline: ${colaLocal.length}\n`;
+                    }
+                    
+                    resumen += `\n🎯 Sistema ${snapshot.docs.length === 0 ? 'LIMPIO' : 'CON DATOS'}`;
+                    
+                    log(resumen, 'info');
+                    showNotification('📊 Estado del sistema verificado', 'info', true);
+                });
+            } else {
+                resumen += '❌ Firebase no disponible\n';
+                log(resumen, 'error');
+                showNotification('❌ No se pudo verificar el estado', 'error', true);
+            }
         }
     </script>
     <script src="notification-system.js"></script>
