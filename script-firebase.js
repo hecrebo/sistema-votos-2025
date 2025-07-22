@@ -468,78 +468,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Auto-guardar en localStorage
+    // Inicializar tabla masiva sin auto-guardado
     const pasteTable = document.getElementById('paste-table');
     if (pasteTable) {
-        // Cargar datos guardados al iniciar
-        const savedData = localStorage.getItem('bulkRegistrationData');
-        if (savedData) {
-            try {
-                const data = JSON.parse(savedData);
-                const pasteTableBody = document.getElementById('paste-table-body');
-                if (pasteTableBody && data.rows) {
-                    pasteTableBody.innerHTML = '';
-                    data.rows.forEach(row => {
-                        const tr = document.createElement('tr');
-                        tr.style.background = row.background || '#fff';
-                        row.cells.forEach((cell, index) => {
-                            const td = document.createElement('td');
-                            if (index < 7) {
-                                td.contentEditable = true;
-                                td.style.padding = '1rem 0.75rem';
-                                td.style.borderBottom = '1px solid #dee2e6';
-                                td.style.minWidth = index < 3 ? '150px' : index < 5 ? '120px' : '80px';
-                            } else {
-                                td.style.padding = '1rem 0.75rem';
-                                td.style.borderBottom = '1px solid #dee2e6';
-                                td.style.minWidth = '100px';
-                                td.style.textAlign = 'center';
-                                td.style.color = '#6c757d';
-                            }
-                            td.textContent = cell;
-                            tr.appendChild(td);
-                        });
-                        pasteTableBody.appendChild(tr);
-                    });
-                    updateBulkStats();
-                }
-            } catch (e) {
-                console.error('Error cargando datos guardados:', e);
-            }
-        }
+        // Limpiar datos guardados automáticamente al iniciar
+        localStorage.removeItem('bulkRegistrationData');
+        console.log('🧹 Datos de tabla masiva eliminados del localStorage al iniciar');
         
-        // Guardar datos automáticamente
-        pasteTable.addEventListener('input', function() {
-            setTimeout(() => {
-                saveBulkDataToLocalStorage();
-            }, 1000);
-        });
+        // NO cargar datos guardados automáticamente - tabla siempre limpia al iniciar
+        console.log('🧹 Tabla masiva inicializada limpia');
         
         // Inicializar cargador de archivos Excel
         loadXLSXLibrary();
     }
 });
 
-// Función para guardar datos en localStorage
-function saveBulkDataToLocalStorage() {
-    const pasteTableBody = document.getElementById('paste-table-body');
-    if (!pasteTableBody) return;
-    
-    const data = {
-        timestamp: new Date().toISOString(),
-        rows: []
-    };
-    
-    for (let tr of pasteTableBody.rows) {
-        const cells = Array.from(tr.cells);
-        const rowData = {
-            background: tr.style.background,
-            cells: cells.map(cell => cell.textContent.trim())
-        };
-        data.rows.push(rowData);
-    }
-    
-    localStorage.setItem('bulkRegistrationData', JSON.stringify(data));
+// Función para limpiar datos guardados de la tabla masiva
+function limpiarDatosTablaMasiva() {
+    localStorage.removeItem('bulkRegistrationData');
+    console.log('🧹 Datos de tabla masiva eliminados del localStorage');
 }
 
 // Función para cargar archivo Excel
@@ -1084,6 +1031,10 @@ window.limpiarTablaMasiva = function() {
         if (progressContainer) {
             progressContainer.style.display = 'none';
         }
+        
+        // Limpiar datos guardados en localStorage
+        localStorage.removeItem('bulkRegistrationData');
+        console.log('🧹 Datos de tabla masiva eliminados del localStorage');
         
         // Actualizar estadísticas
         if (typeof updateBulkStats === 'function') {
@@ -5972,5 +5923,19 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.inicializarFuncionesRegistroMasivo);
 } else {
     window.inicializarFuncionesRegistroMasivo();
+}
+
+// Inicializar tabla masiva sin auto-guardado
+const pasteTable = document.getElementById('paste-table');
+if (pasteTable) {
+    // Limpiar datos guardados automáticamente al iniciar
+    localStorage.removeItem('bulkRegistrationData');
+    console.log('🧹 Datos de tabla masiva eliminados del localStorage al iniciar');
+    
+    // NO cargar datos guardados automáticamente - tabla siempre limpia al iniciar
+    console.log('🧹 Tabla masiva inicializada limpia');
+    
+    // Inicializar cargador de archivos Excel
+    loadXLSXLibrary();
 }
 
