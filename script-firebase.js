@@ -961,11 +961,24 @@ async function procesarRegistrosMasivos() {
         console.log(`🗑️ Filas eliminadas: ${rowsToRemove.length}`);
         
         if (count > 0) {
-            // Actualizar la interfaz si el sistema de votos está disponible
-            if (window.votingSystem) {
-                setTimeout(() => {
-                    window.votingSystem.loadDataFromFirebase();
-                }, 1000);
+            // Actualizar solo los contadores sin recargar toda la página
+            if (window.votingSystem && window.votingSystem.votes) {
+                // Agregar los nuevos registros a la lista local
+                console.log('✅ Actualizando contadores localmente...');
+                
+                // Actualizar contadores en tiempo real sin recargar
+                if (typeof window.votingSystem.updateAllCounters === 'function') {
+                    window.votingSystem.updateAllCounters();
+                }
+                
+                // Mostrar mensaje de éxito sin recargar
+                if (typeof window.votingSystem.showMessage === 'function') {
+                    window.votingSystem.showMessage(
+                        `✅ ${count} registros procesados exitosamente`,
+                        'success',
+                        'registration'
+                    );
+                }
             }
             
             // Mostrar notificación de éxito
@@ -1010,14 +1023,56 @@ window.limpiarTablaMasiva = function() {
             return;
         }
         
-        // Confirmar limpieza
-        if (!confirm('¿Estás seguro de que quieres limpiar toda la tabla? Esta acción no se puede deshacer.')) {
-            console.log('❌ Limpieza cancelada por el usuario');
-            return;
+        // Confirmar limpieza (solo si hay datos)
+        const rows = pasteTableBody.querySelectorAll('tr');
+        let hasData = false;
+        
+        for (let row of rows) {
+            const cells = Array.from(row.cells);
+            for (let cell of cells) {
+                if (cell.textContent.trim() !== '' && cell.textContent.trim() !== 'Pendiente') {
+                    hasData = true;
+                    break;
+                }
+            }
+            if (hasData) break;
         }
         
-        // Limpiar tabla
-        pasteTableBody.innerHTML = '<tr style="background: #fff;"><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 100px; text-align: center; color: #6c757d;">Pendiente</td></tr>';
+        if (hasData) {
+            if (!confirm('¿Estás seguro de que quieres limpiar toda la tabla? Esta acción no se puede deshacer.')) {
+                console.log('❌ Limpieza cancelada por el usuario');
+                return;
+            }
+        }
+        
+        // Limpiar tabla completamente
+        pasteTableBody.innerHTML = '';
+        
+        // Agregar una fila vacía limpia
+        const newRow = document.createElement('tr');
+        newRow.style.background = '#fff';
+        
+        // Crear las 8 celdas (7 editables + 1 status)
+        for (let i = 0; i < 7; i++) {
+            const cell = document.createElement('td');
+            cell.contentEditable = 'true';
+            cell.style.padding = '1rem 0.75rem';
+            cell.style.borderBottom = '1px solid #dee2e6';
+            cell.style.minWidth = i < 3 ? '150px' : i < 5 ? '120px' : '80px';
+            newRow.appendChild(cell);
+        }
+        
+        // Celda de estado (no editable)
+        const statusCell = document.createElement('td');
+        statusCell.style.padding = '1rem 0.75rem';
+        statusCell.style.borderBottom = '1px solid #dee2e6';
+        statusCell.style.minWidth = '100px';
+        statusCell.style.textAlign = 'center';
+        statusCell.style.color = '#6c757d';
+        statusCell.textContent = 'Pendiente';
+        newRow.appendChild(statusCell);
+        
+        pasteTableBody.appendChild(newRow);
         
         // Ocultar elementos de estado
         if (importStatus) {
@@ -1040,6 +1095,12 @@ window.limpiarTablaMasiva = function() {
         // Mostrar mensaje de éxito
         if (window.votingSystem && typeof window.votingSystem.showMessage === 'function') {
             window.votingSystem.showMessage('Tabla limpiada correctamente', 'success', 'registration');
+        }
+        
+        // Asegurar que permanezca en la página de registro masivo
+        if (window.votingSystem && typeof window.votingSystem.navigateToPage === 'function') {
+            // Mantener en la página actual sin cambiar
+            console.log('📍 Manteniendo en página de registro masivo');
         }
         
     } catch (error) {
