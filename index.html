@@ -773,6 +773,14 @@
                             <label for="registrator-search">Buscar:</label>
                             <input type="text" id="registrator-search" placeholder="Buscar por nombre o cédula...">
                         </div>
+                        <div class="filter-group">
+                            <label for="registrator-voted-filter">Estado de Voto:</label>
+                            <select id="registrator-voted-filter">
+                                <option value="">Todos</option>
+                                <option value="true">✅ Votó</option>
+                                <option value="false">❌ No votó</option>
+                            </select>
+                        </div>
                         <button class="btn btn-primary" onclick="registratorFilterHistory()">🔍 Filtrar</button>
                         <button class="btn btn-secondary" onclick="registratorExportHistory()">📊 Exportar</button>
                     </div>
@@ -792,6 +800,7 @@
                                     <th>CV</th>
                                     <th>Comunidad</th>
                                     <th>Tipo</th>
+                                    <th>¿Votó?</th>
                                 </tr>
                             </thead>
                             <tbody id="registrator-history-tbody">

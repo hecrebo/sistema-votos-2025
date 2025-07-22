@@ -4677,6 +4677,7 @@ class VotingSystemFirebase extends VotingSystem {
         const dateFilter = document.getElementById('registrator-date-filter')?.value;
         const cvFilter = document.getElementById('registrator-cv-filter')?.value;
         const searchTerm = document.getElementById('registrator-search')?.value?.toLowerCase();
+        const votedFilter = document.getElementById('registrator-voted-filter')?.value;
 
         let filtered = [...registrations];
 
@@ -4728,6 +4729,14 @@ class VotingSystemFirebase extends VotingSystem {
             );
         }
 
+        // Filtro por estado de voto
+        if (votedFilter) {
+            filtered = filtered.filter(reg => {
+                const voted = reg.voted === true || reg.voted === 'true';
+                return votedFilter === 'true' ? voted : !voted;
+            });
+        }
+
         return filtered;
     }
 
@@ -4767,6 +4776,12 @@ class VotingSystemFirebase extends VotingSystem {
 
             console.log('📋 Registro:', reg.name, 'Tipo:', registrationType, 'Fecha:', regDate);
 
+            // Determinar si votó
+            const voted = reg.voted === true || reg.voted === 'true';
+            const votedStatus = voted ? 
+                '<span style="color: #10b981; font-weight: 600;">✅ Sí</span>' : 
+                '<span style="color: #ef4444; font-weight: 600;">❌ No</span>';
+
             return `
                 <tr>
                     <td>${formattedDate}</td>
@@ -4779,6 +4794,7 @@ class VotingSystemFirebase extends VotingSystem {
                     <td>${reg.ubch || 'N/A'}</td>
                     <td>${reg.community || 'N/A'}</td>
                     <td style="text-align: center; font-size: 0.9rem; color: #6c757d;">${registrationType}</td>
+                    <td style="text-align: center; font-size: 0.9rem;">${votedStatus}</td>
                 </tr>
             `;
         }).join('');
