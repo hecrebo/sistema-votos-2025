@@ -4411,7 +4411,9 @@ class VotingSystemFirebase extends VotingSystem {
                 community: 'EL CUJINAL',
                 registradoPor: username,
                 fechaRegistro: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 horas atrás
-                voted: true
+                voted: true,
+                fechaConfirmacion: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+                confirmedBy: 'verificador1'
             },
             {
                 name: 'Ana López',
@@ -4435,7 +4437,9 @@ class VotingSystemFirebase extends VotingSystem {
                 community: 'EL SAMAN',
                 registradoPor: username,
                 fechaRegistro: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), // 8 horas atrás
-                voted: true
+                voted: true,
+                fechaConfirmacion: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+                confirmedBy: 'verificador2'
             },
             {
                 name: 'Carmen Silva',
@@ -4448,6 +4452,47 @@ class VotingSystemFirebase extends VotingSystem {
                 registradoPor: username,
                 fechaRegistro: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(), // 10 horas atrás
                 voted: false
+            },
+            // Registros masivos de ejemplo
+            {
+                name: 'Pedro Martínez',
+                cedula: '11111111',
+                telefono: '04111111111',
+                sexo: 'M',
+                edad: 45,
+                ubch: 'LICEO JOSE FELIX RIBAS',
+                community: 'EL CUJINAL',
+                registeredBy: username,
+                registeredAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hora atrás
+                voted: true,
+                fechaConfirmacion: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+                confirmedBy: 'verificador3'
+            },
+            {
+                name: 'Isabel Torres',
+                cedula: '22222222',
+                telefono: '04222222222',
+                sexo: 'F',
+                edad: 33,
+                ubch: 'COLEGIO ASUNCION BELTRAN',
+                community: 'EL VALLE',
+                registeredBy: username,
+                registeredAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 horas atrás
+                voted: false
+            },
+            {
+                name: 'Roberto Herrera',
+                cedula: '33333333',
+                telefono: '04333333333',
+                sexo: 'M',
+                edad: 29,
+                ubch: 'ESCUELA PRIMARIA BOLIVARIANA LA PRADERA',
+                community: 'EL SAMAN',
+                registeredBy: username,
+                registeredAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 horas atrás
+                voted: true,
+                fechaConfirmacion: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+                confirmedBy: 'verificador1'
             }
         ];
 
@@ -4732,7 +4777,9 @@ class VotingSystemFirebase extends VotingSystem {
         // Filtro por estado de voto
         if (votedFilter) {
             filtered = filtered.filter(reg => {
-                const voted = reg.voted === true || reg.voted === 'true';
+                const voted = reg.voted === true || reg.voted === 'true' || 
+                             reg.fechaConfirmacion || reg.voteTimestamp || 
+                             reg.confirmedBy || reg.voted === 1;
                 return votedFilter === 'true' ? voted : !voted;
             });
         }
@@ -4777,7 +4824,9 @@ class VotingSystemFirebase extends VotingSystem {
             console.log('📋 Registro:', reg.name, 'Tipo:', registrationType, 'Fecha:', regDate);
 
             // Determinar si votó
-            const voted = reg.voted === true || reg.voted === 'true';
+            const voted = reg.voted === true || reg.voted === 'true' || 
+                         reg.fechaConfirmacion || reg.voteTimestamp || 
+                         reg.confirmedBy || reg.voted === 1;
             const votedStatus = voted ? 
                 '<span style="color: #10b981; font-weight: 600;">✅ Sí</span>' : 
                 '<span style="color: #ef4444; font-weight: 600;">❌ No</span>';
