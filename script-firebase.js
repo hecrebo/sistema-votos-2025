@@ -5884,58 +5884,139 @@ window.procesarRegistrosMasivos = procesarRegistrosMasivos;
 window.inicializarFuncionesRegistroMasivo = function() {
     console.log('🔧 Inicializando funciones de registro masivo...');
     
-    // Verificar que las funciones estén disponibles
-    if (typeof procesarRegistrosMasivos === 'function') {
-        window.procesarRegistrosMasivos = procesarRegistrosMasivos;
-        console.log('✅ procesarRegistrosMasivos disponible');
-    } else {
-        console.error('❌ procesarRegistrosMasivos no está definida');
-    }
-    
-    if (typeof limpiarTablaMasiva === 'function') {
-        window.limpiarTablaMasiva = limpiarTablaMasiva;
-        console.log('✅ limpiarTablaMasiva disponible');
-    } else {
-        console.error('❌ limpiarTablaMasiva no está definida');
-    }
-    
-    // Verificar elementos del DOM
-    const pasteTableBody = document.getElementById('paste-table-body');
-    const importStatus = document.getElementById('import-massive-status');
-    
-    if (pasteTableBody) {
-        console.log('✅ Tabla de registro masivo encontrada');
-    } else {
-        console.error('❌ Tabla de registro masivo no encontrada');
-    }
-    
-    if (importStatus) {
-        console.log('✅ Status de importación encontrado');
-    } else {
-        console.error('❌ Status de importación no encontrado');
-    }
-    
-    console.log('🎯 Funciones de registro masivo inicializadas');
+    // Esperar un poco más para asegurar que todo esté listo
+    setTimeout(() => {
+        // Verificar que las funciones estén disponibles
+        if (typeof procesarRegistrosMasivos === 'function') {
+            window.procesarRegistrosMasivos = procesarRegistrosMasivos;
+            console.log('✅ procesarRegistrosMasivos disponible');
+        } else {
+            console.error('❌ procesarRegistrosMasivos no está definida');
+        }
+        
+        if (typeof limpiarTablaMasiva === 'function') {
+            window.limpiarTablaMasiva = limpiarTablaMasiva;
+            console.log('✅ limpiarTablaMasiva disponible');
+        } else {
+            console.error('❌ limpiarTablaMasiva no está definida');
+        }
+        
+        // Verificar elementos del DOM
+        const pasteTableBody = document.getElementById('paste-table-body');
+        const importStatus = document.getElementById('import-massive-status');
+        const pasteTable = document.getElementById('paste-table');
+        
+        if (pasteTableBody) {
+            console.log('✅ Tabla de registro masivo encontrada');
+        } else {
+            console.error('❌ Tabla de registro masivo no encontrada');
+        }
+        
+        if (importStatus) {
+            console.log('✅ Status de importación encontrado');
+        } else {
+            console.error('❌ Status de importación no encontrado');
+        }
+        
+        if (pasteTable) {
+            console.log('✅ Tabla paste encontrada');
+        } else {
+            console.error('❌ Tabla paste no encontrada');
+        }
+        
+        // Inicializar tabla masiva sin auto-guardado
+        if (pasteTable) {
+            // Limpiar datos guardados automáticamente al iniciar
+            localStorage.removeItem('bulkRegistrationData');
+            console.log('🧹 Datos de tabla masiva eliminados del localStorage al iniciar');
+            
+            // NO cargar datos guardados automáticamente - tabla siempre limpia al iniciar
+            console.log('🧹 Tabla masiva inicializada limpia');
+            
+            // Inicializar cargador de archivos Excel
+            if (typeof loadXLSXLibrary === 'function') {
+                loadXLSXLibrary();
+                console.log('✅ Librería XLSX inicializada');
+            } else {
+                console.error('❌ loadXLSXLibrary no está disponible');
+            }
+        }
+        
+        console.log('🎯 Funciones de registro masivo inicializadas correctamente');
+    }, 500); // Esperar 500ms para asegurar que todo esté listo
 };
 
 // Ejecutar inicialización cuando el DOM esté listo
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.inicializarFuncionesRegistroMasivo);
 } else {
+    // Si el DOM ya está listo, ejecutar inmediatamente
     window.inicializarFuncionesRegistroMasivo();
 }
 
-// Inicializar tabla masiva sin auto-guardado
-const pasteTable = document.getElementById('paste-table');
-if (pasteTable) {
-    // Limpiar datos guardados automáticamente al iniciar
+// También ejecutar después de un tiempo adicional para asegurar que todo esté listo
+setTimeout(() => {
+    if (typeof window.inicializarFuncionesRegistroMasivo === 'function') {
+        console.log('🔄 Re-inicializando funciones de registro masivo...');
+        window.inicializarFuncionesRegistroMasivo();
+    }
+}, 1000);
+
+// Función para forzar reinicialización del registro masivo
+window.forzarReinicializacionRegistroMasivo = function() {
+    console.log('🔄 Forzando reinicialización del registro masivo...');
+    
+    // Limpiar cualquier estado anterior
+    window.procesandoRegistros = false;
+    window.limpiandoTabla = false;
+    
+    // Limpiar datos guardados
     localStorage.removeItem('bulkRegistrationData');
-    console.log('🧹 Datos de tabla masiva eliminados del localStorage al iniciar');
     
-    // NO cargar datos guardados automáticamente - tabla siempre limpia al iniciar
-    console.log('🧹 Tabla masiva inicializada limpia');
+    // Reinicializar funciones
+    if (typeof procesarRegistrosMasivos === 'function') {
+        window.procesarRegistrosMasivos = procesarRegistrosMasivos;
+    }
     
-    // Inicializar cargador de archivos Excel
-    loadXLSXLibrary();
-}
+    if (typeof limpiarTablaMasiva === 'function') {
+        window.limpiarTablaMasiva = limpiarTablaMasiva;
+    }
+    
+    // Limpiar tabla si existe
+    const pasteTableBody = document.getElementById('paste-table-body');
+    if (pasteTableBody) {
+        pasteTableBody.innerHTML = '';
+        
+        // Agregar una fila vacía
+        const newRow = document.createElement('tr');
+        newRow.style.background = '#fff';
+        
+        for (let i = 0; i < 7; i++) {
+            const cell = document.createElement('td');
+            cell.contentEditable = 'true';
+            cell.style.padding = '1rem 0.75rem';
+            cell.style.borderBottom = '1px solid #dee2e6';
+            cell.style.minWidth = i < 3 ? '150px' : i < 5 ? '120px' : '80px';
+            newRow.appendChild(cell);
+        }
+        
+        const statusCell = document.createElement('td');
+        statusCell.style.padding = '1rem 0.75rem';
+        statusCell.style.borderBottom = '1px solid #dee2e6';
+        statusCell.style.minWidth = '100px';
+        statusCell.style.textAlign = 'center';
+        statusCell.style.color = '#6c757d';
+        statusCell.textContent = 'Pendiente';
+        newRow.appendChild(statusCell);
+        
+        pasteTableBody.appendChild(newRow);
+    }
+    
+    console.log('✅ Reinicialización del registro masivo completada');
+    
+    // Mostrar mensaje de éxito
+    if (window.votingSystem && typeof window.votingSystem.showMessage === 'function') {
+        window.votingSystem.showMessage('Registro masivo reinicializado correctamente', 'success', 'registration');
+    }
+};
 
