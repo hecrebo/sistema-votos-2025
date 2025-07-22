@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba Registro Masivo - Sistema de Votos 2025</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .content {
+            padding: 2rem;
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+        }
+        .test-section h3 {
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .status.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        
+        .data-display {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        th {
+            background: #e9ecef;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        td[contenteditable="true"] {
+            background: #fff;
+            cursor: text;
+        }
+        
+        .progress-container {
+            display: none;
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: #007bff;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Prueba de Registro Masivo</h1>
+            <p>Sistema de Votos 2025 - Diagnóstico y Pruebas</p>
+        </div>
+        
+        <div class="content">
+            <div class="test-section">
+                <h3>🔍 Diagnóstico del Sistema</h3>
+                <p>Ejecuta un diagnóstico completo del sistema para identificar problemas.</p>
+                <button class="btn btn-primary" onclick="ejecutarDiagnostico()">🔍 Ejecutar Diagnóstico</button>
+                <div id="diagnostico-result" class="status" style="display: none;"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>📊 Tabla de Registro Masivo</h3>
+                <p>Tabla para cargar y probar datos de registro masivo.</p>
+                
+                <div class="table-container">
+                    <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false">
+                        <thead>
+                            <tr>
+                                <th>Centro de Votación</th>
+                                <th>Comunidad</th>
+                                <th>Nombre</th>
+                                <th>Cédula</th>
+                                <th>Teléfono</th>
+                                <th>Sexo</th>
+                                <th>Edad</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paste-table-body">
+                            <tr>
+                                <td contenteditable="true"></td>
+                                <td contenteditable="true"></td>
+                                <td contenteditable="true"></td>
+                                <td contenteditable="true"></td>
+                                <td contenteditable="true"></td>
+                                <td contenteditable="true"></td>
+                                <td contenteditable="true"></td>
+                                <td style="text-align: center; color: #6c757d;">Pendiente</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="progress-container" id="progress-container">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span id="progress-text">Procesando...</span>
+                        <span id="progress-percentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-bar"></div>
+                    </div>
+                </div>
+                
+                <div id="import-massive-status" class="import-status info" style="display:none; margin-top: 1.5rem;"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>🧪 Pruebas Específicas</h3>
+                <button class="btn btn-success" onclick="cargarDatosPrueba()">📋 Cargar Datos de Prueba</button>
+                <button class="btn btn-warning" onclick="probarValidacion()">🔍 Probar Validación</button>
+                <button class="btn btn-info" onclick="simularRegistro()">📤 Simular Registro</button>
+                <button class="btn btn-danger" onclick="limpiarTabla()">🗑️ Limpiar Tabla</button>
+                <div id="pruebas-result" class="status" style="display: none;"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>📈 Resultados y Logs</h3>
+                <div id="resultados" class="data-display">Esperando ejecutar pruebas...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="diagnostico-registro-masivo.js"></script>
+    
+    <script>
+        let resultados = [];
+
+        function mostrarResultado(id, mensaje, tipo) {
+            const elemento = document.getElementById(id);
+            elemento.style.display = 'block';
+            elemento.className = `status ${tipo}`;
+            elemento.textContent = mensaje;
+            
+            resultados.push({
+                prueba: id,
+                mensaje: mensaje,
+                tipo: tipo,
+                timestamp: new Date().toLocaleString()
+            });
+            
+            actualizarResultados();
+        }
+
+        function actualizarResultados() {
+            const contenedor = document.getElementById('resultados');
+            contenedor.textContent = JSON.stringify(resultados, null, 2);
+        }
+
+        function ejecutarDiagnostico() {
+            mostrarResultado('diagnostico-result', '🔍 Ejecutando diagnóstico completo...', 'info');
+            
+            // Ejecutar diagnóstico después de un breve delay
+            setTimeout(() => {
+                try {
+                    diagnosticarRegistroMasivo();
+                    mostrarResultado('diagnostico-result', '✅ Diagnóstico completado. Revisa la consola para detalles.', 'success');
+                } catch (error) {
+                    mostrarResultado('diagnostico-result', `❌ Error en diagnóstico: ${error.message}`, 'error');
+                }
+            }, 500);
+        }
+
+        function simularRegistro() {
+            mostrarResultado('pruebas-result', '🔄 Simulando proceso de registro...', 'info');
+            
+            const pasteTableBody = document.getElementById('paste-table-body');
+            if (!pasteTableBody) {
+                mostrarResultado('pruebas-result', '❌ No se puede acceder a la tabla', 'error');
+                return;
+            }
+
+            let validCount = 0;
+            for (let tr of pasteTableBody.rows) {
+                const cells = Array.from(tr.cells);
+                if (cells.length < 7) continue;
+                
+                const [ubch, community, name, cedula, telefono, sexo, edad] = cells.map(td => td.textContent.trim());
+                if (ubch && community && name && cedula && sexo && edad && 
+                    /^\d{6,10}$/.test(cedula) && 
+                    ['M','F','m','f'].includes(sexo) && 
+                    !isNaN(edad) && edad >= 16 && edad <= 120) {
+                    validCount++;
+                }
+            }
+
+            if (validCount > 0) {
+                mostrarResultado('pruebas-result', `✅ Simulación exitosa: ${validCount} registros válidos encontrados`, 'success');
+            } else {
+                mostrarResultado('pruebas-result', '❌ No hay registros válidos para procesar', 'error');
+            }
+        }
+
+        function limpiarTabla() {
+            const pasteTableBody = document.getElementById('paste-table-body');
+            if (pasteTableBody) {
+                pasteTableBody.innerHTML = '<tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td style="text-align: center; color: #6c757d;">Pendiente</td></tr>';
+                mostrarResultado('pruebas-result', '✅ Tabla limpiada correctamente', 'success');
+            } else {
+                mostrarResultado('pruebas-result', '❌ No se puede acceder a la tabla', 'error');
+            }
+        }
+
+        // Configurar eventos de la tabla
+        document.addEventListener('DOMContentLoaded', function() {
+            const pasteTable = document.getElementById('paste-table');
+            const pasteTableBody = document.getElementById('paste-table-body');
+            
+            if (pasteTable) {
+                pasteTable.addEventListener('paste', function (e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text');
+                    const rows = text.split('\n').filter(row => row.trim() !== '');
+                    pasteTableBody.innerHTML = '';
+                    
+                    rows.forEach(row => {
+                        const cols = row.split('\t');
+                        const tr = document.createElement('tr');
+                        for (let i = 0; i < 8; i++) {
+                            const td = document.createElement('td');
+                            if (i < 7) {
+                                td.contentEditable = 'true';
+                                td.textContent = cols[i] ? cols[i].trim() : '';
+                            } else {
+                                td.style.textAlign = 'center';
+                                td.style.color = '#6c757d';
+                                td.textContent = 'Pendiente';
+                            }
+                            tr.appendChild(td);
+                        }
+                        pasteTableBody.appendChild(tr);
+                    });
+                    
+                    mostrarResultado('pruebas-result', `✅ Datos pegados: ${rows.length} filas cargadas`, 'success');
+                });
+            }
+        });
+
+        // Ejecutar diagnóstico inicial
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                mostrarResultado('diagnostico-result', '🔍 Diagnóstico inicial ejecutado. Revisa la consola.', 'info');
+                diagnosticarRegistroMasivo();
+            }, 2000);
+        });
+    </script>
+</body>
+</html> 

@@ -39,6 +39,15 @@
                 font-size: 2.2em;
             }
             
+            .header-actions {
+                margin-top: 15px;
+            }
+            
+            .header-btn {
+                padding: 10px 20px;
+                font-size: 0.95em;
+            }
+            
             .admin-grid {
                 grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
                 gap: 20px;
@@ -71,6 +80,15 @@
             
             .admin-header p {
                 font-size: 1em;
+            }
+            
+            .header-actions {
+                margin-top: 12px;
+            }
+            
+            .header-btn {
+                padding: 8px 16px;
+                font-size: 0.9em;
             }
             
             .admin-grid {
@@ -130,6 +148,17 @@
             .admin-header p {
                 font-size: 0.9em;
                 text-align: center;
+            }
+            
+            .header-actions {
+                margin-top: 10px;
+            }
+            
+            .header-btn {
+                padding: 6px 12px;
+                font-size: 0.85em;
+                width: 100%;
+                max-width: 280px;
             }
             
             .mobile-menu {
@@ -215,6 +244,27 @@
             color: #666;
             margin: 0;
             font-size: 1.15em;
+        }
+        
+        .header-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .header-btn {
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.15);
+        }
+        
+        .header-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102,126,234,0.25);
         }
         
         /* Menú desplegable estilo móvil */
@@ -395,6 +445,37 @@
         .btn-primary:hover {
             background: #667eea;
             color: #fff;
+        }
+
+        /* Estilos para el botón de limpieza */
+        .btn-clean {
+            background: rgba(220, 53, 69, 0.1) !important;
+            color: #dc3545 !important;
+            border: 1px solid #dc3545 !important;
+            padding: 13px 24px !important;
+            border-radius: 12px !important;
+            font-size: 1em !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            font-weight: 600 !important;
+            opacity: 0.9;
+        }
+
+        .btn-clean:hover {
+            background: rgba(220, 53, 69, 0.2) !important;
+            opacity: 1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+        }
+
+        .btn-clean:active {
+            transform: translateY(0);
+        }
+
+        .btn-clean:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
         
         .btn-success {
@@ -996,6 +1077,10 @@
                         <span class="icon">🏠</span>
                         Volver al Sistema
                     </a>
+                    <a href="admin-notifications.html" class="menu-item">
+                        <span class="icon">📢</span>
+                        Gestionar Notificaciones
+                    </a>
                     <a href="#" class="menu-item danger" onclick="logout()">
                         <span class="icon">🚪</span>
                         Cerrar Sesión
@@ -1004,6 +1089,11 @@
             </div>
             <h1>🛠️ Panel de Administración</h1>
             <p>Sistema de Votos 2025 - Gestión 24/7</p>
+            <div class="header-actions">
+                <button class="btn btn-primary header-btn" onclick="window.location.href='admin-notifications.html'">
+                    📢 Gestionar Notificaciones
+                </button>
+            </div>
         </div>
         <!-- PERMISOS POR ROL -->
         <div class="admin-card" style="margin-bottom:24px;">
@@ -1121,6 +1211,7 @@
                     <button class="btn btn-warning" onclick="backupData()">💾 Respaldar Datos</button>
                     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpiar Todo</button>
                     <button class="btn btn-primary" onclick="optimizeSystem()">⚡ Optimizar</button>
+                    <button class="btn btn-clean" onclick="limpiarConfiguracionComunidades()" title="Eliminar comunidades 'BARRIO SOLIDARIO' y 'COMUNIDAD FUTURO'">🧹 Limpiar CV</button>
                 </div>
                 <div class="log-container" id="maintenance-logs"></div>
             </div>
@@ -1141,25 +1232,14 @@
                         <p class="metric-label">Tipos Disponibles</p>
                     </div>
                 </div>
-                <div class="notification-section">
-                    <div class="notification-test-group">
-                        <button class="notification-test-btn" onclick="testNotification('info')">ℹ️ Info</button>
-                        <button class="notification-test-btn success" onclick="testNotification('success')">✅ Éxito</button>
-                        <button class="notification-test-btn warning" onclick="testNotification('warning')">⚠️ Advertencia</button>
-                        <button class="notification-test-btn error" onclick="testNotification('error')">❌ Error</button>
-                    </div>
-                    <small class="notification-hint">Prueba los diferentes tipos de notificación visual</small>
-                    <textarea id="custom-notification" class="notification-textarea" placeholder="Escribe un mensaje personalizado..."></textarea>
-                    <div class="notification-actions">
-                        <button class="btn btn-primary" onclick="sendCustomNotification()">📤 Enviar Local</button>
-                        <button class="btn btn-success" onclick="sendGlobalNotificationFromAdmin()">🌐 Enviar a Todos</button>
-                    </div>
-                    <div class="notification-roles">
-                        <button class="btn btn-warning" onclick="sendRoleNotificationFromAdmin('registrador')">👤 Registradores</button>
-                        <button class="btn btn-info" onclick="sendRoleNotificationFromAdmin('verificador')">✅ Verificadores</button>
-                        <button class="btn btn-secondary" onclick="sendRoleNotificationFromAdmin('usuario')">👥 Usuarios</button>
-                    </div>
+                <div class="service-controls">
+                    <button class="btn btn-primary" onclick="window.location.href='admin-notifications.html'">📢 Gestionar Notificaciones</button>
+                    <button class="btn btn-success" onclick="testNotification('success')">🧪 Probar</button>
+                    <button class="btn btn-warning" onclick="sendGlobalNotificationFromAdmin()">🌐 Enviar Global</button>
                 </div>
+                <small style="color: #666; font-size: 0.9em; display: block; margin-top: 10px;">
+                    Accede a la página completa de notificaciones para más opciones
+                </small>
             </div>
         </div>
         
@@ -1779,8 +1859,8 @@
             let count = 0, errors = 0;
             for (let tr of pasteTableBody.rows) {
                 const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
-                // Validación básica
-                if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
+                // Validación básica (teléfono es opcional)
+                if (!ubch || !community || !name || !cedula || !sexo || !edad) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
@@ -1790,7 +1870,8 @@
                     tr.style.background = '#fff3cd';
                     continue;
                 }
-                if (!/^04\d{9}$/.test(telefono)) {
+                // Validar teléfono solo si está presente (es opcional)
+                if (telefono && !/^04\d{9}$/.test(telefono)) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
@@ -1811,7 +1892,7 @@
                     community,
                     name,
                     cedula: cedula.replace(/\D/g, ''),
-                    telefono: telefono.replace(/\D/g, ''),
+                    telefono: telefono ? telefono.replace(/\D/g, '') : '',
                     sexo: sexo.toUpperCase(),
                     edad: parseInt(edad),
                     registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
@@ -2008,6 +2089,79 @@
 
         // Al final de script.js
         // window.votingSystem = new VotingSystemFirebase(); // Eliminado según el error
+        
+        // Función para limpiar configuración de comunidades (solo se ejecuta una vez)
+        window.limpiarConfiguracionComunidades = async function() {
+            // Verificar si ya se ejecutó
+            if (localStorage.getItem('configuracionLimpia') === 'true') {
+                showNotification('✅ Configuración ya fue limpiada anteriormente', 'info', true);
+                return;
+            }
+
+            try {
+                showNotification('🧹 Iniciando limpieza de configuración...', 'info', true);
+                log('🧹 Iniciando limpieza de configuración...', 'info');
+                
+                // Esperar a que Firebase esté disponible
+                let intentos = 0;
+                while (!window.firebaseDB && intentos < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    intentos++;
+                }
+                
+                if (!window.firebaseDB) {
+                    showNotification('⚠️ Firebase no disponible, saltando limpieza', 'warning', true);
+                    log('⚠️ Firebase no disponible, saltando limpieza', 'warning');
+                    return;
+                }
+                
+                // Configuración corregida sin las comunidades problemáticas
+                const configCorregida = {
+                    "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+                    "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+                    "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+                    "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+                    "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+                    "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+                    "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "CONSOLACIÓN"],
+                    "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+                    "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+                    "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+                    "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGUE", "CONSOLACIÓN"],
+                    "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+                    "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+                    "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+                    "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+                    "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+                    "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+                    "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+                    "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
+                };
+                
+                log('🔄 Actualizando configuración en Firebase...', 'info');
+                
+                // Actualizar configuración en Firebase
+                await window.firebaseDB.ubchCollection.doc('config').set({
+                    mapping: configCorregida,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                    version: '1.1',
+                    cleaned: true,
+                    cleanedAt: new Date().toISOString()
+                });
+                
+                log('✅ Configuración actualizada en Firebase', 'success');
+                log('✅ Comunidades "BARRIO SOLIDARIO" y "COMUNIDAD FUTURO" eliminadas', 'success');
+                
+                // Marcar como limpiado para evitar ejecuciones futuras
+                localStorage.setItem('configuracionLimpia', 'true');
+                
+                showNotification('✅ Configuración limpiada exitosamente', 'success', true);
+                
+            } catch (error) {
+                log('❌ Error limpiando configuración: ' + error.message, 'error');
+                showNotification('❌ Error limpiando configuración: ' + error.message, 'error', true);
+            }
+        };
         
         // Inicializar sistema automático
         if (typeof AutoInitSystem !== 'undefined') {

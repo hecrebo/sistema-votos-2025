@@ -44,6 +44,25 @@
     
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Ocultar botones específicos de roles por defecto para evitar flash */
+        #nav-verifier-dashboard,
+        #nav-verifier-history,
+        #nav-registrator-dashboard,
+        #nav-registrator-history {
+            display: none !important;
+        }
+        
+        /* Ocultar todos los botones de navegación hasta que se configuren */
+        .nav-btn {
+            display: none !important;
+        }
+        
+        /* Mostrar botones solo cuando se configuren correctamente */
+        .nav-btn.configured {
+            display: inline-block !important;
+        }
+    </style>
     <!-- PDF Libraries (cargar antes que otros scripts) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js"></script>
@@ -56,6 +75,14 @@
     <script src="queue-manager.js"></script>
     <script src="notification-system.js"></script>
     <script src="realtime-notifications.js"></script>
+    <script src="pwa-installer.js"></script>
+    <script src="pwa-debug.js"></script>
+    <!-- Chart.js para gráficos del verificador -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Funciones específicas para verificadores -->
+    <script src="verifier-functions.js"></script>
+    <!-- Funciones específicas para registradores -->
+    <script src="registrator-functions.js"></script>
     
     <!-- Agregar Choices.js para autocomplete -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
@@ -68,13 +95,17 @@
             <div class="header-content">
                 <div class="header-top">
                     <div class="logo-container">
-                        <img src="logo.jpg" alt="Logo Sistema de Votos" class="header-logo">
+                        <img src="logo 2.png" alt="Logo Sistema de Votos" class="header-logo">
                     </div>
                     <h1 class="header-title">Registro de Votos y Estadísticas</h1>
                 </div>
                 <nav class="nav-menu">
                     <button class="nav-btn active" data-page="registration" id="nav-registration">Registro</button>
                     <button class="nav-btn" data-page="check-in" id="nav-check-in">Confirmar Voto</button>
+                    <button class="nav-btn" data-page="verifier-dashboard" id="nav-verifier-dashboard">📊 Mi Dashboard (Verificador)</button>
+                    <button class="nav-btn" data-page="verifier-history" id="nav-verifier-history">📋 Mi Historial (Verificador)</button>
+                    <button class="nav-btn" data-page="registrator-dashboard" id="nav-registrator-dashboard">📊 Mi Dashboard (Registrador)</button>
+                    <button class="nav-btn" data-page="registrator-history" id="nav-registrator-history">📋 Mi Historial (Registrador)</button>
                     <button class="nav-btn" data-page="listado" id="nav-listado">Listado</button>
                     <button class="nav-btn" data-page="dashboard" id="nav-dashboard">Totales</button>
                     <button class="nav-btn" data-page="statistics" id="nav-statistics">Estadísticas</button>
@@ -82,6 +113,13 @@
                 </nav>
                 <div class="user-info">
                     <span class="user-id" id="userId"></span>
+                    <button class="btn btn-primary" onclick="installPWA()" id="manual-install-btn" style="display: none; margin-right: 10px;">
+                        📱 Instalar App
+                    </button>
+                    <button class="btn btn-outline" onclick="votingSystem.logout()" style="margin-right: 10px; border: 1px solid #e5e7eb; color: #ffffff; background: transparent;">
+                        Cerrar Sesión
+                    </button>
+
                     <div class="sync-status">
                         <span class="sync-spinner" id="sync-spinner"></span>
                         <span class="sync-check" id="sync-check"></span>
@@ -92,7 +130,8 @@
                     <div class="offline-indicator" id="offline-indicator">
                         <span class="offline-icon">📴</span>
                         <span class="offline-text">Sin conexión</span>
-                                    </div>
+                    </div>
+
                     <!-- Eliminar panel y botones de migración -->
                 </div>
                 <!-- Menú desplegable móvil -->
@@ -119,9 +158,6 @@
                         </button>
                         <button type="button" class="mode-btn" data-mode="bulk" onclick="switchRegistrationMode('bulk')">
                             📊 Registro Masivo (Excel)
-                        </button>
-                        <button type="button" class="mode-btn" data-mode="mylistado" onclick="switchRegistrationMode('mylistado')">
-                            📋 Mi Listado
                         </button>
                     </div>
                     
@@ -156,10 +192,10 @@
                                 <label for="edad">Edad</label>
                                 <input type="number" id="edad" name="edad" placeholder="Ej: 25" min="16" max="120" required title="Introduce una edad válida (entre 16 y 120 años)" autocomplete="off">
                             </div>
-                            <div class="form-group">
-                                <label for="ubch">CV</label>
-                                <select id="ubch" name="ubch" required></select>
-                            </div>
+                                                <div class="form-group">
+                        <label for="ubch">Centro de Votación</label>
+                        <select id="ubch" name="ubch" required></select>
+                    </div>
                             <button type="submit" class="btn btn-primary btn-large" id="register-btn">
                                 <span class="btn-text">Registrar Persona</span>
                                 <span class="btn-loading" style="display: none;">Registrando...</span>
@@ -169,61 +205,102 @@
                     
                     <!-- Registro masivo desde Excel -->
                     <div id="bulk-registration" class="registration-mode" style="display: none;">
-                        <div class="admin-card import-section">
-                            <h3>📋 Registro Masivo (Pega los datos de Excel aquí)</h3>
-                            <div class="import-info">
-                                <p>Pega los datos copiados de Excel directamente en la tabla. Puedes editar los valores antes de cargar.</p>
-                                <p>Columnas esperadas: <b>CV, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad</b></p>
+                        <div class="admin-card import-section" style="padding: 2rem; margin: 1rem 0;">
+                            <h3 style="margin-bottom: 1.5rem; color: #2c3e50; font-size: 1.5rem;">📊 Registro Masivo</h3>
+                            
+                            <!-- Información mejorada -->
+                            <div class="import-info" style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #007bff;">
+                                <p style="margin-bottom: 1rem; color: #495057; line-height: 1.6;">Pega los datos de Excel en la tabla o carga un archivo. Los registros válidos se enviarán automáticamente y se borrarán de la tabla.</p>
+                                <p style="margin: 0; color: #6c757d; font-size: 0.95rem;"><strong>Columnas:</strong> <b>Centro de Votación, Comunidad, Nombre, Cédula, Teléfono (opcional), Sexo, Edad</b></p>
                             </div>
-                            <div style="overflow-x:auto;">
-                                <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false" style="min-width:800px;">
+
+                            <!-- Controles principales ARRIBA de la tabla -->
+                            <div class="import-controls-main" style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-bottom: 1rem;">
+                                <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" style="display: none;">
+                                <button class="btn btn-info" onclick="document.getElementById('excel-file-input').click()" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
+                                    📁 Cargar Excel
+                                </button>
+                                <button class="btn btn-success" onclick="procesarRegistrosMasivos()" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
+                                    📤 Procesar Registros
+                                </button>
+                                <button class="btn btn-warning" onclick="limpiarTablaMasiva()" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
+                                    🗑️ Limpiar Todo
+                                </button>
+                                <button class="btn btn-secondary" onclick="downloadTemplate()" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
+                                    📋 Plantilla
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="actualizarConfiguracionMasivo()" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
+                                    ⚙️ Configurar
+                                </button>
+                            </div>
+
+                            <!-- Contadores en tiempo real -->
+                            <div class="bulk-stats" style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                                <div class="stat-item" style="background: #e8f5e8; padding: 0.5rem 1rem; border-radius: 5px; border: 1px solid #28a745;">
+                                    <span style="font-weight: bold; color: #28a745;">✅ Válidos:</span>
+                                    <span id="valid-count" style="margin-left: 0.5rem;">0</span>
+                                </div>
+                                <div class="stat-item" style="background: #fff3cd; padding: 0.5rem 1rem; border-radius: 5px; border: 1px solid #ffc107;">
+                                    <span style="font-weight: bold; color: #856404;">⚠️ Errores:</span>
+                                    <span id="error-count" style="margin-left: 0.5rem;">0</span>
+                                </div>
+                                <div class="stat-item" style="background: #ffeaa7; padding: 0.5rem 1rem; border-radius: 5px; border: 1px solid #f39c12;">
+                                    <span style="font-weight: bold; color: #856404;">🔄 Duplicados:</span>
+                                    <span id="duplicate-count" style="margin-left: 0.5rem;">0</span>
+                                </div>
+                                <div class="stat-item" style="background: #e3f2fd; padding: 0.5rem 1rem; border-radius: 5px; border: 1px solid #2196f3;">
+                                    <span style="font-weight: bold; color: #1976d2;">📊 Total:</span>
+                                    <span id="total-count" style="margin-left: 0.5rem;">0</span>
+                                </div>
+                            </div>
+
+                            <!-- Barra de progreso -->
+                            <div id="progress-container" style="display: none; margin-bottom: 1rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span id="progress-text">Procesando...</span>
+                                    <span id="progress-percentage">0%</span>
+                                </div>
+                                <div style="background: #e9ecef; border-radius: 10px; height: 8px; overflow: hidden;">
+                                    <div id="progress-bar" style="background: #007bff; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Tabla simplificada -->
+                            <div style="overflow-x:auto; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <table id="paste-table" class="preview-table" contenteditable="true" spellcheck="false" style="min-width:800px; margin: 0;">
                                     <thead>
                                         <tr>
-                                            <th>CV</th>
-                                            <th>Comunidad</th>
-                                            <th>Nombre</th>
-                                            <th>Cédula</th>
-                                            <th>Teléfono</th>
-                                            <th>Sexo</th>
-                                            <th>Edad</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Centro de Votación</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Comunidad</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Nombre</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Cédula</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Teléfono</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Sexo</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Edad</th>
+                                            <th style="padding: 1rem 0.75rem; background: #e9ecef; font-weight: 600; color: #495057;">Estado</th>
                                         </tr>
                                     </thead>
                                     <tbody id="paste-table-body">
-                                        <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+                                        <tr style="background: #fff;">
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td>
+                                            <td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td>
+                                            <td style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 100px; text-align: center; color: #6c757d;">Pendiente</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="import-controls">
-                                <button class="btn btn-success" onclick="importPasteTable()">Cargar a Firebase</button>
-                                <button class="btn btn-warning" onclick="clearPasteTable()">Limpiar Tabla</button>
-                                <button class="btn btn-info" onclick="limpiarColaYForzarSync()">🔄 Limpiar Cola & Sincronizar</button>
-                            </div>
-                            <div id="import-massive-status" class="import-status info" style="display:none;"></div>
+
+                            <!-- Estado del import -->
+                            <div id="import-massive-status" class="import-status info" style="display:none; margin-top: 1rem;"></div>
                         </div>
                     </div>
                     
-                    <!-- Nueva sección: Mi Listado -->
-                    <div id="mylistado-registration" class="registration-mode" style="display: none;">
-                        <div class="mylistado-card">
-                            <h3>📋 Mi Listado</h3>
-                            <div class="mylistado-actions">
-                                <button class="btn btn-primary" onclick="cargarMiListado()">🔄 Actualizar Mi Listado</button>
-                                <button class="btn btn-secondary" onclick="exportarMiListado()">📊 Exportar Excel</button>
-                                <button class="btn btn-warning" onclick="insertarRegistrosPrueba()">🧪 Registros de Prueba</button>
-                                <button class="btn btn-danger" onclick="limpiarMiListado()">🗑️ Limpiar Listado</button>
-                            </div>
-                            <div class="mylistado-search-container">
-                                <input type="text" id="mylistado-search" placeholder="Buscar en mi listado..." style="padding: 10px 15px; border-radius: 8px; border: 1px solid #d1d5db; width: 100%; max-width: 400px; margin-bottom: 15px;">
-                            </div>
-                            <div id="mylistado-container">
-                                <div id="mylistado-loading" style="text-align: center; padding: 20px; display: none;">
-                                    <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                                    <p>Cargando mi listado...</p>
-                                </div>
-                                <div id="mylistado-content"></div>
-                            </div>
-                        </div>
-                    </div>
+
 
                     <div id="registration-message" class="message" style="display: none;"></div>
                     <div id="queue-status" class="queue-status" style="display: none;"></div>
@@ -273,7 +350,7 @@
                                         <option value="name">Nombre</option>
                                         <option value="cedula">Cédula</option>
                                         <option value="community">Comunidad</option>
-                                        <option value="ubch">CV</option>
+                                        <option value="ubch">Centro de Votación</option>
                                     </select>
                                 </div>
                             </div>
@@ -313,9 +390,9 @@
                             
                             <div class="advanced-filters">
                         <div class="ubch-filter">
-                                    <label for="ubch-filter-select">CV:</label>
+                                    <label for="ubch-filter-select">Centro de Votación:</label>
                             <select id="ubch-filter-select" class="ubch-filter-select">
-                                <option value="">Todos los CV</option>
+                                <option value="">Todos los Centros de Votación</option>
                             </select>
                         </div>
                         <div class="community-filter">
@@ -351,7 +428,7 @@
                         </div>
                         <div class="bulk-actions-buttons">
                             <button class="btn btn-success btn-small" onclick="votingSystem.bulkConfirmVotes()">🎯 Confirmar Votos</button>
-                            <button class="btn btn-danger btn-small" onclick="votingSystem.bulkDeleteVotes()">❌ Eliminar</button>
+                            <button class="btn btn-danger btn-small" id="bulk-delete-btn" onclick="votingSystem.bulkDeleteVotes()">❌ Eliminar</button>
                         </div>
                     </div>
 
@@ -372,7 +449,7 @@
                             </div>
                             <div class="detail-section">
                                 <h4>Información Electoral</h4>
-                                <div class="detail-info"><strong>CV:</strong> <span id="detail-ubch"></span></div>
+                                <div class="detail-info"><strong>Centro de Votación:</strong> <span id="detail-ubch"></span></div>
                                 <div class="detail-info"><strong>Comunidad:</strong> <span id="detail-community"></span></div>
                                 <div class="detail-info"><strong>Estado del Voto:</strong> <span id="detail-vote-status"></span></div>
                                 <div class="detail-info"><strong>Fecha de Registro:</strong> <span id="detail-registered-at"></span></div>
@@ -383,7 +460,7 @@
                                 <div class="detail-actions">
                                     <button class="btn btn-primary" onclick="votingSystem.editFromDetail()">🔄 Editar</button>
                                     <button class="btn btn-success" onclick="votingSystem.confirmFromDetail()">🎯 Confirmar Voto</button>
-                                    <button class="btn btn-danger" onclick="votingSystem.deleteFromDetail()">❌ Eliminar</button>
+                                    <button class="btn btn-danger" id="detail-delete-btn" onclick="votingSystem.deleteFromDetail()">❌ Eliminar</button>
                                 </div>
                             </div>
                         </div>
@@ -402,7 +479,7 @@
                                     <th class="sortable-header" data-sort="telefono">Teléfono ↕</th>
                                     <th class="sortable-header" data-sort="sexo">Sexo ↕</th>
                                     <th class="sortable-header" data-sort="edad">Edad ↕</th>
-                                    <th class="sortable-header" data-sort="ubch">CV ↕</th>
+                                    <th class="sortable-header" data-sort="ubch">Centro de Votación ↕</th>
                                     <th class="sortable-header" data-sort="community">Comunidad ↕</th>
                                     <th class="sortable-header" data-sort="voted">Votó ↕</th>
                                     <th>Acciones</th>
@@ -463,7 +540,7 @@
                     </div>
                     <div class="stats-grid">
                         <div class="stats-card">
-                            <h3>Votos por CV</h3>
+                            <h3>Votos por Centro de Votación</h3>
                             <div class="stats-list" id="ubch-stats"></div>
                         </div>
                         <div class="stats-card">
@@ -478,6 +555,254 @@
                             <h3>Votos por Rango de Edad</h3>
                             <div class="stats-list" id="edad-stats"></div>
                         </div>
+                    </div>
+                    <!-- Al final de la sección de estadísticas (antes de cerrar la page-container de statistics-page): -->
+                    <div class="stats-projection-section">
+                                              <h3 style="margin-top:2em;">Resumen por Centro de Votación</h3>
+                      <div id="stats-projection-list" class="projection-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verifier Dashboard Page -->
+            <div class="page" id="verifier-dashboard-page">
+                <div class="page-container">
+                    <h2 class="page-title">📊 Mi Dashboard de Verificación</h2>
+                    
+                    <!-- Resumen de actividad personal -->
+                    <div class="verifier-stats-grid">
+                        <div class="verifier-stat-card">
+                            <h3>🎯 Confirmaciones Hoy</h3>
+                            <p class="verifier-stat-number" id="verifier-today-confirmations">0</p>
+                            <p class="verifier-stat-label">votos confirmados hoy</p>
+                        </div>
+                        <div class="verifier-stat-card">
+                            <h3>📈 Confirmaciones Esta Semana</h3>
+                            <p class="verifier-stat-number" id="verifier-week-confirmations">0</p>
+                            <p class="verifier-stat-label">votos confirmados esta semana</p>
+                        </div>
+                        <div class="verifier-stat-card">
+                            <h3>📊 Total Personal</h3>
+                            <p class="verifier-stat-number" id="verifier-total-confirmations">0</p>
+                            <p class="verifier-stat-label">votos confirmados en total</p>
+                        </div>
+                        <div class="verifier-stat-card">
+                            <h3>⏱️ Promedio por Hora</h3>
+                            <p class="verifier-stat-number" id="verifier-hourly-average">0</p>
+                            <p class="verifier-stat-label">confirmaciones por hora</p>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico de actividad por hora -->
+                    <div class="verifier-chart-section">
+                        <h3>📊 Mi Actividad por Hora (Hoy)</h3>
+                        <div class="verifier-chart-container">
+                            <canvas id="verifier-activity-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas por CV -->
+                    <div class="verifier-cv-stats">
+                        <h3>🏛️ Mis Confirmaciones por Centro de Votación</h3>
+                        <div class="verifier-cv-list" id="verifier-cv-stats-list">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Últimas confirmaciones -->
+                    <div class="verifier-recent-section">
+                        <h3>🕒 Mis Últimas Confirmaciones</h3>
+                        <div class="verifier-recent-list" id="verifier-recent-confirmations">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verifier History Page -->
+            <div class="page" id="verifier-history-page">
+                <div class="page-container">
+                    <h2 class="page-title">📋 Mi Historial de Confirmaciones</h2>
+                    
+                    <!-- Filtros de búsqueda -->
+                    <div class="verifier-history-filters">
+                        <div class="filter-group">
+                            <label for="verifier-date-filter">Fecha:</label>
+                            <select id="verifier-date-filter">
+                                <option value="">Todas las fechas</option>
+                                <option value="today">Hoy</option>
+                                <option value="yesterday">Ayer</option>
+                                <option value="week">Esta semana</option>
+                                <option value="month">Este mes</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="verifier-cv-filter">Centro de Votación:</label>
+                            <select id="verifier-cv-filter">
+                                <option value="">Todos los CV</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="verifier-search">Buscar:</label>
+                            <input type="text" id="verifier-search" placeholder="Buscar por nombre o cédula...">
+                        </div>
+                        <button class="btn btn-primary" onclick="verifierFilterHistory()">🔍 Filtrar</button>
+                        <button class="btn btn-secondary" onclick="verifierExportHistory()">📊 Exportar</button>
+                    </div>
+
+                    <!-- Tabla de historial -->
+                    <div class="verifier-history-table-container">
+                        <table class="verifier-history-table" id="verifier-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Hora</th>
+                                    <th>Nombre</th>
+                                    <th>Cédula</th>
+                                    <th>CV</th>
+                                    <th>Comunidad</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="verifier-history-tbody">
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div class="verifier-pagination" id="verifier-pagination">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registrator Dashboard Page -->
+            <div class="page" id="registrator-dashboard-page">
+                <div class="page-container">
+                    <h2 class="page-title">📊 Mi Dashboard de Registro</h2>
+                    
+                    <!-- Resumen de actividad personal -->
+                    <div class="registrator-stats-grid">
+                        <div class="registrator-stat-card">
+                            <h3>📝 Registros Hoy</h3>
+                            <p class="registrator-stat-number" id="registrator-today-registrations">0</p>
+                            <p class="registrator-stat-label">personas registradas hoy</p>
+                        </div>
+                        <div class="registrator-stat-card">
+                            <h3>📈 Registros Esta Semana</h3>
+                            <p class="registrator-stat-number" id="registrator-week-registrations">0</p>
+                            <p class="registrator-stat-label">personas registradas esta semana</p>
+                        </div>
+                        <div class="registrator-stat-card">
+                            <h3>📊 Total Personal</h3>
+                            <p class="registrator-stat-number" id="registrator-total-registrations">0</p>
+                            <p class="registrator-stat-label">personas registradas en total</p>
+                        </div>
+                        <div class="registrator-stat-card">
+                            <h3>⏱️ Promedio por Hora</h3>
+                            <p class="registrator-stat-number" id="registrator-hourly-average">0</p>
+                            <p class="registrator-stat-label">registros por hora</p>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas de tipos de registro -->
+                    <div class="registrator-stats-grid" style="margin-top: 2rem;">
+                        <div class="registrator-stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <h3>👤 Registros Individuales</h3>
+                            <p class="registrator-stat-number" id="registrator-individual-count">0</p>
+                            <p class="registrator-stat-label">registros uno por uno</p>
+                        </div>
+                        <div class="registrator-stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <h3>📊 Registros Masivos</h3>
+                            <p class="registrator-stat-number" id="registrator-bulk-count">0</p>
+                            <p class="registrator-stat-label">registros por lotes</p>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico de actividad por hora -->
+                    <div class="registrator-chart-section">
+                        <h3>📊 Mi Actividad por Hora (Hoy)</h3>
+                        <div class="registrator-chart-container">
+                            <canvas id="registrator-activity-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas por CV -->
+                    <div class="registrator-cv-stats">
+                        <h3>🏛️ Mis Registros por Centro de Votación</h3>
+                        <div class="registrator-cv-list" id="registrator-cv-stats-list">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Últimos registros -->
+                    <div class="registrator-recent-section">
+                        <h3>🕒 Mis Últimos Registros</h3>
+                        <div class="registrator-recent-list" id="registrator-recent-registrations">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registrator History Page -->
+            <div class="page" id="registrator-history-page">
+                <div class="page-container">
+                    <h2 class="page-title">📋 Mi Historial de Registros</h2>
+                    
+                    <!-- Filtros de búsqueda -->
+                    <div class="registrator-history-filters">
+                        <div class="filter-group">
+                            <label for="registrator-date-filter">Fecha:</label>
+                            <select id="registrator-date-filter">
+                                <option value="">Todas las fechas</option>
+                                <option value="today">Hoy</option>
+                                <option value="yesterday">Ayer</option>
+                                <option value="week">Esta semana</option>
+                                <option value="month">Este mes</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="registrator-cv-filter">Centro de Votación:</label>
+                            <select id="registrator-cv-filter">
+                                <option value="">Todos los CV</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="registrator-search">Buscar:</label>
+                            <input type="text" id="registrator-search" placeholder="Buscar por nombre o cédula...">
+                        </div>
+                        <button class="btn btn-primary" onclick="registratorFilterHistory()">🔍 Filtrar</button>
+                        <button class="btn btn-secondary" onclick="registratorExportHistory()">📊 Exportar</button>
+                    </div>
+
+                    <!-- Tabla de historial -->
+                    <div class="registrator-history-table-container">
+                        <table class="registrator-history-table" id="registrator-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Hora</th>
+                                    <th>Nombre</th>
+                                    <th>Cédula</th>
+                                    <th>Teléfono</th>
+                                    <th>Sexo</th>
+                                    <th>Edad</th>
+                                    <th>CV</th>
+                                    <th>Comunidad</th>
+                                    <th>Tipo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registrator-history-tbody">
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div class="registrator-pagination" id="registrator-pagination">
+                        <!-- Se llenará dinámicamente -->
                     </div>
                 </div>
             </div>
@@ -500,7 +825,7 @@
                     <p class="projection-text" id="projection-text">0 de 0</p>
                 </div>
                 <div class="projection-stats">
-                    <h2>Votos por CV</h2>
+                                            <h2>Votos por Centro de Votación</h2>
                     <div class="projection-list" id="projection-ubch-list"></div>
                 </div>
             </div>
@@ -560,9 +885,9 @@
                         <input type="number" id="edit-edad" name="edad" min="16" max="120" required>
                     </div>
                     <div class="form-group">
-                        <label for="edit-ubch">CV</label>
+                        <label for="edit-ubch">Centro de Votación</label>
                         <select id="edit-ubch" name="ubch" required>
-                            <option value="">Selecciona un CV</option>
+                            <option value="">Selecciona un Centro de Votación</option>
                         </select>
                     </div>
                     <div class="modal-actions">
@@ -590,6 +915,72 @@
     <script src="service-manager.js"></script>
     <script src="init-system.js"></script>
     <script src="choices.min.js"></script>
+    <script src="diagnostico-registro-masivo.js"></script>
+    
+    <!-- Funciones globales -->
+    <script>
+        // Función para alternar menú móvil (acordeón)
+        window.toggleMenu = function() {
+            const menuDropdown = document.getElementById('menu-dropdown');
+            const menuToggle = document.querySelector('.menu-toggle');
+            
+            if (menuDropdown) {
+                const isActive = menuDropdown.classList.contains('active');
+                
+                if (isActive) {
+                    // Cerrar menú con animación
+                    menuDropdown.classList.remove('active');
+                    if (menuToggle) {
+                        menuToggle.textContent = '⋮';
+                        menuToggle.style.transform = 'rotate(0deg)';
+                    }
+                } else {
+                    // Abrir menú con animación
+                    menuDropdown.classList.add('active');
+                    if (menuToggle) {
+                        menuToggle.textContent = '✕';
+                        menuToggle.style.transform = 'rotate(180deg)';
+                    }
+                }
+            }
+        };
+
+        // Cerrar menú al hacer clic fuera
+        document.addEventListener('click', function(event) {
+            const mobileMenu = document.querySelector('.mobile-menu');
+            const menuDropdown = document.getElementById('menu-dropdown');
+            const menuToggle = document.querySelector('.menu-toggle');
+            
+            if (mobileMenu && !mobileMenu.contains(event.target) && menuDropdown) {
+                menuDropdown.classList.remove('active');
+                if (menuToggle) {
+                    menuToggle.textContent = '⋮';
+                    menuToggle.style.transform = 'rotate(0deg)';
+                }
+            }
+        });
+
+        // Función para filtrar historial del registrador
+        window.registratorFilterHistory = function() {
+            if (window.votingSystem) {
+                const currentUser = window.votingSystem.getCurrentUser();
+                if (currentUser && currentUser.rol === 'registrador') {
+                    const registrations = window.votingSystem.getRegistratorRegistrations(currentUser.username);
+                    const filteredRegistrations = window.votingSystem.applyRegistratorFilters(registrations);
+                    window.votingSystem.renderRegistratorHistoryTable(filteredRegistrations);
+                }
+            }
+        };
+
+        // Función para exportar historial del registrador
+        window.registratorExportHistory = function() {
+            if (window.votingSystem) {
+                window.votingSystem.exportRegistratorHistory();
+            }
+        };
+        
+
+    </script>
     
     <script>
         const USUARIOS_INICIALES = [
@@ -844,14 +1235,11 @@
         window.renderMyRecordsTable = async function() {
             const tableBody = document.querySelector('#myrecords-table tbody');
             if (!tableBody) return;
-            
             tableBody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
             
             try {
-                // Obtener usuario actual
                 const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 const username = normalizarUsuario(currentUser.username || '');
-                
                 if (!username) {
                     tableBody.innerHTML = '<tr><td colspan="8">No hay usuario activo</td></tr>';
                     return;
@@ -1042,42 +1430,7 @@
             }
         });
 
-        // === FUNCIONES PARA CAMBIO DE MODO DE REGISTRO ===
-        
-        // Cambiar entre registro individual, masivo y mi listado
-        function switchRegistrationMode(mode) {
-            const individualDiv = document.getElementById('individual-registration');
-            const bulkDiv = document.getElementById('bulk-registration');
-            const myListadoDiv = document.getElementById('mylistado-registration');
-            const modeButtons = document.querySelectorAll('.mode-btn');
-            
-            // Actualizar botones
-            modeButtons.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.mode === mode) {
-                    btn.classList.add('active');
-                }
-            });
-            
-            // Mostrar/ocultar secciones
-            if (mode === 'individual') {
-                individualDiv.style.display = 'block';
-                bulkDiv.style.display = 'none';
-                myListadoDiv.style.display = 'none';
-            } else if (mode === 'bulk') {
-                individualDiv.style.display = 'none';
-                bulkDiv.style.display = 'block';
-                myListadoDiv.style.display = 'none';
-            } else if (mode === 'mylistado') {
-                individualDiv.style.display = 'none';
-                bulkDiv.style.display = 'none';
-                myListadoDiv.style.display = 'block';
-                setTimeout(() => {
-                    cargarMiListado();
-                }, 100);
-            }
-            console.log(`✅ Modo de registro cambiado a: ${mode}`);
-        }
+
 
         // === FUNCIONES PARA REGISTRO MASIVO SIMPLE ===
         
@@ -1097,13 +1450,58 @@
                     const text = (e.clipboardData || window.clipboardData).getData('text');
                     const rows = text.split('\n').filter(row => row.trim() !== '');
                     pasteTableBody.innerHTML = '';
+                    
                     rows.forEach(row => {
                         const cols = row.split('\t');
                         const tr = document.createElement('tr');
-                        for (let i = 0; i < 7; i++) {
+                        
+                        // Mapear datos según el número de columnas
+                        let mappedData = [];
+                        if (cols.length === 4) {
+                            // Formato: Cédula, Teléfono, Sexo, Edad
+                            mappedData = [
+                                window.configuracionRegistroMasivo?.centroVotacion || 'GRUPO ESCOLAR DOCTOR RAFAEL PEREZ',
+                                window.configuracionRegistroMasivo?.comunidad || 'ALTAMIRA',
+                                window.configuracionRegistroMasivo?.nombrePorDefecto || 'NOMBRE POR DEFINIR',
+                                cols[0] || '', // Cédula
+                                cols[1] || '', // Teléfono
+                                cols[2] || '', // Sexo
+                                cols[3] || ''  // Edad
+                            ];
+                        } else if (cols.length === 7) {
+                            // Formato completo: Centro, Comunidad, Nombre, Cédula, Teléfono, Sexo, Edad
+                            mappedData = cols;
+                        } else {
+                            // Otros formatos, usar los datos disponibles
+                            mappedData = [
+                                cols[0] || '', // Centro de Votación
+                                cols[1] || '', // Comunidad
+                                cols[2] || '', // Nombre
+                                cols[3] || '', // Cédula
+                                cols[4] || '', // Teléfono
+                                cols[5] || '', // Sexo
+                                cols[6] || ''  // Edad
+                            ];
+                        }
+                        
+                        // Crear siempre 8 celdas (7 datos + 1 estado)
+                        for (let i = 0; i < 8; i++) {
                             const td = document.createElement('td');
-                            td.contentEditable = 'true';
-                            td.textContent = cols[i] ? cols[i].trim() : '';
+                            if (i < 7) {
+                                td.contentEditable = 'true';
+                                td.style.padding = '1rem 0.75rem';
+                                td.style.borderBottom = '1px solid #dee2e6';
+                                td.style.minWidth = i < 3 ? '150px' : i < 5 ? '120px' : '80px';
+                                td.textContent = mappedData[i] || '';
+                            } else {
+                                // Celda de estado (no editable)
+                                td.style.padding = '1rem 0.75rem';
+                                td.style.borderBottom = '1px solid #dee2e6';
+                                td.style.minWidth = '100px';
+                                td.style.textAlign = 'center';
+                                td.style.color = '#6c757d';
+                                td.textContent = 'Pendiente';
+                            }
                             tr.appendChild(td);
                         }
                         pasteTableBody.appendChild(tr);
@@ -1150,7 +1548,7 @@
         // Limpiar tabla
         function clearPasteTable() {
             if (pasteTableBody) {
-                pasteTableBody.innerHTML = '<tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>';
+                pasteTableBody.innerHTML = '<tr><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 150px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 120px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td contenteditable="true" style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 80px;"></td><td style="padding: 1rem 0.75rem; border-bottom: 1px solid #dee2e6; min-width: 100px; text-align: center; color: #6c757d;">Pendiente</td></tr>';
                 if (importStatus) {
                     importStatus.style.display = 'none';
                 }
@@ -1179,8 +1577,8 @@
             for (let tr of pasteTableBody.rows) {
                 const [ubch, community, name, cedula, telefono, sexo, edad] = Array.from(tr.cells).map(td => td.textContent.trim());
                 
-                // Validación básica
-                if (!ubch || !community || !name || !cedula || !telefono || !sexo || !edad) {
+                // Validación básica (teléfono es opcional)
+                if (!ubch || !community || !name || !cedula || !sexo || !edad) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
@@ -1190,7 +1588,8 @@
                     tr.style.background = '#fff3cd';
                     continue;
                 }
-                if (!/^04\d{9}$/.test(telefono)) {
+                // Validar teléfono solo si está presente (es opcional)
+                if (telefono && !/^04\d{9}$/.test(telefono)) {
                     errors++;
                     tr.style.background = '#fff3cd';
                     continue;
@@ -1212,7 +1611,7 @@
                     community,
                     name,
                     cedula: cedula.replace(/\D/g, ''),
-                    telefono: telefono.replace(/\D/g, ''),
+                    telefono: telefono ? telefono.replace(/\D/g, '') : '', // Teléfono opcional
                     sexo: sexo.toUpperCase(),
                     edad: parseInt(edad),
                     registeredBy: normalizarUsuario(JSON.parse(localStorage.getItem('currentUser')||'{}').username || 'admin'),
@@ -1232,17 +1631,20 @@
                     await window.firebaseDB.votesCollection.add(data);
                     tr.style.background = '#d4edda'; // Verde: éxito
                     count++;
-                    // Aquí pegas el fragmento:
-                    guardarRegistroLocal({
-                        nombre: data.name,
-                        cedula: data.cedula,
-                        telefono: data.telefono,
-                        sexo: data.sexo,
-                        edad: data.edad,
-                        ubch: data.ubch,
-                        comunidad: data.community,
-                        fecha: new Date().toLocaleString()
-                    });
+                    
+                    // Guardar también en registros locales
+                    if (typeof guardarRegistroLocal === 'function') {
+                        guardarRegistroLocal({
+                            nombre: data.name,
+                            cedula: data.cedula,
+                            telefono: data.telefono,
+                            sexo: data.sexo,
+                            edad: data.edad,
+                            ubch: data.ubch,
+                            comunidad: data.community,
+                            fecha: new Date().toLocaleString()
+                        });
+                    }
                 } catch (err) {
                     tr.style.background = '#f8d7da'; // Rojo: error
                     errors++;
@@ -1255,7 +1657,7 @@
             } else if (count > 0 && errors > 0) {
                 importStatus.className = 'import-status warning';
                 importStatus.textContent = `⚠️ ${count} registros cargados. ${errors} filas con errores o duplicados.`;
-                } else {
+            } else {
                 importStatus.className = 'import-status error';
                 importStatus.textContent = `❌ No se cargaron registros. Verifica los datos.`;
             }
@@ -1301,68 +1703,90 @@
         // Registrar Service Worker para PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(function(registration) {
-                        console.log('✅ Service Worker registrado exitosamente:', registration.scope);
-                        console.log('📱 PWA Status:', {
-                            scope: registration.scope,
-                            active: registration.active,
-                            installing: registration.installing,
-                            waiting: registration.waiting
+                // Verificar que estemos en HTTPS o localhost
+                if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                    navigator.serviceWorker.register('./service-worker.js')
+                        .then(function(registration) {
+                            console.log('✅ Service Worker registrado exitosamente:', registration.scope);
+                            console.log('📱 PWA Status:', {
+                                scope: registration.scope,
+                                active: registration.active,
+                                installing: registration.installing,
+                                waiting: registration.waiting
+                            });
+                            
+                            // Verificar si la página está controlada por el SW
+                            if (navigator.serviceWorker.controller) {
+                                console.log('✅ Página controlada por Service Worker');
+                            } else {
+                                console.log('⚠️ Página no controlada por Service Worker');
+                            }
+                        })
+                        .catch(function(error) {
+                            console.error('❌ Error registrando Service Worker:', error);
                         });
-                        
-                        // Verificar si la página está controlada por el SW
-                        if (navigator.serviceWorker.controller) {
-                            console.log('✅ Página controlada por Service Worker');
-                        } else {
-                            console.log('⚠️ Página no controlada por Service Worker');
-                        }
-                    })
-                    .catch(function(error) {
-                        console.error('❌ Error registrando Service Worker:', error);
-                    });
+                } else {
+                    console.log('⚠️ Service Worker no registrado: Protocolo no soportado (requiere HTTPS o localhost)');
+                }
             });
         } else {
             console.log('❌ Service Worker no soportado en este navegador');
         }
 
         // Función fácil para mostrar 'Mis Registros' consultando solo los registros del usuario actual desde Firebase
-        async function mostrarMisRegistrosFacil() {
+        async function renderMyRecordsTable() {
             const tableBody = document.querySelector('#myrecords-table tbody');
             if (!tableBody) return;
             tableBody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
 
-            // Consultar solo la cola local
-            let registrosLocales = [];
-            if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
-                try {
-                    registrosLocales = window.offlineQueueManager.obtenerColaLocal();
-                } catch (e) {
-                    console.error('Error consultando cola local:', e);
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const username = normalizarUsuario(currentUser.username || '');
+                if (!username) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No hay usuario activo</td></tr>';
+                    return;
                 }
+                
+                // Cargar datos desde Firebase (igual que en admin-panel)
+                const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).get();
+                const allUsers = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Filtrar por el usuario actual
+                const misRegistros = allUsers.filter(user => 
+                    (user.registeredBy || '').trim().toLowerCase() === username
+                );
+                
+                if (misRegistros.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
+                    return;
+                }
+                
+                // Renderizar tabla
+                let rows = '';
+                misRegistros.forEach(d => {
+                    rows += `<tr>
+                        <td>${d.name || ''}</td>
+                        <td>${d.cedula || ''}</td>
+                        <td>${d.telefono || ''}</td>
+                        <td>${d.sexo || ''}</td>
+                        <td>${d.edad || ''}</td>
+                        <td>${d.ubch || ''}</td>
+                        <td>${d.community || ''}</td>
+                        <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
+                    </tr>`;
+                });
+                tableBody.innerHTML = rows;
+                
+                console.log(`✅ Mis Registros: ${misRegistros.length} registros encontrados para ${username}`);
+                
+            } catch (error) {
+                console.error('❌ Error cargando Mis Registros:', error);
+                tableBody.innerHTML = '<tr><td colspan="8">Error cargando registros</td></tr>';
             }
-
-            if (!registrosLocales || registrosLocales.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8">No tienes registros propios aún.</td></tr>';
-                return;
-            }
-
-            // Renderizar tabla
-            let rows = '';
-            registrosLocales.forEach(d => {
-                rows += `<tr>
-                    <td>${d.name || ''}</td>
-                    <td>${d.cedula || ''}</td>
-                    <td>${d.telefono || ''}</td>
-                    <td>${d.sexo || ''}</td>
-                    <td>${d.edad || ''}</td>
-                    <td>${d.ubch || ''}</td>
-                    <td>${d.community || ''}</td>
-                    <td>${d.registeredAt ? (new Date(d.registeredAt)).toLocaleString('es-VE', {hour12:true}) : ''}</td>
-                </tr>`;
-            });
-            tableBody.innerHTML = rows;
-        }
+        };
 
         // === FUNCIÓN DE PRUEBA: Insertar registros de prueba para el usuario actual ===
         function insertarRegistrosDePrueba() {
@@ -1455,425 +1879,32 @@
             }
         });
 
-        // === SISTEMA DE MI LISTADO ===
-        
-        // Variable global para almacenar el listado del usuario
-        let miListadoData = [];
-        
-        // Función principal para cargar el listado del usuario actual
-        async function cargarMiListado() {
-            const loadingDiv = document.getElementById('mylistado-loading');
-            const contentDiv = document.getElementById('mylistado-content');
-            
-            // Mostrar loading
-            loadingDiv.style.display = 'block';
-            contentDiv.innerHTML = '';
-            
-            try {
-                // Obtener usuario actual
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                const username = normalizarUsuario(currentUser.username || '');
-                
-                if (!username) {
-                    throw new Error('No hay usuario activo');
-                }
-                
-                console.log(`🔍 Cargando listado para usuario: ${username}`);
-                
-                // Limpiar listado anterior
-                miListadoData = [];
-                
-                // 1. Cargar desde Firebase
-                if (window.firebaseDB && window.firebaseDB.votesCollection) {
-                    try {
-                        const snapshot = await window.firebaseDB.votesCollection
-                            .where('registeredBy', '==', username)
-                            .orderBy('createdAt', 'desc')
-                            .get();
-                        
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            miListadoData.push({
-                                id: doc.id,
-                                nombre: data.name || '',
-                                cedula: data.cedula || '',
-                                telefono: data.telefono || '',
-                                sexo: data.sexo || '',
-                                edad: data.edad || '',
-                                ubch: data.ubch || '',
-                                comunidad: data.community || '',
-                                fecha: data.registeredAt ? new Date(data.registeredAt).toLocaleString('es-VE') : '',
-                                fuente: 'Firebase'
-                            });
-                        });
-                        
-                        console.log(`📊 Cargados ${snapshot.size} registros de Firebase`);
-                    } catch (error) {
-                        console.error('❌ Error cargando desde Firebase:', error);
-                    }
-                }
-                
-                // 2. Cargar desde localStorage
-                try {
-                    const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
-                    registrosLocales.forEach(reg => {
-                        miListadoData.push({
-                            id: 'local_' + Date.now() + Math.random(),
-                            nombre: reg.nombre || '',
-                            cedula: reg.cedula || '',
-                            telefono: reg.telefono || '',
-                            sexo: reg.sexo || '',
-                            edad: reg.edad || '',
-                            ubch: reg.ubch || '',
-                            comunidad: reg.comunidad || '',
-                            fecha: reg.fecha || '',
-                            fuente: 'Local'
-                        });
-                    });
-                    
-                    console.log(`💾 Cargados ${registrosLocales.length} registros locales`);
-                } catch (error) {
-                    console.error('❌ Error cargando registros locales:', error);
-                }
-                
-                // 3. Cargar desde cola offline
-                try {
-                    if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
-                        const colaLocal = window.offlineQueueManager.obtenerColaLocal();
-                        colaLocal.forEach(reg => {
-                            miListadoData.push({
-                                id: 'cola_' + (reg.id || Date.now() + Math.random()),
-                                nombre: reg.name || '',
-                                cedula: reg.cedula || '',
-                                telefono: reg.telefono || '',
-                                sexo: reg.sexo || '',
-                                edad: reg.edad || '',
-                                ubch: reg.ubch || '',
-                                comunidad: reg.community || '',
-                                fecha: reg.registeredAt ? new Date(reg.registeredAt).toLocaleString('es-VE') : '',
-                                fuente: 'Cola'
-                            });
-                        });
-                        
-                        console.log(`🔄 Cargados ${colaLocal.length} registros de cola`);
-                    }
-                } catch (error) {
-                    console.error('❌ Error cargando cola offline:', error);
-                }
-                
-                // Eliminar duplicados por cédula (mantener el más reciente)
-                const uniqueData = [];
-                const seenCedulas = new Set();
-                
-                miListadoData.forEach(registro => {
-                    if (!seenCedulas.has(registro.cedula)) {
-                        seenCedulas.add(registro.cedula);
-                        uniqueData.push(registro);
-                    }
-                });
-                
-                miListadoData = uniqueData;
-                
-                console.log(`📋 Total de registros únicos: ${miListadoData.length}`);
-                
-                // Renderizar el listado
-                renderizarMiListado(miListadoData);
-                
-            } catch (error) {
-                console.error('❌ Error cargando mi listado:', error);
-                contentDiv.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #dc3545;">
-                        <h4>❌ Error al cargar el listado</h4>
-                        <p>${error.message}</p>
-                        <button class="btn btn-primary" onclick="cargarMiListado()">🔄 Reintentar</button>
-                    </div>
-                `;
-            } finally {
-                // Ocultar loading
-                loadingDiv.style.display = 'none';
-            }
-        }
-        
-        // Función para renderizar el listado
-        function renderizarMiListado(datos) {
-            const contentDiv = document.getElementById('mylistado-content');
-            
-            if (datos.length === 0) {
-                contentDiv.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #6c757d;">
-                        <h4>📋 Tu listado está vacío</h4>
-                        <p>Aún no has registrado ninguna persona.</p>
-                        <button class="btn btn-primary" onclick="switchRegistrationMode('individual')">➕ Registrar Primera Persona</button>
-                        <button class="btn btn-warning" onclick="insertarRegistrosPrueba()">🧪 Cargar Datos de Prueba</button>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = `
-                <div style="margin-bottom: 15px; padding: 10px; background: #e9ecef; border-radius: 5px;">
-                    <strong>📊 Resumen:</strong> ${datos.length} personas registradas
-                </div>
-                <div class="listado-grid">
-            `;
-            
-            datos.forEach(persona => {
-                const sexoIcon = persona.sexo === 'M' ? '👨' : persona.sexo === 'F' ? '👩' : '👤';
-                const fuenteColor = persona.fuente === 'Firebase' ? '#28a745' : persona.fuente === 'Local' ? '#007bff' : '#ffc107';
-                
-                html += `
-                    <div class="listado-card" style="border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <strong style="font-size: 1.1em;">${sexoIcon} ${persona.nombre}</strong>
-                            <span style="background: ${fuenteColor}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.8em;">${persona.fuente}</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9em; color: #6c757d;">
-                            <div><strong>Cédula:</strong> ${persona.cedula}</div>
-                            <div><strong>Teléfono:</strong> ${persona.telefono || 'N/A'}</div>
-                            <div><strong>Edad:</strong> ${persona.edad} años</div>
-                            <div><strong>Sexo:</strong> ${persona.sexo === 'M' ? 'Masculino' : persona.sexo === 'F' ? 'Femenino' : 'N/A'}</div>
-                            <div><strong>UBCH:</strong> ${persona.ubch}</div>
-                            <div><strong>Comunidad:</strong> ${persona.comunidad}</div>
-                        </div>
-                        <div style="margin-top: 8px; font-size: 0.8em; color: #6c757d;">
-                            <strong>Fecha:</strong> ${persona.fecha}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            html += '</div>';
-            contentDiv.innerHTML = html;
-        }
-        
-        // Función para filtrar el listado
-        function filtrarMiListado() {
-            const searchInput = document.getElementById('mylistado-search');
-            const query = searchInput.value.toLowerCase().trim();
-            
-            if (!query) {
-                renderizarMiListado(miListadoData);
-                return;
-            }
-            
-            const datosFiltrados = miListadoData.filter(persona => {
-                return persona.nombre.toLowerCase().includes(query) ||
-                       persona.cedula.includes(query) ||
-                       persona.telefono.includes(query) ||
-                       persona.ubch.toLowerCase().includes(query) ||
-                       persona.comunidad.toLowerCase().includes(query);
-            });
-            
-            renderizarMiListado(datosFiltrados);
-        }
-        
-        // Función para exportar el listado
-        function exportarMiListado() {
-            if (miListadoData.length === 0) {
-                alert('❌ No hay datos para exportar');
-                return;
-            }
-            
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            const username = currentUser.username || 'usuario';
-            
-            let csv = 'Nombre,Cédula,Teléfono,Sexo,Edad,UBCH,Comunidad,Fecha,Fuente\n';
-            
-            miListadoData.forEach(persona => {
-                csv += `"${persona.nombre}","${persona.cedula}","${persona.telefono}","${persona.sexo}","${persona.edad}","${persona.ubch}","${persona.comunidad}","${persona.fecha}","${persona.fuente}"\n`;
-            });
-            
-            const BOM = '\uFEFF';
-            const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `mi_listado_${username}_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            console.log(`📊 Listado exportado: ${miListadoData.length} registros`);
-        }
-        
-        // Función para insertar registros de prueba
-        function insertarRegistrosPrueba() {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            const username = normalizarUsuario(currentUser.username || '');
-            
-            if (!username) {
-                alert('❌ No hay usuario activo');
-                return;
-            }
-            
-            const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
-            const timestamp = new Date().toLocaleString();
-            
-            // Crear 3 registros de prueba
-            for (let i = 1; i <= 3; i++) {
-                registrosLocales.push({
-                    nombre: `Persona Prueba ${i}`,
-                    cedula: `${Date.now()}${i}`.slice(-8),
-                    telefono: `0412${String(Math.floor(Math.random() * 10000000)).padStart(7, '0')}`,
-                    sexo: i % 2 === 0 ? 'F' : 'M',
-                    edad: 20 + i,
-                    ubch: 'UBCH PRUEBA',
-                    comunidad: 'Comunidad Prueba',
-                    fecha: timestamp
-                });
-            }
-            
-            localStorage.setItem('misRegistrosLocales', JSON.stringify(registrosLocales));
-            
-            alert('✅ 3 registros de prueba agregados');
-            
-            // Recargar el listado
-            cargarMiListado();
-        }
-        
-        // Función para limpiar el listado
-        function limpiarMiListado() {
-            if (confirm('⚠️ ¿Estás seguro de que quieres limpiar todos los registros locales?\n\nEsto NO afectará los registros en Firebase.')) {
-                localStorage.removeItem('misRegistrosLocales');
-                alert('🗑️ Registros locales eliminados');
-                cargarMiListado();
-            }
-        }
-        
-        // Configurar el buscador cuando la página cargue
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('mylistado-search');
-            if (searchInput) {
-                searchInput.addEventListener('input', filtrarMiListado);
-            }
-        });
 
-        // Función simple para probar el botón
-        function probarMiListado() {
-            console.log('🔍 Probando Mi Listado...');
-            alert('✅ El botón funciona correctamente');
-            
-            // Crear un registro de prueba simple
-            const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
-            registrosLocales.push({
-                nombre: 'Prueba Simple',
-                cedula: '12345678',
-                telefono: '04121234567',
-                sexo: 'M',
-                edad: 30,
-                ubch: 'UBCH TEST',
-                comunidad: 'Comunidad Test',
-                fecha: new Date().toLocaleString()
-            });
-            localStorage.setItem('misRegistrosLocales', JSON.stringify(registrosLocales));
-            
-            // Intentar cargar el listado
-            if (typeof cargarMiListado === 'function') {
-                cargarMiListado();
-            } else {
-                console.error('❌ Función cargarMiListado no encontrada');
-            }
-        }
-        
-        // === FUNCIÓN DE DIAGNÓSTICO ===
-        async function diagnosticarRegistros() {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            const username = normalizarUsuario(currentUser.username || '');
-            
-            console.log('🔍 === DIAGNÓSTICO DE REGISTROS ===');
-            console.log('Usuario actual:', currentUser);
-            console.log('Username normalizado:', username);
-            
-            if (!username) {
-                alert('❌ No hay usuario activo');
-                return;
-            }
-            
-            // 1. Verificar registros en Firebase
-            let firebaseCount = 0;
-            if (window.firebaseDB && window.firebaseDB.votesCollection) {
-                try {
-                    const snapshot = await window.firebaseDB.votesCollection.where('registeredBy', '==', username).get();
-                    firebaseCount = snapshot.size;
-                    console.log('📊 Registros en Firebase:', firebaseCount);
-                    
-                    // Mostrar algunos ejemplos
-                    snapshot.forEach((doc, index) => {
-                        if (index < 3) {
-                            const data = doc.data();
-                            console.log(`- ${data.name} (${data.cedula}) -> registeredBy: "${data.registeredBy}"`);
-                        }
-                    });
-                } catch (error) {
-                    console.error('❌ Error consultando Firebase:', error);
-                }
-            }
-            
-            // 2. Verificar registros locales
-            const registrosLocales = JSON.parse(localStorage.getItem('misRegistrosLocales') || '[]');
-            console.log('💾 Registros locales:', registrosLocales.length);
-            
-            // 3. Verificar cola offline
-            let colaCount = 0;
-            if (window.offlineQueueManager && typeof window.offlineQueueManager.obtenerColaLocal === 'function') {
-                try {
-                    const colaLocal = window.offlineQueueManager.obtenerColaLocal();
-                    colaCount = colaLocal.length;
-                    console.log('🔄 Registros en cola offline:', colaCount);
-                } catch (error) {
-                    console.error('❌ Error consultando cola offline:', error);
-                }
-            }
-            
-            const totalRegistros = firebaseCount + registrosLocales.length + colaCount;
-            
-            alert(`🔍 DIAGNÓSTICO COMPLETO:\n\n` +
-                  `Usuario: ${username}\n` +
-                  `Firebase: ${firebaseCount} registros\n` +
-                  `Locales: ${registrosLocales.length} registros\n` +
-                  `Cola offline: ${colaCount} registros\n` +
-                  `TOTAL: ${totalRegistros} registros\n\n` +
-                  `Revisa la consola (F12) para más detalles.`);
-        }
-
-        // === FUNCIÓN DE MIGRACIÓN: Normalizar todos los 'registeredBy' en Firebase ===
-        // (Eliminada por limpieza de interfaz)
-        // ... existing code ...
-        // Agregar botón de migración en la sección 'Mis Registros' (solo pruebas)
-        // (Eliminado por limpieza de interfaz)
-        // ... existing code ...
 
         // === FUNCIÓN PARA LIMPIAR LA COLA LOCAL ===
         function limpiarMisRegistrosLocales() {
             if (window.offlineQueueManager && typeof window.offlineQueueManager.limpiarColaLocal === 'function') {
                 if (confirm('¿Seguro que quieres borrar todos tus registros locales?')) {
                     window.offlineQueueManager.limpiarColaLocal();
-                    mostrarMisRegistrosFacil();
+                    alert('Registros locales eliminados');
                 }
             } else {
                 alert('No se puede limpiar la cola local.');
             }
         }
 
-        // Agregar botón de limpiar cola local en la sección 'Mis Registros'
-        document.addEventListener('DOMContentLoaded', function() {
-            const myRecordsActions = document.querySelector('.myrecords-actions');
-            if (myRecordsActions) {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-danger';
-                btn.textContent = 'Limpiar Mis Registros Locales';
-                btn.onclick = limpiarMisRegistrosLocales;
-                myRecordsActions.appendChild(btn);
-            }
-        });
-
         // Definir switchRegistrationMode globalmente para evitar errores de referencia
         window.switchRegistrationMode = function(mode) {
             const individualDiv = document.getElementById('individual-registration');
             const bulkDiv = document.getElementById('bulk-registration');
-            const myRecordsDiv = document.getElementById('myrecords-registration');
             const modeButtons = document.querySelectorAll('.mode-btn');
+            
+            // Verificar que los elementos existen antes de usarlos
+            if (!individualDiv || !bulkDiv) {
+                console.error('❌ Error: Elementos de registro no encontrados');
+                return;
+            }
+            
             // Actualizar botones
             modeButtons.forEach(btn => {
                 btn.classList.remove('active');
@@ -1881,19 +1912,14 @@
                     btn.classList.add('active');
                 }
             });
+            
             // Mostrar/ocultar secciones
             if (mode === 'individual') {
                 individualDiv.style.display = 'block';
                 bulkDiv.style.display = 'none';
-                myRecordsDiv.style.display = 'none';
             } else if (mode === 'bulk') {
                 individualDiv.style.display = 'none';
                 bulkDiv.style.display = 'block';
-                myRecordsDiv.style.display = 'none';
-            } else if (mode === 'mylistado') {
-                individualDiv.style.display = 'none';
-                bulkDiv.style.display = 'none';
-                myRecordsDiv.style.display = 'block';
             }
             console.log(`✅ Modo de registro cambiado a: ${mode}`);
         };
@@ -1912,7 +1938,350 @@
                 });
             }
         });
+
+        // Función para cargar configuración UBCH
+        async function loadUBCHConfig() {
+            if (window.firebaseDB && window.firebaseDB.ubchCollection) {
+                try {
+                    const configDoc = await window.firebaseDB.ubchCollection.doc('config').get();
+                    if (configDoc.exists && configDoc.data().mapping) {
+                        mapping = configDoc.data().mapping;
+                        console.log('✅ Mapeo de CV/comunidades cargado desde Firebase (ubchCollection.config.mapping)');
+                    }
+                } catch (error) {
+                    console.error('❌ Error cargando configuración UBCH:', error);
+                }
+            }
+        }
+        
+        // Cargar configuración UBCH cuando esté disponible
+        if (window.firebaseDB && window.firebaseDB.ubchCollection) {
+            loadUBCHConfig();
+        }
+
+        // === INICIALIZACIÓN UNIFICADA DEL SISTEMA ===
+        
+        // Función para inicializar el sistema de registro de manera unificada
+        async function initializeRegistrationSystem() {
+            console.log('🚀 Inicializando sistema de registro unificado...');
+            
+            try {
+                // 1. Verificar que Firebase esté disponible
+                if (!window.firebaseDB) {
+                    console.error('❌ Firebase no está disponible');
+                    throw new Error('Firebase no está configurado');
+                }
+                
+                // 2. Crear instancia del sistema de votos si no existe
+                if (!window.votingSystem) {
+                    console.log('📋 Creando instancia del sistema de votos...');
+                    window.votingSystem = new VotingSystemFirebase();
+                    await window.votingSystem.init();
+                }
+                
+                // 3. Configurar event listeners del formulario de registro
+                const registrationForm = document.getElementById('registration-form');
+                if (registrationForm) {
+                    // Remover event listeners existentes para evitar duplicados
+                    const newForm = registrationForm.cloneNode(true);
+                    registrationForm.parentNode.replaceChild(newForm, registrationForm);
+                    
+                    // Agregar event listener para el envío del formulario
+                    newForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        console.log('📝 Enviando formulario de registro...');
+                        
+                        if (window.votingSystem && typeof window.votingSystem.handleRegistration === 'function') {
+                            await window.votingSystem.handleRegistration();
+                        } else {
+                            console.error('❌ Sistema de votos no disponible');
+                            alert('Error: Sistema no disponible. Recarga la página.');
+                        }
+                    });
+                    
+                    console.log('✅ Event listeners del formulario configurados');
+                }
+                
+                // 4. Configurar event listeners para los selects
+                const ubchSelect = document.getElementById('ubch');
+                const communitySelect = document.getElementById('community');
+                
+                if (ubchSelect && communitySelect) {
+                    // Event listener para cuando cambie el CV
+                    ubchSelect.addEventListener('change', function() {
+                        console.log('🔄 CV seleccionado:', this.value);
+                        // Los selects son independientes, no necesitan vinculación
+                    });
+                    
+                    // Event listener para cuando cambie la comunidad
+                    communitySelect.addEventListener('change', function() {
+                        console.log('🔄 Comunidad seleccionada:', this.value);
+                    });
+                    
+                    console.log('✅ Event listeners de selects configurados');
+                }
+                
+                // 5. Cargar datos iniciales
+                if (window.votingSystem) {
+                    await window.votingSystem.loadDataFromFirebase();
+                    window.votingSystem.renderRegistrationPage();
+                }
+                
+                console.log('✅ Sistema de registro inicializado correctamente');
+                
+            } catch (error) {
+                console.error('❌ Error inicializando sistema de registro:', error);
+                alert('Error al inicializar el sistema. Recarga la página.');
+            }
+        }
+        
+        // Función para verificar y corregir problemas de inicialización
+        function checkAndFixInitialization() {
+            console.log('🔍 Verificando estado de inicialización...');
+            
+            // Verificar que el formulario existe
+            const form = document.getElementById('registration-form');
+            if (!form) {
+                console.error('❌ Formulario de registro no encontrado');
+                return false;
+            }
+            
+            // Verificar que los selects existen
+            const ubchSelect = document.getElementById('ubch');
+            const communitySelect = document.getElementById('community');
+            if (!ubchSelect || !communitySelect) {
+                console.error('❌ Selects de CV o comunidad no encontrados');
+                return false;
+            }
+            
+            // Verificar que el sistema de votos esté disponible
+            if (!window.votingSystem) {
+                console.error('❌ Sistema de votos no inicializado');
+                return false;
+            }
+            
+            console.log('✅ Verificación de inicialización exitosa');
+            return true;
+        }
+        
+        // === INICIALIZACIÓN UNIFICADA AL CARGAR LA PÁGINA ===
+        
+        // Inicializar el sistema cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('📱 Página cargada, iniciando sistema unificado...');
+            
+            // Esperar a que Firebase esté disponible
+            let retries = 0;
+            const maxRetries = 10;
+            
+            while (!window.firebaseDB && retries < maxRetries) {
+                console.log(`⏳ Esperando Firebase... (intento ${retries + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                retries++;
+            }
+            
+            if (!window.firebaseDB) {
+                console.error('❌ Firebase no disponible después de múltiples intentos');
+                alert('Error: No se pudo conectar con Firebase. Recarga la página.');
+                return;
+            }
+            
+            // Inicializar sistema de registro unificado
+            await initializeRegistrationSystem();
+            
+            // Verificar que todo esté funcionando correctamente
+            if (!checkAndFixInitialization()) {
+                console.error('❌ Problemas detectados en la inicialización');
+                alert('Error: Problemas detectados en la inicialización. Recarga la página.');
+                return;
+            }
+            
+            console.log('🎉 Sistema unificado inicializado completamente');
+            
+            // Mostrar mensaje de éxito
+            const messageDiv = document.getElementById('registration-message');
+            if (messageDiv) {
+                messageDiv.textContent = '✅ Sistema listo para registrar personas';
+                messageDiv.className = 'message success';
+                messageDiv.style.display = 'block';
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 3000);
+            }
+        });
+        
+        // Función global para reinicializar el sistema si es necesario
+        window.reinitializeSystem = async function() {
+            console.log('🔄 Reinicializando sistema...');
+            await initializeRegistrationSystem();
+        };
+        
+        // Función global para verificar el estado del sistema
+        window.checkSystemStatus = function() {
+            return checkAndFixInitialization();
+        };
+
+        // Función para verificar estado PWA
+        window.checkPWAStatus = function() {
+            if (window.pwaInstaller) {
+                return window.pwaInstaller.showPWAInfo();
+            }
+            return null;
+        };
+
+        // Mostrar información PWA en consola al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (window.pwaInstaller) {
+                    console.log('📱 Estado PWA:');
+                    window.pwaInstaller.showPWAInfo();
+                }
+            }, 2000);
+        });
+
+        // Función global para instalación manual de PWA
+        window.installPWA = function() {
+            if (window.pwaInstaller) {
+                window.pwaInstaller.installPWA();
+            } else {
+                console.log('⚠️ PWA Installer no disponible');
+                alert('La instalación PWA no está disponible en este momento.');
+            }
+        };
+
+        // Función para limpiar configuración de comunidades (solo se ejecuta una vez)
+        window.limpiarConfiguracionComunidades = async function() {
+            // Verificar si ya se ejecutó
+            if (localStorage.getItem('configuracionLimpia') === 'true') {
+                console.log('✅ Configuración ya fue limpiada anteriormente');
+                return;
+            }
+
+            try {
+                console.log('🧹 Iniciando limpieza de configuración...');
+                
+                // Esperar a que Firebase esté disponible
+                let intentos = 0;
+                while (!window.firebaseDB && intentos < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    intentos++;
+                }
+                
+                if (!window.firebaseDB) {
+                    console.log('⚠️ Firebase no disponible, saltando limpieza');
+                    return;
+                }
+                
+                // Configuración corregida sin las comunidades problemáticas
+                const configCorregida = {
+                    "COLEGIO ASUNCION BELTRAN": ["EL VALLE", "VILLA OASIS", "VILLAS DEL CENTRO 1ERA ETAPA", "VILLAS DEL CENTRO 3ERA ETAPA B", "VILLAS DEL CENTRO 3ERA ETAPA C", "VILLAS DEL CENTRO IV ETAPA", "LA CAMACHERA", "CONSOLACIÓN"],
+                    "LICEO JOSE FELIX RIBAS": ["EL CUJINAL", "LAS MORAS", "VILLA ESPERANZA 200", "VILLAS DEL CENTRO 3ERA ETAPA A", "LOS PALOMARES", "EL LAGO", "CARABALI I Y II", "EL BANCO", "CARIAPRIMA I Y II", "CONSOLACIÓN"],
+                    "ESCUELA PRIMARIA BOLIVARIANA LA PRADERA": ["EL SAMAN", "GUAYABAL E", "PALOS GRANDES II", "PALOS GRANDES I", "TIERRAS DEL SOL", "LA CASTELLANA", "GARDENIAS I", "GARDENIAS II", "EL CERCADITO", "ALTAMIRA", "LA ENSENADA", "BUCARES", "GUAYABAL", "APAMATE", "EL REFUGIO", "LOS ROBLES", "ARAGUANEY", "CONSOLACIÓN"],
+                    "CASA COMUNAL JOSE TOMAS GALLARDO": ["JOSE TOMAS GALLARDO A", "JOSE TOMAS GALLARDO B", "ALI PRIMERA", "CONSOLACIÓN"],
+                    "ESCUELA 5 DE JULIO": ["10 DE AGOSTO", "CAMPO ALEGRE I", "CAMPO ALEGRE II", "5 DE JULIO", "CONSOLACIÓN"],
+                    "ESCUELA CECILIO ACOSTA": ["VOLUNTAD DE DIOS", "LAS MALVINAS", "BRISAS DEL LAGO", "MAISANTA", "INDIANA SUR", "LOS CASTORES", "CONSOLACIÓN"],
+                    "ESCUELA BASICA FE Y ALEGRIA": ["FE Y ALEGRIA", "CONSOLACIÓN"],
+                    "ESCUELA GRADUADA ANTONIO JOSE DE SUCRE": ["PALO NEGRO OESTE", "JESUS DE NAZARETH", "SECTOR BOLIVAR", "PALO NEGRO ESTE", "CONSOLACIÓN"],
+                    "CASA COMUNAL": ["LOS JABILLOS", "CONSOLACIÓN"],
+                    "UNIDAD EDUCATIVA MONSEÑOR JOSÉ JACINTO SOTO LAYA": ["PROLONGACION MIRANDA", "SANTA EDUVIGES II", "CONSOLACIÓN"],
+                    "BASE DE MISIONES LUISA CACERES DE ARISMENDI": ["4 DE DICIEMBRE", "23 DE ENERO", "19 DE ABRIL", "EL EREIGUE", "CONSOLACIÓN"],
+                    "ESCUELA ESTADAL ALEJO ZULOAGA": ["MANUELITA SAENZ", "PANAMERICANO", "CONSOLACIÓN"],
+                    "UNIDAD EDUCATIVA MONSEÑOR MONTES DE OCA": ["REMATE", "CONSOLACIÓN"],
+                    "ESCUELA BASICA NACIONAL CONCENTRADA LA ESTACION": ["18 DE OCTUBRE", "CONSOLACIÓN"],
+                    "ESCUELA RECEPTORIA": ["CARMEN CENTRO", "CENTRO CENTRO", "CONSOLACIÓN"],
+                    "GRUPO ESCOLAR DR RAFAEL PEREZ": ["VIRGEN DEL CARMEN", "CONSOLACIÓN"],
+                    "LICEO ALFREDO PIETRI": ["LOS OJITOS", "LOS VENCEDORES", "CONSOLACIÓN"],
+                    "ESCUELA BOLIVARIANA ROMERO GARCIA": ["SAN BERNARDO", "LA CAPILLA", "LAS HACIENDAS", "CONSOLACIÓN"],
+                    "ESCUELA GRADUADA PEDRO GUAL": ["BOQUITA CENTRO", "INDIANA NORTE", "CONSOLACIÓN"]
+                };
+                
+                console.log('🔄 Actualizando configuración en Firebase...');
+                
+                // Actualizar configuración en Firebase
+                await window.firebaseDB.ubchCollection.doc('config').set({
+                    mapping: configCorregida,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                    version: '1.1',
+                    cleaned: true,
+                    cleanedAt: new Date().toISOString()
+                });
+                
+                console.log('✅ Configuración actualizada en Firebase');
+                console.log('✅ Comunidades "BARRIO SOLIDARIO" y "COMUNIDAD FUTURO" eliminadas');
+                
+                // Marcar como limpiado para evitar ejecuciones futuras
+                localStorage.setItem('configuracionLimpia', 'true');
+                
+                // Actualizar configuración local si el sistema está disponible
+                if (window.votingSystem) {
+                    window.votingSystem.ubchToCommunityMap = configCorregida;
+                    window.votingSystem.renderRegistrationPage();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error limpiando configuración:', error);
+            }
+        };
+
+        // Función de diagnóstico para identificar problemas de navegación
+        window.diagnoseNavigation = function() {
+            console.log('🔍 === DIAGNÓSTICO DE NAVEGACIÓN ===');
+            
+            // Verificar usuario actual
+            const currentUser = window.votingSystem ? window.votingSystem.getCurrentUser() : null;
+            console.log('👤 Usuario actual:', currentUser);
+            
+            // Verificar botones de navegación
+            const navButtons = document.querySelectorAll('.nav-btn');
+            console.log('🔍 Total de botones encontrados:', navButtons.length);
+            
+            navButtons.forEach(btn => {
+                const isVisible = btn.style.display !== 'none';
+                const isActive = btn.classList.contains('active');
+                const hasClickListener = btn.onclick !== null;
+                console.log(`📋 "${btn.textContent.trim()}" (${btn.id}): Visible=${isVisible}, Activo=${isActive}, ClickListener=${hasClickListener}`);
+            });
+            
+            // Verificar páginas
+            const pages = ['verifier-dashboard-page', 'registrator-dashboard-page', 'verifier-history-page', 'registrator-history-page'];
+            pages.forEach(pageId => {
+                const page = document.getElementById(pageId);
+                console.log(`📄 ${pageId}: ${page ? 'EXISTE' : 'NO EXISTE'}`);
+            });
+            
+            // Verificar event listeners
+            const dashboardBtn = document.getElementById('nav-verifier-dashboard');
+            if (dashboardBtn) {
+                console.log('🔍 Event listeners del botón dashboard:', dashboardBtn.onclick);
+                console.log('🔍 Dataset del botón:', dashboardBtn.dataset);
+            }
+            
+            console.log('🔍 === FIN DIAGNÓSTICO ===');
+        };
+        
+        // Función para forzar navegación a dashboard
+        window.forceDashboard = function() {
+            console.log('🔄 Forzando navegación a dashboard...');
+            if (window.votingSystem) {
+                const currentUser = window.votingSystem.getCurrentUser();
+                if (currentUser && currentUser.rol === 'verificador') {
+                    window.votingSystem.navigateToPage('verifier-dashboard');
+                } else if (currentUser && currentUser.rol === 'registrador') {
+                    window.votingSystem.navigateToPage('registrator-dashboard');
+                }
+            }
+        };
+        
+        // Función para forzar configuración de botones de dashboard
+        window.forceSetupDashboardButtons = function() {
+            console.log('🔧 Forzando configuración de botones de dashboard...');
+            if (window.votingSystem) {
+                window.votingSystem.forceSetupDashboardButtons();
+            }
+        };
     </script>
+    
+
     
     <!-- Contenedor de Notificaciones -->
     <div id="notification-container"></div>

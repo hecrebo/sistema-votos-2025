@@ -127,9 +127,16 @@ class AutoInitSystem {
     }
 
     async checkPermissions() {
-        // NO solicitar permisos automáticamente para evitar congelar la app en móviles
-        // Los permisos se solicitarán solo bajo demanda mediante botón
-        console.log('ℹ️ Permisos de notificación: Solo bajo demanda');
+        // Verificar permisos de notificación (sin solicitar)
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                console.log('✅ Permisos de notificación ya concedidos');
+            } else if (Notification.permission === 'denied') {
+                console.log('❌ Permisos de notificación denegados');
+            } else {
+                console.log('ℹ️ Permisos de notificación no solicitados (se solicitan en el login)');
+            }
+        }
     }
 
     // === NOTIFICACIONES AUTOMÁTICAS ===
@@ -144,97 +151,6 @@ class AutoInitSystem {
         setInterval(() => {
             this.processNotificationQueue();
         }, 2000);
-        
-        // Crear botón de activación de notificaciones si no existe
-        this.createNotificationButton();
-    }
-    
-    // Método para solicitar permisos bajo demanda
-    async requestNotificationPermission() {
-        if (!('Notification' in window)) {
-            this.showToast('Las notificaciones no están disponibles en este navegador', 'warning');
-            return false;
-        }
-        
-        if (Notification.permission === 'granted') {
-            this.showToast('Las notificaciones ya están activadas', 'success');
-            return true;
-        }
-        
-        if (Notification.permission === 'denied') {
-            this.showToast('Las notificaciones están bloqueadas. Habilítalas en la configuración del navegador', 'warning');
-            return false;
-        }
-        
-        try {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                this.showToast('¡Notificaciones activadas! Recibirás alertas importantes', 'success');
-                return true;
-            } else {
-                this.showToast('Las notificaciones fueron rechazadas. Puedes activarlas más tarde', 'info');
-                return false;
-            }
-        } catch (error) {
-            console.error('Error al solicitar permisos de notificación:', error);
-            this.showToast('Error al activar notificaciones', 'error');
-            return false;
-        }
-    }
-    
-    // Crear botón de activación de notificaciones
-    createNotificationButton() {
-        // Solo crear si no existe ya
-        if (document.getElementById('notification-activation-btn')) return;
-        
-        const button = document.createElement('button');
-        button.id = 'notification-activation-btn';
-        button.innerHTML = '🔔 Activar Notificaciones';
-        button.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            z-index: 9999;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-            display: ${Notification.permission === 'granted' ? 'none' : 'block'};
-        `;
-        
-        // Efectos hover
-        button.addEventListener('mouseenter', () => {
-            button.style.transform = 'translateY(-2px)';
-            button.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)';
-        });
-        
-        button.addEventListener('mouseleave', () => {
-            button.style.transform = 'translateY(0)';
-            button.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
-        });
-        
-        // Click handler
-        button.addEventListener('click', async () => {
-            button.disabled = true;
-            button.innerHTML = '⏳ Activando...';
-            
-            const success = await this.requestNotificationPermission();
-            
-            if (success) {
-                button.style.display = 'none';
-            } else {
-                button.disabled = false;
-                button.innerHTML = '🔔 Activar Notificaciones';
-            }
-        });
-        
-        document.body.appendChild(button);
     }
 
     showSystemNotification(message, type = 'info') {
@@ -737,21 +653,6 @@ class AutoInitSystem {
             connectivity: navigator.onLine,
             storage: !!window.localStorage
         };
-    }
-    
-    // Método público para solicitar permisos de notificación
-    async requestNotifications() {
-        return await this.requestNotificationPermission();
-    }
-    
-    // Método para verificar si las notificaciones están disponibles
-    areNotificationsAvailable() {
-        return 'Notification' in window && Notification.permission === 'granted';
-    }
-    
-    // Método para mostrar el botón de notificaciones manualmente
-    showNotificationButton() {
-        this.createNotificationButton();
     }
 }
 
