@@ -5973,13 +5973,20 @@ window.forzarReinicializacionRegistroMasivo = function() {
     // Limpiar datos guardados
     localStorage.removeItem('bulkRegistrationData');
     
+    // Mantener variables globales
+    if (typeof window.mantenerVariablesGlobales === 'function') {
+        window.mantenerVariablesGlobales();
+    }
+    
     // Reinicializar funciones
     if (typeof procesarRegistrosMasivos === 'function') {
         window.procesarRegistrosMasivos = procesarRegistrosMasivos;
+        console.log('✅ procesarRegistrosMasivos reinicializada');
     }
     
     if (typeof limpiarTablaMasiva === 'function') {
         window.limpiarTablaMasiva = limpiarTablaMasiva;
+        console.log('✅ limpiarTablaMasiva reinicializada');
     }
     
     // Limpiar tabla si existe
@@ -6010,6 +6017,7 @@ window.forzarReinicializacionRegistroMasivo = function() {
         newRow.appendChild(statusCell);
         
         pasteTableBody.appendChild(newRow);
+        console.log('✅ Tabla limpiada y reinicializada');
     }
     
     console.log('✅ Reinicialización del registro masivo completada');
@@ -6019,4 +6027,119 @@ window.forzarReinicializacionRegistroMasivo = function() {
         window.votingSystem.showMessage('Registro masivo reinicializado correctamente', 'success', 'registration');
     }
 };
+
+// Función robusta para mantener variables globales persistentes
+window.mantenerVariablesGlobales = function() {
+    console.log('🔧 Manteniendo variables globales...');
+    
+    // Asegurar que las funciones principales estén siempre disponibles
+    if (typeof procesarRegistrosMasivos === 'function') {
+        window.procesarRegistrosMasivos = procesarRegistrosMasivos;
+        console.log('✅ procesarRegistrosMasivos asignada globalmente');
+    } else {
+        console.error('❌ procesarRegistrosMasivos no está definida');
+    }
+    
+    if (typeof limpiarTablaMasiva === 'function') {
+        window.limpiarTablaMasiva = limpiarTablaMasiva;
+        console.log('✅ limpiarTablaMasiva asignada globalmente');
+    } else {
+        console.error('❌ limpiarTablaMasiva no está definida');
+    }
+    
+    // Asegurar que otras funciones importantes estén disponibles
+    if (typeof loadExcelFile === 'function') {
+        window.loadExcelFile = loadExcelFile;
+        console.log('✅ loadExcelFile asignada globalmente');
+    }
+    
+    if (typeof downloadTemplate === 'function') {
+        window.downloadTemplate = downloadTemplate;
+        console.log('✅ downloadTemplate asignada globalmente');
+    }
+    
+    if (typeof actualizarConfiguracionMasivo === 'function') {
+        window.actualizarConfiguracionMasivo = actualizarConfiguracionMasivo;
+        console.log('✅ actualizarConfiguracionMasivo asignada globalmente');
+    }
+    
+    if (typeof forzarReinicializacionRegistroMasivo === 'function') {
+        window.forzarReinicializacionRegistroMasivo = forzarReinicializacionRegistroMasivo;
+        console.log('✅ forzarReinicializacionRegistroMasivo asignada globalmente');
+    }
+    
+    // Asegurar que las variables de estado estén inicializadas
+    if (typeof window.procesandoRegistros === 'undefined') {
+        window.procesandoRegistros = false;
+        console.log('✅ Variable procesandoRegistros inicializada');
+    }
+    
+    if (typeof window.limpiandoTabla === 'undefined') {
+        window.limpiandoTabla = false;
+        console.log('✅ Variable limpiandoTabla inicializada');
+    }
+    
+    console.log('🎯 Variables globales mantenidas correctamente');
+};
+
+// Ejecutar mantenimiento de variables globales periódicamente
+setInterval(() => {
+    if (typeof window.mantenerVariablesGlobales === 'function') {
+        window.mantenerVariablesGlobales();
+    }
+}, 5000); // Verificar cada 5 segundos
+
+// También ejecutar cuando la pestaña vuelve a estar activa
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        console.log('🔄 Pestaña activa - verificando variables globales...');
+        setTimeout(() => {
+            if (typeof window.mantenerVariablesGlobales === 'function') {
+                window.mantenerVariablesGlobales();
+            }
+        }, 100);
+    }
+});
+
+// Función para verificar el estado de las variables globales
+window.verificarEstadoVariablesGlobales = function() {
+    console.log('🔍 Verificando estado de variables globales...');
+    
+    const estado = {
+        procesarRegistrosMasivos: typeof window.procesarRegistrosMasivos === 'function',
+        limpiarTablaMasiva: typeof window.limpiarTablaMasiva === 'function',
+        loadExcelFile: typeof window.loadExcelFile === 'function',
+        downloadTemplate: typeof window.downloadTemplate === 'function',
+        actualizarConfiguracionMasivo: typeof window.actualizarConfiguracionMasivo === 'function',
+        forzarReinicializacionRegistroMasivo: typeof window.forzarReinicializacionRegistroMasivo === 'function',
+        mantenerVariablesGlobales: typeof window.mantenerVariablesGlobales === 'function',
+        procesandoRegistros: typeof window.procesandoRegistros !== 'undefined',
+        limpiandoTabla: typeof window.limpiandoTabla !== 'undefined'
+    };
+    
+    console.log('📊 Estado de variables globales:', estado);
+    
+    // Contar funciones disponibles
+    const funcionesDisponibles = Object.values(estado).filter(Boolean).length;
+    const totalFunciones = Object.keys(estado).length;
+    
+    console.log(`✅ ${funcionesDisponibles}/${totalFunciones} funciones disponibles`);
+    
+    // Mostrar alerta si faltan funciones críticas
+    if (!estado.procesarRegistrosMasivos || !estado.limpiarTablaMasiva) {
+        console.warn('⚠️ Funciones críticas no disponibles - ejecutando mantenimiento...');
+        if (typeof window.mantenerVariablesGlobales === 'function') {
+            window.mantenerVariablesGlobales();
+        }
+    }
+    
+    return estado;
+};
+
+// Ejecutar verificación al cargar la página
+setTimeout(() => {
+    if (typeof window.verificarEstadoVariablesGlobales === 'function') {
+        window.verificarEstadoVariablesGlobales();
+    }
+}, 2000);
 
