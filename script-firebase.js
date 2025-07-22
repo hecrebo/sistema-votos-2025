@@ -672,7 +672,7 @@ function updateCellStatus(cell, message, color) {
 }
 
 // Nueva función para procesar registros masivos (como registro individual)
-window.procesarRegistrosMasivos = async function() {
+function procesarRegistrosMasivos() {
     try {
         const pasteTableBody = document.getElementById('paste-table-body');
         const importStatus = document.getElementById('import-massive-status');
@@ -5622,4 +5622,7 @@ window.actualizarConfiguracionMasivo = function() {
     
     console.log('✅ Configuración actualizada:', window.configuracionRegistroMasivo);
 };
+
+// Hacer la función procesarRegistrosMasivos disponible globalmente
+window.procesarRegistrosMasivos = procesarRegistrosMasivos;
 
