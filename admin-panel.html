@@ -1226,6 +1226,9 @@
                     <p style="margin: 0; color: #856404; font-weight: 500;">
                         <strong>⚠️ ADVERTENCIA:</strong> Esta sección permite limpiar completamente el sistema para dejarlo en estado inicial para producción.
                     </p>
+                    <p style="margin: 5px 0 0 0; color: #856404; font-size: 0.9em;">
+                        <strong>🔐 SEGURIDAD:</strong> Se requiere un código de seguridad para ejecutar la limpieza completa.
+                    </p>
                 </div>
                 <div class="service-controls">
                     <button class="btn btn-danger" onclick="limpiarSistemaCompleto()" style="background: #dc3545; border-color: #dc3545;">
@@ -2209,6 +2212,15 @@
         
         // Función para limpiar completamente el sistema y dejarlo en estado inicial
         async function limpiarSistemaCompleto() {
+            // Código de seguridad requerido
+            const codigoSeguridad = prompt('🔐 CÓDIGO DE SEGURIDAD REQUERIDO:\n\nPara proceder con la limpieza completa del sistema, debes ingresar el código de seguridad.\n\nIngresa el código:');
+            
+            if (codigoSeguridad !== '212121') {
+                showNotification('❌ Código de seguridad incorrecto. Acceso denegado.', 'error', true);
+                log('❌ Intento de limpieza con código incorrecto: ' + codigoSeguridad, 'error');
+                return;
+            }
+
             if (!confirm('⚠️ ADVERTENCIA CRÍTICA:\n\nEsta acción eliminará TODOS los datos del sistema:\n• Todos los registros de votos\n• Todos los datos de ejemplo\n• Configuraciones temporales\n• Datos de prueba\n\n¿Estás SEGURO de que quieres proceder?\n\nEsta acción NO SE PUEDE DESHACER.')) {
                 return;
             }
@@ -2344,6 +2356,15 @@
 
         // Función para verificar estado del sistema
         function verificarEstadoSistema() {
+            // Código de seguridad requerido para verificación detallada
+            const codigoSeguridad = prompt('🔐 CÓDIGO DE SEGURIDAD:\n\nPara verificar el estado detallado del sistema, ingresa el código de seguridad:\n\nIngresa el código:');
+            
+            if (codigoSeguridad !== '212121') {
+                showNotification('❌ Código de seguridad incorrecto. Acceso denegado.', 'error', true);
+                log('❌ Intento de verificación con código incorrecto: ' + codigoSeguridad, 'error');
+                return;
+            }
+
             let resumen = '📊 ESTADO DEL SISTEMA:\n\n';
             
             // Verificar Firebase
