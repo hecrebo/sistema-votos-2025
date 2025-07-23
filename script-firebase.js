@@ -14,15 +14,9 @@ if (window.votingSystem) {
 
 // === FUNCIONES CRÍTICAS DEL REGISTRO MASIVO - DEFINIDAS INMEDIATAMENTE ===
 
-// Función simple para procesarRegistrosMasivos
+// Función simple para procesarRegistrosMasivos - SIN DEPENDENCIAS COMPLEJAS
 window.procesarRegistrosMasivos = function() {
-    console.log('🔄 procesarRegistrosMasivos llamada');
-    
-    // Verificar que el sistema esté listo
-    if (!window.votingSystem) {
-        alert('El sistema está inicializando. Por favor, espera unos segundos y vuelve a intentar.');
-        return;
-    }
+    console.log('🔄 procesarRegistrosMasivos llamada - MODO SIMPLIFICADO');
     
     // Verificar que Firebase esté disponible
     if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
@@ -37,7 +31,10 @@ window.procesarRegistrosMasivos = function() {
         return;
     }
     
-    // Procesar registros
+    // Obtener usuario actual de manera simple
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const username = currentUser.username || 'Sistema';
+    
     console.log('✅ Iniciando procesamiento de registros...');
     
     let count = 0, errors = 0, duplicates = 0;
@@ -62,13 +59,6 @@ window.procesarRegistrosMasivos = function() {
             continue;
         }
         
-        // Verificar duplicados
-        const existingLocal = window.votingSystem.votes.find(v => v.cedula === cedula.replace(/\D/g, ''));
-        if (existingLocal) {
-            duplicates++;
-            continue;
-        }
-        
         // Crear datos del registro
         const voteData = {
             name: name.trim(),
@@ -78,16 +68,17 @@ window.procesarRegistrosMasivos = function() {
             edad: parseInt(edad),
             ubch: ubch.trim(),
             community: community.trim(),
-            registeredBy: window.votingSystem.getCurrentUser()?.username || 'Sistema',
+            registeredBy: username,
             registeredAt: new Date().toISOString(),
             timestamp: Date.now()
         };
         
-        // Guardar en Firebase
+        // Guardar directamente en Firebase
         try {
-            window.votingSystem.saveVoteToFirebase(voteData);
+            window.firebaseDB.votesCollection.add(voteData);
             count++;
             tr.remove(); // Remover fila exitosa
+            console.log(`✅ Registro enviado: ${name} - ${cedula}`);
         } catch (error) {
             console.error('Error enviando registro:', error);
             errors++;
@@ -102,11 +93,13 @@ window.procesarRegistrosMasivos = function() {
     if (typeof updateBulkStats === 'function') {
         updateBulkStats(count, errors, duplicates);
     }
+    
+    console.log(`🎯 PROCESAMIENTO COMPLETADO: ${count} enviados, ${errors} errores`);
 };
 
-// Función simple para limpiarTablaMasiva
+// Función simple para limpiarTablaMasiva - SIN DEPENDENCIAS
 window.limpiarTablaMasiva = function() {
-    console.log('🧹 limpiarTablaMasiva llamada');
+    console.log('🧹 limpiarTablaMasiva llamada - MODO SIMPLIFICADO');
     
     const pasteTableBody = document.getElementById('paste-table-body');
     if (!pasteTableBody) {
@@ -216,5 +209,5 @@ window.forzarReinicializacionRegistroMasivo = function() {
     console.log('✅ Reinicialización completada');
 };
 
-console.log('✅ Funciones críticas del registro masivo definidas');
+console.log('✅ Funciones críticas del registro masivo definidas - MODO SIMPLIFICADO');
 
