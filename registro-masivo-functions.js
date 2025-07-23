@@ -123,6 +123,7 @@ window.procesarRegistrosMasivos = async function() {
         if (!ubch || !community || !name || !cedula || !sexo || !edad) {
             errors++;
             updateCellStatus(cells[7], 'Datos incompletos', 'error');
+            actualizarContadoresClaros(count, errors, duplicates);
             continue;
         }
         
@@ -130,18 +131,21 @@ window.procesarRegistrosMasivos = async function() {
         if (!/^\d{6,10}$/.test(cedula)) {
             errors++;
             updateCellStatus(cells[7], 'Cédula inválida', 'error');
+            actualizarContadoresClaros(count, errors, duplicates);
             continue;
         }
         
         if (!['M','F','m','f'].includes(sexo)) {
             errors++;
             updateCellStatus(cells[7], 'Sexo inválido', 'error');
+            actualizarContadoresClaros(count, errors, duplicates);
             continue;
         }
         
         if (isNaN(edad) || edad < 16 || edad > 120) {
             errors++;
             updateCellStatus(cells[7], 'Edad inválida', 'error');
+            actualizarContadoresClaros(count, errors, duplicates);
             continue;
         }
         
@@ -162,6 +166,7 @@ window.procesarRegistrosMasivos = async function() {
                 // Duplicado encontrado
                 updateCellStatus(cells[7], '🔄 Duplicado', 'duplicate');
                 duplicates++;
+                actualizarContadoresClaros(count, errors, duplicates);
                 console.log(`🔄 Duplicado encontrado: ${name} - ${cedulaClean}`);
                 continue;
             }
@@ -189,6 +194,7 @@ window.procesarRegistrosMasivos = async function() {
             updateCellStatus(cells[7], '✅ Enviado', 'success');
             rowsToRemove.push(tr);
             count++;
+            actualizarContadoresClaros(count, errors, duplicates);
             
             console.log(`✅ Registro enviado: ${name} - ${cedula}`);
             
@@ -196,6 +202,7 @@ window.procesarRegistrosMasivos = async function() {
             console.error('❌ Error enviando registro:', error);
             errors++;
             updateCellStatus(cells[7], 'Error de envío', 'error');
+            actualizarContadoresClaros(count, errors, duplicates);
         }
     }
     
@@ -216,20 +223,13 @@ window.procesarRegistrosMasivos = async function() {
         if (progressContainer) progressContainer.style.display = 'none';
     }, 2000);
     
-    // Mostrar resultado final
-    const resultMessage = `${count} registros enviados exitosamente. ${errors} errores, ${duplicates} duplicados`;
-    if (importStatus) {
-        importStatus.style.display = 'block';
-        importStatus.className = 'import-status success';
-        importStatus.textContent = resultMessage;
-    }
+    // Mostrar resultado final sin recargar página
+    mostrarResultadoFinalSinRecarga(count, errors, duplicates);
     
     console.log(`🎯 PROCESAMIENTO COMPLETADO: ${count} enviados, ${errors} errores, ${duplicates} duplicados`);
     
-    // Actualizar contadores
-    if (typeof updateBulkStats === 'function') {
-        updateBulkStats(count, errors, duplicates);
-    }
+    // Actualizar contadores de manera clara
+    actualizarContadoresClaros(count, errors, duplicates);
 };
 
 // Función para limpiar tabla masiva
@@ -272,10 +272,8 @@ window.limpiarTablaMasiva = function() {
         // Limpiar localStorage
         localStorage.removeItem('bulkRegistrationData');
         
-        // Actualizar contadores
-        if (typeof updateBulkStats === 'function') {
-            updateBulkStats(0, 0, 0);
-        }
+        // Actualizar contadores de manera clara
+        actualizarContadoresClaros(0, 0, 0);
         
         console.log('✅ Tabla limpiada correctamente');
     }
@@ -498,5 +496,99 @@ window.probarVerificacionDuplicados = async function(cedula) {
         return false;
     }
 };
+
+// Función para actualizar contadores de manera clara
+function actualizarContadoresClaros(validos, errores, duplicados) {
+    console.log(`📊 Actualizando contadores: ${validos} válidos, ${errores} errores, ${duplicados} duplicados`);
+    
+    // Actualizar contadores individuales
+    const validCount = document.getElementById('valid-count');
+    const errorCount = document.getElementById('error-count');
+    const duplicateCount = document.getElementById('duplicate-count');
+    const totalCount = document.getElementById('total-count');
+    
+    if (validCount) validCount.textContent = validos;
+    if (errorCount) errorCount.textContent = errores;
+    if (duplicateCount) duplicateCount.textContent = duplicados;
+    if (totalCount) totalCount.textContent = validos + errores + duplicados;
+    
+    // Actualizar colores según el estado
+    if (validCount) {
+        validCount.style.color = validos > 0 ? '#28a745' : '#6c757d';
+        validCount.style.fontWeight = validos > 0 ? 'bold' : 'normal';
+    }
+    
+    if (errorCount) {
+        errorCount.style.color = errores > 0 ? '#dc3545' : '#6c757d';
+        errorCount.style.fontWeight = errores > 0 ? 'bold' : 'normal';
+    }
+    
+    if (duplicateCount) {
+        duplicateCount.style.color = duplicados > 0 ? '#ffc107' : '#6c757d';
+        duplicateCount.style.fontWeight = duplicados > 0 ? 'bold' : 'normal';
+    }
+}
+
+// Función para mostrar resultado final sin recargar página
+function mostrarResultadoFinalSinRecarga(count, errors, duplicates) {
+    console.log(`🎯 Mostrando resultado final: ${count} enviados, ${errors} errores, ${duplicates} duplicados`);
+    
+    const importStatus = document.getElementById('import-massive-status');
+    if (!importStatus) return;
+    
+    // Determinar el tipo de mensaje según los resultados
+    let messageClass = 'success';
+    let messageIcon = '✅';
+    let messageTitle = 'Procesamiento Completado';
+    
+    if (errors > 0 && duplicates > 0) {
+        messageClass = 'warning';
+        messageIcon = '⚠️';
+        messageTitle = 'Procesamiento con Advertencias';
+    } else if (errors > 0) {
+        messageClass = 'error';
+        messageIcon = '❌';
+        messageTitle = 'Procesamiento con Errores';
+    } else if (duplicates > 0) {
+        messageClass = 'info';
+        messageIcon = '🔄';
+        messageTitle = 'Procesamiento con Duplicados';
+    }
+    
+    // Crear mensaje detallado
+    let messageText = `${messageIcon} ${messageTitle}\n\n`;
+    messageText += `📊 Resultados:\n`;
+    messageText += `• ✅ Registros enviados: ${count}\n`;
+    messageText += `• ❌ Errores: ${errors}\n`;
+    messageText += `• 🔄 Duplicados: ${duplicates}\n\n`;
+    
+    if (count > 0) {
+        messageText += `✅ Los registros válidos se enviaron correctamente a la base de datos.`;
+    }
+    
+    if (errors > 0) {
+        messageText += `\n❌ Algunos registros tienen errores y permanecen en la tabla para corrección.`;
+    }
+    
+    if (duplicates > 0) {
+        messageText += `\n🔄 Se encontraron registros duplicados que no se enviaron.`;
+    }
+    
+    // Mostrar mensaje
+    importStatus.style.display = 'block';
+    importStatus.className = `import-status ${messageClass}`;
+    importStatus.innerHTML = messageText.replace(/\n/g, '<br>');
+    
+    // Ocultar mensaje después de 8 segundos
+    setTimeout(() => {
+        if (importStatus.style.display !== 'none') {
+            importStatus.style.opacity = '0.7';
+            setTimeout(() => {
+                importStatus.style.display = 'none';
+                importStatus.style.opacity = '1';
+            }, 1000);
+        }
+    }, 8000);
+}
 
 console.log('✅ Funciones del registro masivo cargadas correctamente'); 
