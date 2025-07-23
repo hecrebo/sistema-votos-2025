@@ -9,9 +9,11 @@ window.procesarRegistrosMasivos = async function() {
     
     // Verificar que Firebase esté disponible
     if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
-        alert('Firebase no está disponible. Intenta recargar la página.');
+        alert('⚠️ El sistema no puede conectarse a la base de datos.\n\nSolución:\n• Verifica tu conexión a internet\n• Recarga la página (F5)\n• Intenta más tarde');
         return;
     }
+    
+    console.log('✅ Firebase disponible para verificación de duplicados');
     
     // Verificar que la tabla exista
     const pasteTableBody = document.getElementById('paste-table-body');
@@ -122,17 +124,25 @@ window.procesarRegistrosMasivos = async function() {
         try {
             // Verificar duplicados en Firebase
             const cedulaClean = cedula.replace(/\D/g, '');
-            const duplicateQuery = window.firebaseDB.votesCollection.where('cedula', '==', cedulaClean);
+            console.log(`🔍 Verificando duplicado para cédula: ${cedulaClean}`);
+            
+            // Consulta más específica para duplicados
+            const duplicateQuery = window.firebaseDB.votesCollection
+                .where('cedula', '==', cedulaClean)
+                .limit(1);
             
             const duplicateSnapshot = await duplicateQuery.get();
+            console.log(`🔍 Resultado de consulta duplicados: ${duplicateSnapshot.size} registros encontrados`);
             
             if (!duplicateSnapshot.empty) {
                 // Duplicado encontrado
                 updateCellStatus(cells[7], '🔄 Duplicado', 'duplicate');
                 duplicates++;
-                console.log(`🔄 Duplicado encontrado: ${name} - ${cedula}`);
+                console.log(`🔄 Duplicado encontrado: ${name} - ${cedulaClean}`);
                 continue;
             }
+            
+            console.log(`✅ No se encontraron duplicados para: ${name} - ${cedulaClean}`);
             
             // Crear datos del registro
             const voteData = {
@@ -427,5 +437,31 @@ function loadXLSXLibrary() {
 
 // Cargar librería XLSX al inicio
 loadXLSXLibrary();
+
+// Función para probar verificación de duplicados
+window.probarVerificacionDuplicados = async function(cedula) {
+    console.log(`🧪 Probando verificación de duplicados para cédula: ${cedula}`);
+    
+    if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
+        console.error('❌ Firebase no disponible para prueba');
+        return false;
+    }
+    
+    try {
+        const cedulaClean = cedula.replace(/\D/g, '');
+        const query = window.firebaseDB.votesCollection
+            .where('cedula', '==', cedulaClean)
+            .limit(1);
+        
+        const snapshot = await query.get();
+        const esDuplicado = !snapshot.empty;
+        
+        console.log(`🧪 Resultado: ${esDuplicado ? 'DUPLICADO' : 'NO DUPLICADO'} para cédula ${cedulaClean}`);
+        return esDuplicado;
+    } catch (error) {
+        console.error('❌ Error en prueba de duplicados:', error);
+        return false;
+    }
+};
 
 console.log('✅ Funciones del registro masivo cargadas correctamente'); 

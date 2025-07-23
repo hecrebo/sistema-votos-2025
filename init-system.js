@@ -48,7 +48,7 @@ async function initializeFirebaseSystem() {
         
     } catch (error) {
         console.error('❌ Error inicializando sistema Firebase:', error);
-        alert('Error al inicializar el sistema. Por favor, recarga la página.');
+        alert('⚠️ El sistema está cargando...\n\nSi el problema persiste:\n• Recarga la página (F5)\n• Verifica tu conexión a internet\n• Intenta más tarde');
     }
 }
 

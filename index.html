@@ -299,8 +299,8 @@
                                         </tr>
                                     </tbody>
                                 </table>
-                            </div>
-
+                    </div>
+                    
                             <!-- Estado del import -->
                             <div id="import-massive-status" class="import-status info" style="display:none; margin-top: 1rem;"></div>
                         </div>
@@ -1503,7 +1503,7 @@
                         for (let i = 0; i < 8; i++) {
                             const td = document.createElement('td');
                             if (i < 7) {
-                                td.contentEditable = 'true';
+                            td.contentEditable = 'true';
                                 td.style.padding = '1rem 0.75rem';
                                 td.style.borderBottom = '1px solid #dee2e6';
                                 td.style.minWidth = i < 3 ? '150px' : i < 5 ? '120px' : '80px';
@@ -2046,7 +2046,7 @@
                 
             } catch (error) {
                 console.error('❌ Error inicializando sistema de registro:', error);
-                alert('Error al inicializar el sistema. Recarga la página.');
+                alert('⚠️ El sistema está cargando...\n\nSi el problema persiste:\n• Recarga la página (F5)\n• Verifica tu conexión a internet\n• Intenta más tarde');
             }
         }
         
@@ -2097,7 +2097,7 @@
             
             if (!window.firebaseDB) {
                 console.error('❌ Firebase no disponible después de múltiples intentos');
-                alert('Error: No se pudo conectar con Firebase. Recarga la página.');
+                alert('⚠️ Problema de conexión...\n\nEl sistema no puede conectarse a internet.\n\nSolución:\n• Verifica tu conexión a internet\n• Recarga la página (F5)\n• Intenta más tarde');
                 return;
             }
             
@@ -2107,7 +2107,7 @@
             // Verificar que todo esté funcionando correctamente
             if (!checkAndFixInitialization()) {
                 console.error('❌ Problemas detectados en la inicialización');
-                alert('Error: Problemas detectados en la inicialización. Recarga la página.');
+                alert('⚠️ El sistema necesita recargarse...\n\nAlgunos componentes no se cargaron correctamente.\n\nSolución:\n• Recarga la página (F5)\n• Si persiste, cierra y abre el navegador');
                 return;
             }
             
