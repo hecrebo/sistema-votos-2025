@@ -1256,6 +1256,49 @@
                 </div>
             </div>
 
+            <!-- Gestión de Duplicados -->
+            <div class="admin-card mantenimiento">
+                <h3>
+                    <span class="status-indicator status-warning" id="duplicates-status">⚠️</span>
+                    🔄 Gestión de Duplicados
+                </h3>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                    <p style="margin: 0; color: #856404; font-weight: 500;">
+                        <strong>🔍 DETECCIÓN:</strong> Identifica y elimina registros duplicados basándose en la cédula.
+                    </p>
+                    <p style="margin: 5px 0 0 0; color: #856404; font-size: 0.9em;">
+                        <strong>🛡️ SEGURIDAD:</strong> Se mantiene el registro más reciente de cada cédula.
+                    </p>
+                </div>
+                <div class="service-controls">
+                    <button class="btn btn-info" onclick="verificarDuplicadosFirebase()" style="background: #17a2b8; border-color: #17a2b8;">
+                        🔍 Verificar Duplicados
+                    </button>
+                    <button class="btn btn-warning" onclick="limpiarDuplicadosFirebase()" style="background: #ffc107; border-color: #ffc107; color: #212529;">
+                        🧹 Limpiar Duplicados
+                    </button>
+                    <button class="btn btn-secondary" onclick="crearIndiceUnicoCedula()">
+                        📋 Índice Único
+                    </button>
+                </div>
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                    <h4 style="margin: 0 0 10px 0; color: #495057;">¿Qué hace la gestión de duplicados?</h4>
+                    <ul style="margin: 0; padding-left: 20px; color: #6c757d;">
+                        <li>Identifica registros con la misma cédula</li>
+                        <li>Mantiene el registro más reciente</li>
+                        <li>Elimina registros duplicados automáticamente</li>
+                        <li>Muestra reporte detallado de duplicados</li>
+                        <li>Ayuda a mantener la integridad de datos</li>
+                    </ul>
+                    <p style="margin: 10px 0 0 0; color: #856404; font-weight: 500;">
+                        <strong>💡 Recomendación: Verifica antes de limpiar</strong>
+                    </p>
+                </div>
+                <div class="log-container" id="duplicates-logs">
+                    <div class="log-entry log-info">Sistema de gestión de duplicados listo</div>
+                </div>
+            </div>
+
             <!-- Sistema de Notificaciones -->
             <div class="admin-card notification-panel">
                 <h3>
