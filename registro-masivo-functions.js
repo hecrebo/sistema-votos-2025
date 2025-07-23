@@ -4,7 +4,7 @@
 console.log('🚀 Cargando funciones del registro masivo...');
 
 // Función para procesar registros masivos
-window.procesarRegistrosMasivos = function() {
+window.procesarRegistrosMasivos = async function() {
     console.log('🔄 procesarRegistrosMasivos llamada');
     
     // Verificar que Firebase esté disponible
@@ -73,7 +73,7 @@ window.procesarRegistrosMasivos = function() {
     
     const rows = Array.from(pasteTableBody.rows);
     const totalRows = rows.length;
-    let count = 0, errors = 0;
+    let count = 0, errors = 0, duplicates = 0;
     const rowsToRemove = [];
     
     // Obtener usuario actual
@@ -120,10 +120,24 @@ window.procesarRegistrosMasivos = function() {
         }
         
         try {
+            // Verificar duplicados en Firebase
+            const cedulaClean = cedula.replace(/\D/g, '');
+            const duplicateQuery = window.firebaseDB.votesCollection.where('cedula', '==', cedulaClean);
+            
+            const duplicateSnapshot = await duplicateQuery.get();
+            
+            if (!duplicateSnapshot.empty) {
+                // Duplicado encontrado
+                updateCellStatus(cells[7], '🔄 Duplicado', 'duplicate');
+                duplicates++;
+                console.log(`🔄 Duplicado encontrado: ${name} - ${cedula}`);
+                continue;
+            }
+            
             // Crear datos del registro
             const voteData = {
                 name: name.trim(),
-                cedula: cedula.replace(/\D/g, ''),
+                cedula: cedulaClean,
                 telefono: telefono || '',
                 sexo: sexo.toUpperCase(),
                 edad: parseInt(edad),
@@ -135,7 +149,7 @@ window.procesarRegistrosMasivos = function() {
             };
             
             // Guardar en Firebase
-            window.firebaseDB.votesCollection.add(voteData);
+            await window.firebaseDB.votesCollection.add(voteData);
             
             // Marcar como exitoso
             updateCellStatus(cells[7], '✅ Enviado', 'success');
@@ -158,18 +172,18 @@ window.procesarRegistrosMasivos = function() {
     if (progressContainer) progressContainer.style.display = 'none';
     
     // Mostrar resultado final
-    const resultMessage = `${count} registros enviados exitosamente. ${errors} errores`;
+    const resultMessage = `${count} registros enviados exitosamente. ${errors} errores, ${duplicates} duplicados`;
     if (importStatus) {
         importStatus.style.display = 'block';
         importStatus.className = 'import-status success';
         importStatus.textContent = resultMessage;
     }
     
-    console.log(`🎯 PROCESAMIENTO COMPLETADO: ${count} enviados, ${errors} errores`);
+    console.log(`🎯 PROCESAMIENTO COMPLETADO: ${count} enviados, ${errors} errores, ${duplicates} duplicados`);
     
     // Actualizar contadores
     if (typeof updateBulkStats === 'function') {
-        updateBulkStats(count, errors, 0);
+        updateBulkStats(count, errors, duplicates);
     }
 };
 
