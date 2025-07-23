@@ -67,6 +67,15 @@ window.procesarRegistrosMasivos = async function() {
     const importStatus = document.getElementById('import-massive-status');
     
     if (progressContainer) progressContainer.style.display = 'block';
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        progressBar.style.background = '#007bff';
+        progressBar.style.transition = 'width 0.3s ease';
+    }
+    if (progressPercentage) progressPercentage.textContent = '0%';
+    if (progressText) progressText.textContent = 'Iniciando procesamiento...';
+    const progressDetails = document.getElementById('progress-details');
+    if (progressDetails) progressDetails.textContent = 'Preparando verificación de duplicados...';
     if (importStatus) {
         importStatus.style.display = 'block';
         importStatus.className = 'import-status info';
@@ -89,11 +98,26 @@ window.procesarRegistrosMasivos = async function() {
         
         const [ubch, community, name, cedula, telefono, sexo, edad] = cells.map(td => td.textContent.trim());
         
-        // Actualizar progreso
-        const progress = Math.round((i / totalRows) * 100);
-        if (progressBar) progressBar.style.width = progress + '%';
+        // Actualizar progreso con más detalle
+        const progress = Math.round(((i + 1) / totalRows) * 100);
+        if (progressBar) {
+            progressBar.style.width = progress + '%';
+            progressBar.style.transition = 'width 0.3s ease';
+        }
         if (progressPercentage) progressPercentage.textContent = progress + '%';
-        if (progressText) progressText.textContent = `Procesando registro ${i + 1} de ${totalRows}`;
+        if (progressText) progressText.textContent = `Procesando registro ${i + 1} de ${totalRows} (${progress}%)`;
+        if (progressDetails) progressDetails.textContent = `Verificando: ${name} - ${cedula}`;
+        
+        // Agregar color según el progreso
+        if (progressBar) {
+            if (progress < 30) {
+                progressBar.style.background = '#dc3545'; // Rojo
+            } else if (progress < 70) {
+                progressBar.style.background = '#ffc107'; // Amarillo
+            } else {
+                progressBar.style.background = '#28a745'; // Verde
+            }
+        }
         
         // Validación básica
         if (!ubch || !community || !name || !cedula || !sexo || !edad) {
@@ -178,8 +202,19 @@ window.procesarRegistrosMasivos = async function() {
     // Remover filas exitosas
     rowsToRemove.forEach(tr => tr.remove());
     
-    // Ocultar barra de progreso
-    if (progressContainer) progressContainer.style.display = 'none';
+    // Mostrar progreso final al 100%
+    if (progressBar) {
+        progressBar.style.width = '100%';
+        progressBar.style.background = '#28a745';
+    }
+    if (progressPercentage) progressPercentage.textContent = '100%';
+    if (progressText) progressText.textContent = 'Procesamiento completado';
+    if (progressDetails) progressDetails.textContent = `✅ Completado: ${count} enviados, ${errors} errores, ${duplicates} duplicados`;
+    
+    // Esperar un momento antes de ocultar
+    setTimeout(() => {
+        if (progressContainer) progressContainer.style.display = 'none';
+    }, 2000);
     
     // Mostrar resultado final
     const resultMessage = `${count} registros enviados exitosamente. ${errors} errores, ${duplicates} duplicados`;
