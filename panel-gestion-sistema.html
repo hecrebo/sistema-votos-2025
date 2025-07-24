@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Gestión del Sistema - Votos 2025</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 20px;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+
+        .nav-item {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .nav-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .role-section {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .role-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .role-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .role-toggle {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .role-toggle.disabled {
+            background: #dc3545;
+        }
+
+        .permission-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+
+        .permission-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online { background: #28a745; }
+        .status-offline { background: #dc3545; }
+        .status-warning { background: #ffc107; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: black;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .log-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .log-time {
+            color: #6c757d;
+        }
+
+        .log-message {
+            color: #495057;
+        }
+
+        .log-error {
+            color: #dc3545;
+        }
+
+        .log-success {
+            color: #28a745;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .alert {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔧 Panel de Gestión del Sistema</h1>
+            <div class="user-info">
+                <div class="user-badge" id="user-badge">Cargando...</div>
+                <button class="logout-btn" onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="section">
+                    <h3>📊 Navegación</h3>
+                    <button class="nav-item active" onclick="mostrarSeccion('dashboard')">📈 Dashboard</button>
+                    <button class="nav-item" onclick="mostrarSeccion('roles')">👥 Gestión de Roles</button>
+                    <button class="nav-item" onclick="mostrarSeccion('navegacion')">🧭 Configurar Navegación</button>
+                    <button class="nav-item" onclick="mostrarSeccion('usuarios')">👤 Gestión de Usuarios</button>
+                    <button class="nav-item" onclick="mostrarSeccion('sistema')">⚙️ Estado del Sistema</button>
+                    <button class="nav-item" onclick="mostrarSeccion('logs')">📋 Logs del Sistema</button>
+                </div>
+
+                <div class="section">
+                    <h3>🔗 Acciones Rápidas</h3>
+                    <button class="nav-item" onclick="irASistemaPrincipal()">🏠 Ir al Sistema Principal</button>
+                    <button class="nav-item" onclick="reiniciarNavegacion()">🔄 Reiniciar Navegación</button>
+                    <button class="nav-item" onclick="limpiarCache()">🗑️ Limpiar Cache</button>
+                    <button class="nav-item" onclick="verificarFirebase()">🔥 Verificar Firebase</button>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Dashboard Section -->
+                <div id="dashboard-section" class="section-content">
+                    <h2>📈 Dashboard del Sistema</h2>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-users">0</div>
+                            <div class="stat-label">Usuarios Activos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-votes">0</div>
+                            <div class="stat-label">Votos Registrados</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="system-status">🟢</div>
+                            <div class="stat-label">Estado del Sistema</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="firebase-status">🟢</div>
+                            <div class="stat-label">Firebase</div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>⚡ Acciones Inmediatas</h3>
+                        <button class="btn btn-primary" onclick="repararNavegacion()">🔧 Reparar Navegación</button>
+                        <button class="btn btn-success" onclick="crearUsuarioAdmin()">👤 Crear Usuario Admin</button>
+                        <button class="btn btn-warning" onclick="resetearSistema()">🔄 Resetear Sistema</button>
+                        <button class="btn btn-danger" onclick="limpiarDatos()">🗑️ Limpiar Datos</button>
+                    </div>
+                </div>
+
+                <!-- Roles Section -->
+                <div id="roles-section" class="section-content" style="display: none;">
+                    <h2>👥 Gestión de Roles</h2>
+                    
+                    <div class="role-section">
+                        <div class="role-header">
+                            <div class="role-title">👑 Superusuario</div>
+                            <button class="role-toggle" onclick="toggleRole('superusuario')">Activo</button>
+                        </div>
+                        <div class="permission-grid">
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" checked disabled>
+                                <span>Acceso completo al sistema</span>
+                            </div>
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" checked disabled>
+                                <span>Gestión de usuarios</span>
+                            </div>
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" checked disabled>
+                                <span>Configuración del sistema</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="role-section">
+                        <div class="role-header">
+                            <div class="role-title">⚙️ Administrador</div>
+                            <button class="role-toggle" onclick="toggleRole('admin')">Activo</button>
+                        </div>
+                        <div class="permission-grid">
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" id="admin-registro">
+                                <span>Registro de votos</span>
+                            </div>
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" id="admin-listado">
+                                <span>Ver listado</span>
+                            </div>
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" id="admin-estadisticas">
+                                <span>Estadísticas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="role-section">
+                        <div class="role-header">
+                            <div class="role-title">📝 Registrador</div>
+                            <button class="role-toggle" onclick="toggleRole('registrador')">Activo</button>
+                        </div>
+                        <div class="permission-grid">
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" id="registrador-registro">
+                                <span>Registro de votos</span>
+                            </div>
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" id="registrador-historial">
+                                <span>Mi historial</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="role-section">
+                        <div class="role-header">
+                            <div class="role-title">🔍 Verificador</div>
+                            <button class="role-toggle" onclick="toggleRole('verificador')">Activo</button>
+                        </div>
+                        <div class="permission-grid">
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" id="verificador-listado">
+                                <span>Ver listado</span>
+                            </div>
+                            <div class="permission-item">
+                                <input type="checkbox" class="permission-checkbox" id="verificador-estadisticas">
+                                <span>Estadísticas</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navegación Section -->
+                <div id="navegacion-section" class="section-content" style="display: none;">
+                    <h2>🧭 Configurar Navegación</h2>
+                    
+                    <div class="section">
+                        <h3>🔧 Configuración de Botones</h3>
+                        <button class="btn btn-primary" onclick="mostrarTodosLosBotones()">👁️ Mostrar Todos</button>
+                        <button class="btn btn-warning" onclick="ocultarTodosLosBotones()">🙈 Ocultar Todos</button>
+                        <button class="btn btn-success" onclick="configurarPorRol()">🎯 Configurar por Rol</button>
+                        <button class="btn btn-danger" onclick="resetearNavegacion()">🔄 Resetear</button>
+                    </div>
+
+                    <div class="section">
+                        <h3>📋 Estado de Botones</h3>
+                        <div id="botones-status">
+                            <div class="log-entry">
+                                <span class="log-time">Cargando...</span>
+                                <span class="log-message">Verificando estado de botones...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Usuarios Section -->
+                <div id="usuarios-section" class="section-content" style="display: none;">
+                    <h2>👤 Gestión de Usuarios</h2>
+                    
+                    <div class="section">
+                        <h3>➕ Crear Nuevo Usuario</h3>
+                        <button class="btn btn-success" onclick="abrirModalCrearUsuario()">➕ Crear Usuario</button>
+                    </div>
+
+                    <div class="section">
+                        <h3>📋 Usuarios Activos</h3>
+                        <div id="usuarios-lista">
+                            <div class="log-entry">
+                                <span class="log-time">Cargando...</span>
+                                <span class="log-message">Obteniendo lista de usuarios...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sistema Section -->
+                <div id="sistema-section" class="section-content" style="display: none;">
+                    <h2>⚙️ Estado del Sistema</h2>
+                    
+                    <div class="section">
+                        <h3>🔍 Diagnóstico</h3>
+                        <button class="btn btn-primary" onclick="ejecutarDiagnostico()">🔍 Ejecutar Diagnóstico</button>
+                        <button class="btn btn-warning" onclick="verificarConexiones()">🌐 Verificar Conexiones</button>
+                        <button class="btn btn-success" onclick="optimizarSistema()">⚡ Optimizar Sistema</button>
+                    </div>
+
+                    <div class="section">
+                        <h3>📊 Información del Sistema</h3>
+                        <div id="sistema-info">
+                            <div class="log-entry">
+                                <span class="log-time">Cargando...</span>
+                                <span class="log-message">Obteniendo información del sistema...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Section -->
+                <div id="logs-section" class="section-content" style="display: none;">
+                    <h2>📋 Logs del Sistema</h2>
+                    
+                    <div class="section">
+                        <h3>🔧 Controles</h3>
+                        <button class="btn btn-primary" onclick="limpiarLogs()">🗑️ Limpiar Logs</button>
+                        <button class="btn btn-success" onclick="exportarLogs()">📤 Exportar Logs</button>
+                        <button class="btn btn-warning" onclick="activarLogsDetallados()">📝 Logs Detallados</button>
+                    </div>
+
+                    <div class="log-section" id="logs-container">
+                        <div class="log-entry">
+                            <span class="log-time">[Sistema]</span>
+                            <span class="log-message">Panel de gestión iniciado</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear usuario -->
+    <div id="modal-crear-usuario" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal()">&times;</span>
+            <h3>➕ Crear Nuevo Usuario</h3>
+            
+            <div class="form-group">
+                <label>Usuario:</label>
+                <input type="text" id="nuevo-usuario" placeholder="usuario_01">
+            </div>
+            
+            <div class="form-group">
+                <label>Rol:</label>
+                <select id="nuevo-rol">
+                    <option value="superusuario">Superusuario</option>
+                    <option value="admin">Administrador</option>
+                    <option value="registrador">Registrador</option>
+                    <option value="verificador">Verificador</option>
+                    <option value="usuario basico">Usuario Básico</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="nuevo-email" placeholder="usuario@votos2025.com">
+            </div>
+            
+            <button class="btn btn-success" onclick="crearUsuario()">✅ Crear Usuario</button>
+            <button class="btn btn-danger" onclick="cerrarModal()">❌ Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="script-firebase.js"></script>
+    <script src="panel-gestion-sistema.js"></script>
+</body>
+</html> 
