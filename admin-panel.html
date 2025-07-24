@@ -1216,89 +1216,6 @@
                 <div class="log-container" id="maintenance-logs"></div>
             </div>
 
-            <!-- Limpieza del Sistema para Producción -->
-            <div class="admin-card mantenimiento">
-                <h3>
-                    <span class="status-indicator status-danger" id="cleanup-status">⚠️</span>
-                    🧹 Limpieza del Sistema para Producción
-                </h3>
-                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-                    <p style="margin: 0; color: #856404; font-weight: 500;">
-                        <strong>⚠️ ADVERTENCIA:</strong> Esta sección permite limpiar completamente el sistema para dejarlo en estado inicial para producción.
-                    </p>
-                    <p style="margin: 5px 0 0 0; color: #856404; font-size: 0.9em;">
-                        <strong>🔐 SEGURIDAD:</strong> Se requiere un código de seguridad para ejecutar la limpieza completa.
-                    </p>
-                </div>
-                <div class="service-controls">
-                    <button class="btn btn-danger" onclick="limpiarSistemaCompleto()" style="background: #dc3545; border-color: #dc3545;">
-                        🗑️ LIMPIAR SISTEMA COMPLETO
-                    </button>
-                    <button class="btn btn-warning" onclick="verificarEstadoSistema()">
-                        📊 Verificar Estado del Sistema
-                    </button>
-                </div>
-                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-top: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: #495057;">¿Qué hace la limpieza completa?</h4>
-                    <ul style="margin: 0; padding-left: 20px; color: #6c757d;">
-                        <li>Elimina TODOS los registros de votos de Firebase</li>
-                        <li>Limpia todos los datos locales y de ejemplo</li>
-                        <li>Vacía la cola offline</li>
-                        <li>Elimina configuraciones temporales</li>
-                        <li>Deja el sistema en estado inicial</li>
-                    </ul>
-                    <p style="margin: 10px 0 0 0; color: #dc3545; font-weight: 500;">
-                        <strong>⚠️ Esta acción NO SE PUEDE DESHACER</strong>
-                    </p>
-                </div>
-                <div class="log-container" id="cleanup-logs">
-                    <div class="log-entry log-info">Sistema de limpieza listo</div>
-                </div>
-            </div>
-
-            <!-- Gestión de Duplicados -->
-            <div class="admin-card mantenimiento">
-                <h3>
-                    <span class="status-indicator status-warning" id="duplicates-status">⚠️</span>
-                    🔄 Gestión de Duplicados
-                </h3>
-                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-                    <p style="margin: 0; color: #856404; font-weight: 500;">
-                        <strong>🔍 DETECCIÓN:</strong> Identifica y elimina registros duplicados basándose en la cédula.
-                    </p>
-                    <p style="margin: 5px 0 0 0; color: #856404; font-size: 0.9em;">
-                        <strong>🛡️ SEGURIDAD:</strong> Se mantiene el registro más reciente de cada cédula.
-                    </p>
-                </div>
-                <div class="service-controls">
-                    <button class="btn btn-info" onclick="verificarDuplicadosFirebase()" style="background: #17a2b8; border-color: #17a2b8;">
-                        🔍 Verificar Duplicados
-                    </button>
-                    <button class="btn btn-warning" onclick="limpiarDuplicadosFirebase()" style="background: #ffc107; border-color: #ffc107; color: #212529;">
-                        🧹 Limpiar Duplicados
-                    </button>
-                    <button class="btn btn-secondary" onclick="crearIndiceUnicoCedula()">
-                        📋 Índice Único
-                    </button>
-                </div>
-                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-top: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: #495057;">¿Qué hace la gestión de duplicados?</h4>
-                    <ul style="margin: 0; padding-left: 20px; color: #6c757d;">
-                        <li>Identifica registros con la misma cédula</li>
-                        <li>Mantiene el registro más reciente</li>
-                        <li>Elimina registros duplicados automáticamente</li>
-                        <li>Muestra reporte detallado de duplicados</li>
-                        <li>Ayuda a mantener la integridad de datos</li>
-                    </ul>
-                    <p style="margin: 10px 0 0 0; color: #856404; font-weight: 500;">
-                        <strong>💡 Recomendación: Verifica antes de limpiar</strong>
-                    </p>
-                </div>
-                <div class="log-container" id="duplicates-logs">
-                    <div class="log-entry log-info">Sistema de gestión de duplicados listo</div>
-                </div>
-            </div>
-
             <!-- Sistema de Notificaciones -->
             <div class="admin-card notification-panel">
                 <h3>
@@ -1437,8 +1354,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="admin-dashboard.js"></script>
     <script src="admin-sync-panel.js"></script>
-    <script src="limpiar-duplicados.js"></script>
-    <script src="verificacion-duplicados.js"></script>
     
     <script>
         let systemStartTime = Date.now();
@@ -2252,397 +2167,92 @@
         if (typeof AutoInitSystem !== 'undefined') {
             window.autoInitSystem = new AutoInitSystem();
         }
-
-        // === FUNCIÓN DE LIMPIEZA COMPLETA DEL SISTEMA ===
-        
-        // Función para limpiar completamente el sistema y dejarlo en estado inicial
-        async function limpiarSistemaCompleto() {
-            // Código de seguridad requerido
-            const codigoSeguridad = prompt('🔐 CÓDIGO DE SEGURIDAD REQUERIDO:\n\nPara proceder con la limpieza completa del sistema, debes ingresar el código de seguridad.\n\nIngresa el código:');
-            
-            if (codigoSeguridad !== '212121') {
-                showNotification('❌ Código de seguridad incorrecto. Acceso denegado.', 'error', true);
-                log('❌ Intento de limpieza con código incorrecto: ' + codigoSeguridad, 'error');
-                return;
-            }
-
-            if (!confirm('⚠️ ADVERTENCIA CRÍTICA:\n\nEsta acción eliminará TODOS los datos del sistema:\n• Todos los registros de votos\n• Todos los datos de ejemplo\n• Configuraciones temporales\n• Datos de prueba\n\n¿Estás SEGURO de que quieres proceder?\n\nEsta acción NO SE PUEDE DESHACER.')) {
-                return;
-            }
-
-            if (!confirm('🔴 CONFIRMACIÓN FINAL:\n\n¿Estás 100% seguro de que quieres eliminar TODOS los datos?\n\nEsta acción dejará el sistema completamente vacío.')) {
-                return;
-            }
-
-            try {
-                showNotification('🧹 Iniciando limpieza completa del sistema...', 'warning', true);
-                log('🧹 Iniciando limpieza completa del sistema...', 'warning');
-
-                // 1. Limpiar datos de Firebase
-                if (window.firebaseDB && window.firebaseDB.votesCollection) {
-                    log('🗑️ Eliminando todos los registros de Firebase...', 'info');
-                    
-                    // Obtener todos los documentos
-                    const snapshot = await window.firebaseDB.votesCollection.get();
-                    const batch = window.firebaseDB.db.batch();
-                    
-                    snapshot.docs.forEach(doc => {
-                        batch.delete(doc.ref);
-                    });
-                    
-                    await batch.commit();
-                    log(`✅ ${snapshot.docs.length} registros eliminados de Firebase`, 'success');
-                }
-
-                // 2. Limpiar datos locales
-                log('🗑️ Limpiando datos locales...', 'info');
-                
-                // Limpiar localStorage
-                const keysToKeep = ['currentUser', 'sessionTime', 'configuracionLimpia'];
-                const keysToRemove = [];
-                
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && !keysToKeep.includes(key)) {
-                        keysToRemove.push(key);
-                    }
-                }
-                
-                keysToRemove.forEach(key => {
-                    localStorage.removeItem(key);
-                });
-                
-                log(`✅ ${keysToRemove.length} elementos eliminados del localStorage`, 'success');
-
-                // 3. Limpiar cola offline si existe
-                if (window.offlineQueueManager && typeof window.offlineQueueManager.limpiarColaLocal === 'function') {
-                    window.offlineQueueManager.limpiarColaLocal();
-                    log('✅ Cola offline limpiada', 'success');
-                }
-
-                // 4. Limpiar datos de ejemplo
-                if (window.votingSystem && window.votingSystem.votes) {
-                    window.votingSystem.votes = [];
-                    log('✅ Datos de ejemplo eliminados del sistema', 'success');
-                }
-
-                // 5. Limpiar configuraciones temporales
-                const configKeys = [
-                    'sampleDataCreated_',
-                    'registrationDraft',
-                    'misRegistrosLocales',
-                    'bulkRegistrations',
-                    'pasteTableData'
-                ];
-                
-                configKeys.forEach(key => {
-                    if (localStorage.getItem(key)) {
-                        localStorage.removeItem(key);
-                    }
-                });
-                
-                log('✅ Configuraciones temporales eliminadas', 'success');
-
-                // 6. Limpiar datos de prueba
-                const testKeys = [
-                    'testData',
-                    'sampleRegistrations',
-                    'bulkTestData',
-                    'importTestData'
-                ];
-                
-                testKeys.forEach(key => {
-                    if (localStorage.getItem(key)) {
-                        localStorage.removeItem(key);
-                    }
-                });
-                
-                log('✅ Datos de prueba eliminados', 'success');
-
-                // 7. Reinicializar sistema
-                log('🔄 Reinicializando sistema...', 'info');
-                
-                if (window.votingSystem) {
-                    await window.votingSystem.loadDataFromFirebase();
-                    window.votingSystem.updateAllDataDisplays();
-                }
-
-                // 8. Mostrar resumen final
-                const resumen = `
-✅ LIMPIEZA COMPLETA EXITOSA
-
-📊 Resumen de la limpieza:
-• Registros de Firebase: Eliminados
-• Datos locales: Limpiados
-• Cola offline: Vacía
-• Datos de ejemplo: Eliminados
-• Configuraciones temporales: Limpiadas
-• Datos de prueba: Eliminados
-
-🎯 El sistema está ahora en estado inicial
-🚀 Listo para producción con datos reales
-
-⚠️ Recuerda: Esta acción no se puede deshacer
-`;
-
-                showNotification('✅ Limpieza completa exitosa', 'success', true);
-                log(resumen, 'success');
-                
-                // Mostrar alerta final
-                setTimeout(() => {
-                    alert('🎉 LIMPIEZA COMPLETA EXITOSA\n\nEl sistema ha sido completamente limpiado y está listo para producción.\n\nTodos los datos de prueba han sido eliminados.\n\nEl sistema está ahora en estado inicial.');
-                }, 1000);
-
-            } catch (error) {
-                log('❌ Error durante la limpieza: ' + error.message, 'error');
-                showNotification('❌ Error durante la limpieza: ' + error.message, 'error', true);
-            }
-        }
-
-        // Función para verificar estado del sistema
-        function verificarEstadoSistema() {
-            // Código de seguridad requerido para verificación detallada
-            const codigoSeguridad = prompt('🔐 CÓDIGO DE SEGURIDAD:\n\nPara verificar el estado detallado del sistema, ingresa el código de seguridad:\n\nIngresa el código:');
-            
-            if (codigoSeguridad !== '212121') {
-                showNotification('❌ Código de seguridad incorrecto. Acceso denegado.', 'error', true);
-                log('❌ Intento de verificación con código incorrecto: ' + codigoSeguridad, 'error');
-                return;
-            }
-
-            let resumen = '📊 ESTADO DEL SISTEMA:\n\n';
-            
-            // Verificar Firebase
-            if (window.firebaseDB && window.firebaseDB.votesCollection) {
-                window.firebaseDB.votesCollection.get().then(snapshot => {
-                    resumen += `📋 Registros en Firebase: ${snapshot.docs.length}\n`;
-                    
-                    // Verificar localStorage
-                    const localKeys = Object.keys(localStorage);
-                    const relevantKeys = localKeys.filter(key => 
-                        key.includes('sample') || 
-                        key.includes('test') || 
-                        key.includes('bulk') || 
-                        key.includes('registration')
-                    );
-                    
-                    resumen += `💾 Datos locales relevantes: ${relevantKeys.length}\n`;
-                    
-                    // Verificar cola offline
-                    if (window.offlineQueueManager) {
-                        const colaLocal = window.offlineQueueManager.obtenerColaLocal();
-                        resumen += `📦 Elementos en cola offline: ${colaLocal.length}\n`;
-                    }
-                    
-                    resumen += `\n🎯 Sistema ${snapshot.docs.length === 0 ? 'LIMPIO' : 'CON DATOS'}`;
-                    
-                    log(resumen, 'info');
-                    showNotification('📊 Estado del sistema verificado', 'info', true);
-                });
-            } else {
-                resumen += '❌ Firebase no disponible\n';
-                log(resumen, 'error');
-                showNotification('❌ No se pudo verificar el estado', 'error', true);
-            }
-        }
-
-        // === FUNCIONES DE GESTIÓN DE DUPLICADOS ===
-        
-        // Función para verificar duplicados
-        async function verificarDuplicadosFirebase() {
-            console.log('🔍 Verificando duplicados...');
-            
-            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
-                alert('❌ Firebase no está disponible');
-                return;
-            }
-            
-            try {
-                const snapshot = await window.firebaseDB.votesCollection.get();
-                
-                if (snapshot.empty) {
-                    console.log('✅ No hay registros para verificar');
-                    alert('✅ No hay registros para verificar');
-                    return;
-                }
-                
-                const registrosPorCedula = {};
-                const duplicados = [];
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const cedula = data.cedula;
-                    
-                    if (!registrosPorCedula[cedula]) {
-                        registrosPorCedula[cedula] = [];
-                    }
-                    
-                    registrosPorCedula[cedula].push({
-                        id: doc.id,
-                        data: data,
-                        timestamp: data.timestamp || 0
-                    });
-                });
-                
-                // Identificar duplicados
-                Object.keys(registrosPorCedula).forEach(cedula => {
-                    const registros = registrosPorCedula[cedula];
-                    
-                    if (registros.length > 1) {
-                        duplicados.push({
-                            cedula: cedula,
-                            cantidad: registros.length,
-                            registros: registros
-                        });
-                    }
-                });
-                
-                if (duplicados.length === 0) {
-                    console.log('✅ No se encontraron duplicados');
-                    alert('✅ No se encontraron duplicados');
-                    return;
-                }
-                
-                // Mostrar reporte de duplicados
-                let reporte = `🔍 REPORTE DE DUPLICADOS\n\n`;
-                reporte += `Total de cédulas con duplicados: ${duplicados.length}\n\n`;
-                
-                duplicados.forEach(dup => {
-                    reporte += `Cédula ${dup.cedula}: ${dup.cantidad} registros\n`;
-                    dup.registros.forEach((reg, index) => {
-                        const fecha = new Date(reg.timestamp).toLocaleString();
-                        reporte += `  ${index + 1}. ${reg.data.name} - ${fecha}\n`;
-                    });
-                    reporte += '\n';
-                });
-                
-                console.log(reporte);
-                alert(reporte);
-                
-            } catch (error) {
-                console.error('❌ Error verificando duplicados:', error);
-                alert('❌ Error verificando duplicados');
-            }
-        }
-
-        // Función para limpiar duplicados
-        async function limpiarDuplicadosFirebase() {
-            console.log('🔍 Iniciando proceso de limpieza de duplicados...');
-            
-            if (!window.firebaseDB || !window.firebaseDB.votesCollection) {
-                alert('❌ Firebase no está disponible');
-                return;
-            }
-            
-            try {
-                // Obtener todos los registros
-                console.log('📥 Obteniendo todos los registros...');
-                const snapshot = await window.firebaseDB.votesCollection.get();
-                
-                if (snapshot.empty) {
-                    console.log('✅ No hay registros para limpiar');
-                    alert('✅ No hay registros para limpiar');
-                    return;
-                }
-                
-                console.log(`📊 Total de registros encontrados: ${snapshot.size}`);
-                
-                // Agrupar por cédula
-                const registrosPorCedula = {};
-                const duplicados = [];
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const cedula = data.cedula;
-                    
-                    if (!registrosPorCedula[cedula]) {
-                        registrosPorCedula[cedula] = [];
-                    }
-                    
-                    registrosPorCedula[cedula].push({
-                        id: doc.id,
-                        data: data,
-                        timestamp: data.timestamp || 0
-                    });
-                });
-                
-                // Identificar duplicados
-                Object.keys(registrosPorCedula).forEach(cedula => {
-                    const registros = registrosPorCedula[cedula];
-                    
-                    if (registros.length > 1) {
-                        console.log(`🔄 Cédula ${cedula} tiene ${registros.length} registros`);
-                        
-                        // Ordenar por timestamp (más reciente primero)
-                        registros.sort((a, b) => b.timestamp - a.timestamp);
-                        
-                        // Mantener solo el más reciente, marcar los demás como duplicados
-                        const registrosAEliminar = registros.slice(1);
-                        duplicados.push(...registrosAEliminar);
-                    }
-                });
-                
-                console.log(`🔄 Total de duplicados encontrados: ${duplicados.length}`);
-                
-                if (duplicados.length === 0) {
-                    console.log('✅ No se encontraron duplicados');
-                    alert('✅ No se encontraron duplicados');
-                    return;
-                }
-                
-                // Confirmar eliminación
-                const confirmacion = confirm(
-                    `Se encontraron ${duplicados.length} registros duplicados.\n\n` +
-                    `¿Deseas eliminar los duplicados?\n\n` +
-                    `Se mantendrá el registro más reciente de cada cédula.`
-                );
-                
-                if (!confirmacion) {
-                    console.log('❌ Operación cancelada por el usuario');
-                    return;
-                }
-                
-                // Eliminar duplicados
-                console.log('🗑️ Eliminando duplicados...');
-                let eliminados = 0;
-                
-                for (const duplicado of duplicados) {
-                    try {
-                        await window.firebaseDB.votesCollection.doc(duplicado.id).delete();
-                        eliminados++;
-                        console.log(`✅ Eliminado duplicado: ${duplicado.data.name} - ${duplicado.data.cedula}`);
-                    } catch (error) {
-                        console.error(`❌ Error eliminando duplicado: ${duplicado.id}`, error);
-                    }
-                }
-                
-                console.log(`🎯 Limpieza completada: ${eliminados} duplicados eliminados`);
-                alert(`✅ Limpieza completada\n\n${eliminados} duplicados eliminados\n\nSe mantuvieron los registros más recientes.`);
-                
-            } catch (error) {
-                console.error('❌ Error en limpieza de duplicados:', error);
-                alert('❌ Error durante la limpieza de duplicados');
-            }
-        }
-
-        // Función para crear índice único
-        function crearIndiceUnicoCedula() {
-            console.log('📋 Para crear un índice único en cédula:');
-            console.log('1. Ve a Firebase Console');
-            console.log('2. Selecciona tu proyecto');
-            console.log('3. Ve a Firestore Database');
-            console.log('4. Ve a la pestaña "Índices"');
-            console.log('5. Crea un índice único en la colección "votes"');
-            console.log('6. Campo: "cedula"');
-            console.log('7. Tipo: "Ascending"');
-            console.log('8. Configuración: "Unique"');
-            
-            alert('📋 Instrucciones para crear índice único:\n\n1. Ve a Firebase Console\n2. Selecciona tu proyecto\n3. Ve a Firestore Database\n4. Ve a la pestaña "Índices"\n5. Crea un índice único en la colección "votes"\n6. Campo: "cedula"\n7. Tipo: "Ascending"\n8. Configuración: "Unique"');
-        }
     </script>
     <script src="notification-system.js"></script>
     <script src="realtime-notifications.js"></script>
     <script src="auto-init.js"></script>
     <div id="notification-container"></div>
+
+    <!-- === NUEVAS TARJETAS DE REINICIO (PROTEGIDAS POR CÓDIGO) === -->
+    <div class="admin-card mantenimiento">
+        <h3>🔄 Reiniciar Métricas (a 0)</h3>
+        <p style="margin-bottom:15px;color:#666;">Establece contadores y métricas a 0 en Firebase. Requiere código de seguridad.</p>
+        <div class="service-controls">
+            <button class="btn btn-danger" onclick="resetMetricsZero()">🗑️ Reiniciar Métricas</button>
+        </div>
+    </div>
+
+    <div class="admin-card mantenimiento">
+        <h3>🗑️ Reiniciar Estado de Votos</h3>
+        <p style="margin-bottom:15px;color:#666;">Coloca el campo <code>voted</code> en <b>false</b> para todos los registros. Acción protegida.</p>
+        <div class="service-controls">
+            <button class="btn btn-warning" onclick="resetVotedFlags()">🔄 Reiniciar Votos</button>
+        </div>
+    </div>
+    </div>
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    
+    <script src="firebase-config.js"></script>
+    <script src="sync-manager.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="admin-dashboard.js"></script>
+    <script src="admin-sync-panel.js"></script>
+    
+    <script>
+    async function solicitarCodigo() {
+        const codigo = prompt('Introduce el código de seguridad:');
+        return codigo === '212121';
+    }
+
+    async function resetMetricsZero() {
+        if (!(await solicitarCodigo())) {
+            alert('Código incorrecto');
+            return;
+        }
+        if (!confirm('⚠️ Esto pondrá todas las métricas a 0. ¿Continuar?')) return;
+
+        try {
+            maintenanceLog('Reiniciando métricas a 0...', 'warning');
+            const snapshot = await window.firebaseDB.votesCollection.get();
+            const batch = window.firebaseDB.db.batch();
+            snapshot.forEach(doc => {
+                batch.update(doc.ref, { voted: false });
+            });
+            await batch.commit();
+            maintenanceLog('Métricas restablecidas ✔️', 'success');
+            showNotification('Métricas reiniciadas', 'success', true);
+        } catch(err) {
+            maintenanceLog('Error reiniciando métricas: '+err.message, 'error');
+            showNotification('Error reiniciando métricas', 'error', true);
+        }
+    }
+
+    async function resetVotedFlags() {
+        if (!(await solicitarCodigo())) {
+            alert('Código incorrecto');
+            return;
+        }
+        if (!confirm('⚠️ Se establecerá voted=false en todos los registros. ¿Continuar?')) return;
+
+        try {
+            maintenanceLog('Reiniciando estado voted...', 'warning');
+            const snapshot = await window.firebaseDB.votesCollection.where('voted','==',true).get();
+            const batch = window.firebaseDB.db.batch();
+            snapshot.forEach(doc => {
+                batch.update(doc.ref, { voted: false });
+            });
+            await batch.commit();
+            maintenanceLog('Estado de votos restablecido ✔️', 'success');
+            showNotification('Votos reiniciados', 'success', true);
+        } catch(err) {
+            maintenanceLog('Error reiniciando votos: '+err.message, 'error');
+            showNotification('Error reiniciando votos', 'error', true);
+        }
+    }
+    </script>
 </body>
 </html> 

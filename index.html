@@ -63,17 +63,6 @@
             display: inline-block !important;
         }
     </style>
-    <!-- FUNCIONES DEL REGISTRO MASIVO - CARGAR PRIMERO -->
-    <script src="registro-masivo-functions.js"></script>
-    <!-- SCRIPT PARA LIMPIAR DUPLICADOS -->
-    <script src="limpiar-duplicados.js"></script>
-    <!-- SISTEMA GLOBAL DE VERIFICACIÓN DE DUPLICADOS -->
-    <script src="verificacion-duplicados.js"></script>
-    <!-- SCRIPT DE REPARACIÓN DE NAVEGACIÓN -->
-    <script src="fix-navigation.js"></script>
-    <!-- SCRIPT DE REPARACIÓN DE LOGIN -->
-    <script src="fix-user-login.js"></script>
-    
     <!-- PDF Libraries (cargar antes que otros scripts) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js"></script>
@@ -115,6 +104,7 @@
                     <button class="nav-btn" data-page="check-in" id="nav-check-in">Confirmar Voto</button>
                     <button class="nav-btn" data-page="verifier-dashboard" id="nav-verifier-dashboard">📊 Mi Dashboard (Verificador)</button>
                     <button class="nav-btn" data-page="verifier-history" id="nav-verifier-history">📋 Mi Historial (Verificador)</button>
+                    <button class="nav-btn" onclick="window.location.href='registro-rezagados.html'" id="nav-rezagados">➕ Registro Rezagados</button>
                     <button class="nav-btn" data-page="registrator-dashboard" id="nav-registrator-dashboard">📊 Mi Dashboard (Registrador)</button>
                     <button class="nav-btn" data-page="registrator-history" id="nav-registrator-history">📋 Mi Historial (Registrador)</button>
                     <button class="nav-btn" data-page="listado" id="nav-listado">Listado</button>
@@ -129,9 +119,6 @@
                     </button>
                     <button class="btn btn-outline" onclick="votingSystem.logout()" style="margin-right: 10px; border: 1px solid #e5e7eb; color: #ffffff; background: transparent;">
                         Cerrar Sesión
-                    </button>
-                    <button class="btn btn-outline" onclick="window.open('panel-gestion-simple.html', '_blank')" style="margin-right: 10px; border: 1px solid #e5e7eb; color: #ffffff; background: transparent;">
-                        🔧 Panel de Gestión
                     </button>
 
                     <div class="sync-status">
@@ -246,9 +233,6 @@
                                 <button class="btn btn-outline-secondary" onclick="actualizarConfiguracionMasivo()" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
                                     ⚙️ Configurar
                                 </button>
-                                <button class="btn btn-outline-danger" onclick="forzarReinicializacionRegistroMasivo()" style="padding: 0.75rem 1.5rem; font-size: 1rem;" title="Reinicializar si hay problemas">
-                                    🔄 Reinicializar
-                                </button>
                             </div>
 
                             <!-- Contadores en tiempo real -->
@@ -271,17 +255,14 @@
                                 </div>
                             </div>
 
-                            <!-- Barra de progreso mejorada -->
-                            <div id="progress-container" style="display: none; margin-bottom: 1rem; background: #f8f9fa; border-radius: 12px; padding: 1rem; border: 1px solid #dee2e6;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; align-items: center;">
-                                    <span id="progress-text" style="font-weight: 600; color: #495057;">Procesando...</span>
-                                    <span id="progress-percentage" style="font-weight: bold; color: #007bff; font-size: 1.1em;">0%</span>
+                            <!-- Barra de progreso -->
+                            <div id="progress-container" style="display: none; margin-bottom: 1rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span id="progress-text">Procesando...</span>
+                                    <span id="progress-percentage">0%</span>
                                 </div>
-                                <div style="background: #e9ecef; border-radius: 15px; height: 12px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
-                                    <div id="progress-bar" style="background: linear-gradient(90deg, #007bff, #0056b3); height: 100%; width: 0%; transition: width 0.4s ease; border-radius: 15px; box-shadow: 0 2px 4px rgba(0,123,255,0.3);"></div>
-                                </div>
-                                <div style="margin-top: 0.5rem; font-size: 0.9em; color: #6c757d; text-align: center;">
-                                    <span id="progress-details">Iniciando procesamiento masivo...</span>
+                                <div style="background: #e9ecef; border-radius: 10px; height: 8px; overflow: hidden;">
+                                    <div id="progress-bar" style="background: #007bff; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
                                 </div>
                             </div>
 
@@ -793,14 +774,6 @@
                             <label for="registrator-search">Buscar:</label>
                             <input type="text" id="registrator-search" placeholder="Buscar por nombre o cédula...">
                         </div>
-                        <div class="filter-group">
-                            <label for="registrator-voted-filter">Estado de Voto:</label>
-                            <select id="registrator-voted-filter">
-                                <option value="">Todos</option>
-                                <option value="true">✅ Votó</option>
-                                <option value="false">❌ No votó</option>
-                            </select>
-                        </div>
                         <button class="btn btn-primary" onclick="registratorFilterHistory()">🔍 Filtrar</button>
                         <button class="btn btn-secondary" onclick="registratorExportHistory()">📊 Exportar</button>
                     </div>
@@ -820,7 +793,7 @@
                                     <th>CV</th>
                                     <th>Comunidad</th>
                                     <th>Tipo</th>
-                                    <th>¿Votó?</th>
+                                    <th>Votó</th>
                                 </tr>
                             </thead>
                             <tbody id="registrator-history-tbody">
@@ -2060,7 +2033,7 @@
                 
             } catch (error) {
                 console.error('❌ Error inicializando sistema de registro:', error);
-                alert('⚠️ El sistema está cargando...\n\nSi el problema persiste:\n• Recarga la página (F5)\n• Verifica tu conexión a internet\n• Intenta más tarde');
+                alert('Error al inicializar el sistema. Recarga la página.');
             }
         }
         
@@ -2111,7 +2084,7 @@
             
             if (!window.firebaseDB) {
                 console.error('❌ Firebase no disponible después de múltiples intentos');
-                alert('⚠️ Problema de conexión...\n\nEl sistema no puede conectarse a internet.\n\nSolución:\n• Verifica tu conexión a internet\n• Recarga la página (F5)\n• Intenta más tarde');
+                alert('Error: No se pudo conectar con Firebase. Recarga la página.');
                 return;
             }
             
@@ -2121,7 +2094,7 @@
             // Verificar que todo esté funcionando correctamente
             if (!checkAndFixInitialization()) {
                 console.error('❌ Problemas detectados en la inicialización');
-                alert('⚠️ El sistema necesita recargarse...\n\nAlgunos componentes no se cargaron correctamente.\n\nSolución:\n• Recarga la página (F5)\n• Si persiste, cierra y abre el navegador');
+                alert('Error: Problemas detectados en la inicialización. Recarga la página.');
                 return;
             }
             

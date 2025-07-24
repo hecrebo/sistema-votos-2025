@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Rezagados</title>
+    
+    <!-- Estilos y librerías reutilizadas -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <link rel="stylesheet" href="choices.min.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <!-- Configuración global del proyecto -->
+    <script src="firebase-config.js"></script>
+    <script src="choices.min.js"></script>
+</head>
+<body>
+    <header style="padding:1rem; background:#1f2937; color:#fff; text-align:center;">
+        <h1>➕ Registro de Rezagados</h1>
+        <button onclick="window.location.href='index.html'" style="margin-top:0.5rem; padding:0.5rem 1rem;">↩️ Volver al Sistema</button>
+    </header>
+
+    <main style="max-width:600px; margin:2rem auto; padding:1rem; background:#f9fafb; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
+        <form id="registration-form" autocomplete="off">
+            <div class="form-group">
+                <label for="ubch">Centro de Votación</label>
+                <select id="ubch" name="ubch" required></select>
+            </div>
+            <div class="form-group">
+                <label for="community">Comunidad</label>
+                <select id="community" name="community" required></select>
+            </div>
+            <div class="form-group">
+                <label for="name">Nombre de la Persona</label>
+                <input type="text" id="name" name="name" placeholder="Ej: Juan Pérez" required>
+            </div>
+            <div class="form-group">
+                <label for="cedula">Cédula</label>
+                <input type="text" id="cedula" name="cedula" placeholder="Ej: 12345678" required>
+            </div>
+            <div class="form-group">
+                <label for="telefono">Teléfono (opcional)</label>
+                <input type="text" id="telefono" name="telefono" placeholder="Ej: 04121234567">
+            </div>
+            <div class="form-group">
+                <label for="sexo">Sexo</label>
+                <select id="sexo" name="sexo" required>
+                    <option value="">Selecciona</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edad">Edad</label>
+                <input type="number" id="edad" name="edad" min="16" max="120" required placeholder="Ej: 30">
+            </div>
+            <button type="submit" class="btn btn-primary btn-large" style="padding:0.75rem 1.5rem; font-size:1rem;">Registrar</button>
+        </form>
+        <div id="msg" style="margin-top:1rem; text-align:center;"></div>
+    </main>
+
+    <!-- Lógica específica de la página -->
+    <script src="registro-rezagados.js"></script>
+</body>
+</html> 
