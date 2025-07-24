@@ -209,14 +209,10 @@ function getNotificationStatistics() {
     console.log('📊 Estadísticas de notificaciones obtenidas');
 }
 
-// Configurar filtros
-updateNotificationSettings({filterLevel: 'minimal'});
-
-// Bloquear tipos
-blockNotificationType('info');
-
-// Bloquear palabras clave
-blockNotificationKeyword('error');
-
-// Ver estadísticas
-getNotificationStatistics();
+// Configurar filtros cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    updateNotificationSettings({filterLevel: 'minimal'});
+    blockNotificationType('info');
+    blockNotificationKeyword('error');
+    getNotificationStatistics();
+});

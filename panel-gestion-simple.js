@@ -1,9 +1,8 @@
-// === PANEL DE GESTIÓN DEL SISTEMA ===
-console.log('🔧 Iniciando Panel de Gestión del Sistema...');
+// === PANEL DE GESTIÓN SIMPLE ===
+console.log('🔧 Iniciando Panel de Gestión Simple...');
 
 // Variables globales
 let systemLogs = [];
-let panelCurrentUser = null;
 let systemStatus = {
     firebase: false,
     navigation: false,
@@ -15,7 +14,7 @@ let systemStatus = {
 
 // Función para inicializar el panel
 function inicializarPanel() {
-    console.log('🚀 Inicializando panel de gestión...');
+    console.log('🚀 Inicializando panel de gestión simple...');
     
     // Verificar permisos
     verificarPermisos();
@@ -23,13 +22,10 @@ function inicializarPanel() {
     // Cargar datos iniciales
     cargarDatosIniciales();
     
-    // Configurar event listeners
-    configurarEventListeners();
-    
     // Mostrar sección por defecto
     mostrarSeccion('dashboard');
     
-    agregarLog('Panel de gestión inicializado correctamente', 'success');
+    agregarLog('Panel de gestión simple inicializado correctamente', 'success');
 }
 
 // Función para verificar permisos de superusuario
@@ -42,7 +38,6 @@ function verificarPermisos() {
         return false;
     }
     
-    panelCurrentUser = user;
     document.getElementById('user-badge').textContent = `${user.username} (${user.role})`;
     
     console.log('✅ Permisos verificados:', user.username);
@@ -58,9 +53,6 @@ function cargarDatosIniciales() {
     
     // Verificar estado del sistema
     verificarEstadoSistema();
-    
-    // Cargar configuración de roles
-    cargarConfiguracionRoles();
 }
 
 // Función para actualizar estadísticas
@@ -90,94 +82,6 @@ function verificarEstadoSistema() {
     systemStatus.navigation = navButtons.length > 0;
     
     agregarLog(`Navegación: ${navButtons.length} botones encontrados`, 'info');
-}
-
-// === FUNCIONES DE NAVEGACIÓN ===
-
-// Función para mostrar secciones
-function mostrarSeccion(seccion) {
-    console.log(`📄 Mostrando sección: ${seccion}`);
-    
-    // Ocultar todas las secciones
-    const secciones = document.querySelectorAll('.section-content');
-    secciones.forEach(sec => sec.style.display = 'none');
-    
-    // Mostrar sección seleccionada
-    const seccionElement = document.getElementById(`${seccion}-section`);
-    if (seccionElement) {
-        seccionElement.style.display = 'block';
-    }
-    
-    // Actualizar navegación activa
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => item.classList.remove('active'));
-    
-    const activeItem = document.querySelector(`[onclick="mostrarSeccion('${seccion}')"]`);
-    if (activeItem) {
-        activeItem.classList.add('active');
-    }
-    
-    // Cargar datos específicos de la sección
-    cargarDatosSeccion(seccion);
-}
-
-// Función para cargar datos específicos de sección
-function cargarDatosSeccion(seccion) {
-    switch(seccion) {
-        case 'dashboard':
-            actualizarEstadisticas();
-            break;
-        case 'roles':
-            cargarConfiguracionRoles();
-            break;
-        case 'navegacion':
-            verificarEstadoBotones();
-            break;
-        case 'usuarios':
-            cargarListaUsuarios();
-            break;
-        case 'sistema':
-            cargarInfoSistema();
-            break;
-        case 'logs':
-            actualizarLogs();
-            break;
-    }
-}
-
-// === FUNCIONES DE ROLES ===
-
-// Función para cargar configuración de roles
-function cargarConfiguracionRoles() {
-    console.log('👥 Cargando configuración de roles...');
-    
-    // Cargar configuración desde localStorage
-    const configRoles = JSON.parse(localStorage.getItem('configRoles') || '{}');
-    
-    // Aplicar configuración a los checkboxes
-    Object.keys(configRoles).forEach(rol => {
-        Object.keys(configRoles[rol]).forEach(permiso => {
-            const checkbox = document.getElementById(`${rol}-${permiso}`);
-            if (checkbox) {
-                checkbox.checked = configRoles[rol][permiso];
-            }
-        });
-    });
-    
-    agregarLog('Configuración de roles cargada', 'success');
-}
-
-// Función para toggle de roles
-function toggleRole(rol) {
-    console.log(`🔄 Toggleando rol: ${rol}`);
-    
-    const button = event.target;
-    const isActive = button.textContent === 'Activo';
-    
-    button.textContent = isActive ? 'Inactivo' : 'Activo';
-    button.classList.toggle('disabled', isActive);
-    
-    agregarLog(`Rol ${rol} ${isActive ? 'desactivado' : 'activado'}`, 'info');
 }
 
 // === FUNCIONES DE NAVEGACIÓN ===
@@ -281,71 +185,6 @@ function verificarEstadoBotones() {
     botonesStatus.innerHTML = html;
 }
 
-// === FUNCIONES DE USUARIOS ===
-
-// Función para cargar lista de usuarios
-function cargarListaUsuarios() {
-    console.log('👤 Cargando lista de usuarios...');
-    
-    const usuariosLista = document.getElementById('usuarios-lista');
-    
-    // Simular lista de usuarios (en producción vendría de Firebase)
-    const usuarios = [
-        { username: 'superadmin_01', role: 'superusuario', email: 'admin@votos2025.com', lastLogin: '2025-01-24 12:00' },
-        { username: 'admin_01', role: 'admin', email: 'admin1@votos2025.com', lastLogin: '2025-01-24 11:30' },
-        { username: 'registrador_01', role: 'registrador', email: 'reg1@votos2025.com', lastLogin: '2025-01-24 10:15' },
-        { username: 'verificador_01', role: 'verificador', email: 'ver1@votos2025.com', lastLogin: '2025-01-24 09:45' }
-    ];
-    
-    let html = '';
-    usuarios.forEach(user => {
-        html += `
-            <div class="log-entry">
-                <span class="log-time">${user.username}</span>
-                <span class="log-message">${user.role} | ${user.email} | Último login: ${user.lastLogin}</span>
-            </div>
-        `;
-    });
-    
-    usuariosLista.innerHTML = html;
-}
-
-// Función para abrir modal crear usuario
-function abrirModalCrearUsuario() {
-    document.getElementById('modal-crear-usuario').style.display = 'block';
-}
-
-// Función para cerrar modal
-function cerrarModal() {
-    document.getElementById('modal-crear-usuario').style.display = 'none';
-}
-
-// Función para crear usuario
-function crearUsuario() {
-    const username = document.getElementById('nuevo-usuario').value;
-    const role = document.getElementById('nuevo-rol').value;
-    const email = document.getElementById('nuevo-email').value;
-    
-    if (!username || !role || !email) {
-        alert('Por favor completa todos los campos');
-        return;
-    }
-    
-    // Simular creación de usuario
-    const nuevoUsuario = {
-        username: username,
-        role: role,
-        email: email,
-        lastLogin: new Date().toISOString()
-    };
-    
-    console.log('✅ Usuario creado:', nuevoUsuario);
-    agregarLog(`Usuario ${username} creado con rol ${role}`, 'success');
-    
-    cerrarModal();
-    cargarListaUsuarios();
-}
-
 // === FUNCIONES DE SISTEMA ===
 
 // Función para cargar información del sistema
@@ -359,7 +198,7 @@ function cargarInfoSistema() {
         'URL': window.location.href,
         'Firebase': systemStatus.firebase ? '✅ Conectado' : '❌ No conectado',
         'Navegación': systemStatus.navigation ? '✅ Configurada' : '❌ No configurada',
-        'Usuario Actual': panelCurrentUser ? `${panelCurrentUser.username} (${panelCurrentUser.role})` : 'No definido',
+        'Usuario Actual': JSON.parse(localStorage.getItem('currentUser') || '{}').username || 'No definido',
         'Hora del Sistema': new Date().toLocaleString()
     };
     
@@ -394,8 +233,9 @@ function ejecutarDiagnostico() {
     agregarLog(`📊 Navegación: ${navButtons.length} botones encontrados`, 'info');
     
     // Verificar usuario
-    if (panelCurrentUser) {
-        agregarLog(`👤 Usuario: ${panelCurrentUser.username} (${panelCurrentUser.role})`, 'success');
+    const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (user.username) {
+        agregarLog(`👤 Usuario: ${user.username} (${user.role})`, 'success');
     } else {
         agregarLog('❌ No hay usuario logueado', 'error');
     }
@@ -466,11 +306,8 @@ function agregarLog(mensaje, tipo = 'info') {
         systemLogs.shift();
     }
     
-    // Actualizar logs en pantalla si estamos en la sección de logs
-    const logsSection = document.getElementById('logs-section');
-    if (logsSection.style.display !== 'none') {
-        actualizarLogs();
-    }
+    // Actualizar logs en pantalla
+    actualizarLogs();
     
     console.log(`[${timestamp}] ${mensaje}`);
 }
@@ -527,11 +364,6 @@ function activarLogsDetallados() {
 }
 
 // === FUNCIONES DE ACCIONES RÁPIDAS ===
-
-// Función para ir al sistema principal
-function irASistemaPrincipal() {
-    window.open('index.html', '_blank');
-}
 
 // Función para reiniciar navegación
 function reiniciarNavegacion() {
@@ -590,9 +422,6 @@ function repararNavegacion() {
     // Mostrar todos los botones
     mostrarTodosLosBotones();
     
-    // Configurar event listeners
-    configurarEventListeners();
-    
     agregarLog('Navegación reparada', 'success');
 }
 
@@ -649,33 +478,11 @@ function cerrarSesion() {
     window.location.href = 'index.html';
 }
 
-// === FUNCIONES DE CONFIGURACIÓN ===
-
-// Función para configurar event listeners
-function configurarEventListeners() {
-    console.log('🔧 Configurando event listeners...');
-    
-    // Event listeners para checkboxes de permisos
-    const checkboxes = document.querySelectorAll('.permission-checkbox');
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const configRoles = JSON.parse(localStorage.getItem('configRoles') || '{}');
-            const [rol, permiso] = this.id.split('-');
-            
-            if (!configRoles[rol]) configRoles[rol] = {};
-            configRoles[rol][permiso] = this.checked;
-            
-            localStorage.setItem('configRoles', JSON.stringify(configRoles));
-            agregarLog(`Permiso ${permiso} para ${rol} ${this.checked ? 'activado' : 'desactivado'}`, 'info');
-        });
-    });
-}
-
 // === INICIALIZACIÓN ===
 
 // Ejecutar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOM cargado, iniciando panel de gestión...');
+    console.log('🚀 DOM cargado, iniciando panel de gestión simple...');
     
     // Esperar un poco para que otros scripts se carguen
     setTimeout(() => {
@@ -685,7 +492,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Funciones globales para acceso desde consola
 window.panelGestion = {
-    mostrarSeccion,
     repararNavegacion,
     ejecutarDiagnostico,
     agregarLog,
@@ -693,5 +499,5 @@ window.panelGestion = {
     configurarPorRol
 };
 
-console.log('✅ Panel de gestión del sistema cargado');
-console.log('💡 Usa panelGestion.mostrarSeccion("dashboard") para cambiar secciones'); 
+console.log('✅ Panel de gestión simple cargado');
+console.log('💡 Usa panelGestion.repararNavegacion() para reparar la navegación'); 
