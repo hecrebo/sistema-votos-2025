@@ -1284,30 +1284,26 @@ class VotingSystemFirebase extends VotingSystem {
 
     // Mostrar notificación de actualización en tiempo real
     showRealtimeUpdate(message) {
-+        const now = Date.now();
-+        if (window.lastRealtimeNotification && now - window.lastRealtimeNotification < 60000) {
-+            return; // menos de 60s desde la última, no mostrar
-+        }
-+        window.lastRealtimeNotification = now;
-         // Remover notificación anterior si existe
-         const existingNotification = document.querySelector('.realtime-update');
-         if (existingNotification) {
-             existingNotification.remove();
-         }
-         // Crear nueva notificación
-         const notification = document.createElement('div');
-         notification.className = 'realtime-update';
-         notification.textContent = message;
-         
-         document.body.appendChild(notification);
-         
-         // Remover después de 3 segundos
-         setTimeout(() => {
-             if (notification.parentNode) {
-                 notification.remove();
-             }
-         }, 3000);
-     }
+        // Remover notificación anterior si existe
+        const existingNotification = document.querySelector('.realtime-update');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // Crear nueva notificación
+        const notification = document.createElement('div');
+        notification.className = 'realtime-update';
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remover después de 3 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
 
     async saveVoteToFirebase(voteData) {
         try {
@@ -3738,7 +3734,7 @@ class VotingSystemFirebase extends VotingSystem {
             const navVerifierHistory = document.getElementById('nav-verifier-history');
             const navRezagados = document.getElementById('nav-rezagados');
             const navRezagadosMobile = document.getElementById('nav-rezagados-mobile');
-            const rezagadosBtnCheckin = document.getElementById('rezagados-checkin-btn');
+            const rezInline = document.getElementById('rezagados-inline');
             
             if (navCheckIn) {
                 navCheckIn.style.display = 'inline-block';
@@ -3772,7 +3768,10 @@ class VotingSystemFirebase extends VotingSystem {
                 navRezagadosMobile.style.display = 'inline-block';
                 console.log('✅ Botón móvil Rezagados mostrado');
             }
-            if (rezagadosBtnCheckin) rezagadosBtnCheckin.style.display = 'inline-block';
+            if (rezInline) {
+                rezInline.style.display = 'inline-block';
+                console.log('✅ Botón inline Rezagados mostrado');
+            }
             
             // Asegurar que la página inicial sea check-in para verificadores
             this.navigateToPage('check-in');
@@ -3823,7 +3822,10 @@ class VotingSystemFirebase extends VotingSystem {
                 if (btnId === 'nav-verifier-dashboard' || 
                     btnId === 'nav-verifier-history' || 
                     btnId === 'nav-registrator-dashboard' || 
-                    btnId === 'nav-registrator-history') {
+                    btnId === 'nav-registrator-history' ||
+                    btnId === 'nav-rezagados' ||
+                    btnId === 'nav-rezagados-mobile' ||
+                    btnId === 'rezagados-inline') {
                     btn.style.display = 'none';
                     console.log('🚫 Botón oculto (específico de rol):', btnText);
                 } else {

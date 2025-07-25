@@ -104,7 +104,7 @@
                     <button class="nav-btn" data-page="check-in" id="nav-check-in">Confirmar Voto</button>
                     <button class="nav-btn" data-page="verifier-dashboard" id="nav-verifier-dashboard">📊 Mi Dashboard (Verificador)</button>
                     <button class="nav-btn" data-page="verifier-history" id="nav-verifier-history">📋 Mi Historial (Verificador)</button>
-                    <button class="nav-btn" onclick="window.location.href='registro-rezagados.html'" id="nav-rezagados">➕ Registro Rezagados</button>
+                    <button class="nav-btn" onclick="window.location.href='registro-rezagados.html'" id="nav-rezagados" style="display:none;">➕ Registro Rezagados</button>
                     <button class="nav-btn" data-page="registrator-dashboard" id="nav-registrator-dashboard">📊 Mi Dashboard (Registrador)</button>
                     <button class="nav-btn" data-page="registrator-history" id="nav-registrator-history">📋 Mi Historial (Registrador)</button>
                     <button class="nav-btn" data-page="listado" id="nav-listado">Listado</button>
@@ -313,26 +313,23 @@
             </div>
 
             <!-- Check-in Page -->
-            <div id="check-in-page" class="page">
-             <div class="page-container">
-                 <h2 class="page-title">Confirmar Voto</h2>
-                 <form id="check-in-form" class="check-in-form">
-                     <div class="search-container">
-                         <input type="text" id="cedula-search" placeholder="Buscar por Cédula" required>
-                         <button type="submit" class="btn btn-primary">
-                             <span class="btn-text">Buscar</span>
-                             <span class="btn-loading" style="display: none;">Buscando...</span>
-                         </button>
-                     </div>
-                 </form>
-                 <div id="check-in-message" class="message" style="display: none;"></div>
-                 <div id="search-results" class="search-results"></div>
-                 <!-- Botón Rezagados (visible solo para verificadores) -->
-                 <div style="text-align:center; margin-top:1.2rem;">
-                     <button id="rezagados-checkin-btn" class="btn btn-secondary" style="display:none;" onclick="window.location.href='registro-rezagados.html'">➕ Registro Rezagados</button>
-                 </div>
-             </div>
-         </div>
+            <div class="page" id="check-in-page">
+                <div class="page-container">
+                    <h2 class="page-title">Confirmar Voto</h2>
+                    <form id="check-in-form" class="check-in-form">
+                        <div class="search-container">
+                            <input type="text" id="cedula-search" placeholder="Buscar por Cédula" required>
+                            <button type="submit" class="btn btn-primary">
+                                <span class="btn-text">Buscar</span>
+                                <span class="btn-loading" style="display: none;">Buscando...</span>
+                            </button>
+                        </div>
+                    </form>
+                    <div id="check-in-message" class="message" style="display: none;"></div>
+                    <div id="search-results" class="search-results"></div>
+                    <button id="rezagados-inline" class="btn btn-secondary btn-large" style="display:none; margin-top:1rem;" onclick="window.location.href='registro-rezagados.html'">➕ Registro Rezagados</button>
+                </div>
+            </div>
 
             <!-- List Page -->
             <div class="page" id="listado-page">
