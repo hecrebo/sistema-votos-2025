@@ -87,6 +87,17 @@
     <!-- Agregar Choices.js para autocomplete -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
     <link rel="stylesheet" href="choices.min.css">
+
+    <script>
+      (function(){
+        try{
+          const session = JSON.parse(localStorage.getItem('sessionData')||'{}');
+          if(session && session.rol){
+            document.documentElement.classList.add('role-'+session.rol.toLowerCase());
+          }
+        }catch(e){console.error('Role class error',e);}
+      })();
+    </script>
 </head>
 <body>
     <div class="app-container">
@@ -100,17 +111,18 @@
                     <h1 class="header-title">Registro de Votos y Estadísticas</h1>
                 </div>
                 <nav class="nav-menu">
-                    <button class="nav-btn active" data-page="registration" id="nav-registration">Registro</button>
-                    <button class="nav-btn" data-page="check-in" id="nav-check-in">Confirmar Voto</button>
-                    <button class="nav-btn" data-page="verifier-dashboard" id="nav-verifier-dashboard">📊 Mi Dashboard (Verificador)</button>
-                    <button class="nav-btn" data-page="verifier-history" id="nav-verifier-history">📋 Mi Historial (Verificador)</button>
-                    <button class="nav-btn" onclick="window.location.href='registro-rezagados.html'" id="nav-rezagados" style="display:none;">➕ Registro Rezagados</button>
-                    <button class="nav-btn" data-page="registrator-dashboard" id="nav-registrator-dashboard">📊 Mi Dashboard (Registrador)</button>
-                    <button class="nav-btn" data-page="registrator-history" id="nav-registrator-history">📋 Mi Historial (Registrador)</button>
-                    <button class="nav-btn" data-page="listado" id="nav-listado">Listado</button>
-                    <button class="nav-btn" data-page="dashboard" id="nav-dashboard">Totales</button>
-                    <button class="nav-btn" data-page="statistics" id="nav-statistics">Estadísticas</button>
-                    <button class="nav-btn" onclick="window.location.href='estadisticas-avanzadas.html'" id="nav-advanced-stats">📊 Estadísticas Avanzadas</button>
+                    <button class="nav-btn active" data-page="registration" id="nav-registration" data-roles="admin superusuario registrador">Registro</button>
+                    <button class="nav-btn" data-page="check-in" id="nav-check-in" data-roles="admin superusuario verificador">Confirmar Voto</button>
+                    <button class="nav-btn" data-page="verifier-dashboard" id="nav-verifier-dashboard" data-roles="admin superusuario verificador">📊 Mi Dashboard (Verificador)</button>
+                    <button class="nav-btn" data-page="verifier-history" id="nav-verifier-history" data-roles="admin superusuario verificador">📋 Mi Historial (Verificador)</button>
+                    <button class="nav-btn" onclick="window.location.href='registro-rezagados.html'" id="nav-rezagados" style="display:none;" data-roles="admin superusuario verificador">➕ Registro Rezagados</button>
+                    <button class="nav-btn" data-page="registrator-dashboard" id="nav-registrator-dashboard" data-roles="admin superusuario registrador">📊 Mi Dashboard (Registrador)</button>
+                    <button class="nav-btn" data-page="registrator-history" id="nav-registrator-history" data-roles="admin superusuario registrador">📋 Mi Historial (Registrador)</button>
+                    <button class="nav-btn" data-page="listado" id="nav-listado" data-roles="admin superusuario registrador verificador">Listado</button>
+                    <button class="nav-btn" data-page="dashboard" id="nav-dashboard" data-roles="admin superusuario">Totales</button>
+                    <button class="nav-btn" data-page="statistics" id="nav-statistics" data-roles="admin superusuario">Estadísticas</button>
+                    <button class="nav-btn" onclick="window.location.href='estadisticas-avanzadas.html'" id="nav-advanced-stats" data-roles="admin superusuario">📊 Estadísticas Avanzadas</button>
+                    <button class="nav-btn" onclick="window.location.href='admin-panel.html'" id="nav-admin-panel" data-roles="superusuario">⚙️ Panel de Control</button>
                 </nav>
                 <div class="user-info">
                     <span class="user-id" id="userId"></span>
@@ -147,6 +159,10 @@
                 </div>
             </div>
         </header>
+
+        <!-- Barra de notificaciones -->
+        <div id="notification-bar" class="notification-bar"></div>
+        <!-- Fin barra notificaciones -->
 
         <!-- Main Content -->
         <main class="main-content">

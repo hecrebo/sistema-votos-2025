@@ -2320,13 +2320,9 @@ class VotingSystemFirebase extends VotingSystem {
                     <button class="btn btn-primary btn-small" onclick="votingSystem.showDetailView('${vote.id}')" title="Ver detalles">
                         👁️
                     </button>
-                    <button class="btn btn-primary btn-small" onclick="votingSystem.editVote('${vote.id}')" title="Editar">
-                        🔄
-                    </button>
-                    ${this.getCurrentUser()?.rol !== 'verificador' ? `
-                    <button class="btn btn-danger btn-small" onclick="votingSystem.deleteVote('${vote.id}')" title="Eliminar">
-                        ❌
-                    </button>
+                    ${['admin','superusuario'].includes(this.getCurrentUser()?.rol) ? `
+                    <button class="btn btn-primary btn-small" onclick="votingSystem.editVote('${vote.id}')" title="Editar">🔄</button>
+                    <button class="btn btn-danger btn-small" onclick="votingSystem.deleteVote('${vote.id}')" title="Eliminar">❌</button>
                     ` : ''}
                 </td>
             `;
@@ -3841,8 +3837,7 @@ class VotingSystemFirebase extends VotingSystem {
                     btnId === 'nav-registrator-history' ||
                     btnId === 'nav-rezagados' ||
                     btnId === 'nav-rezagados-mobile' ||
-                    btnId === 'rezagados-inline' ||
-                    btnId === 'nav-listado') {
+                    btnId === 'rezagados-inline') { // eliminado nav-listado
                     btn.style.display = 'none';
                     console.log('🚫 Botón oculto (específico de rol):', btnText);
                 } else {
@@ -3853,19 +3848,18 @@ class VotingSystemFirebase extends VotingSystem {
             });
         }
         
+        // Panel de Control solo para superusuario
+        if (currentUser.rol === 'admin') {
+            const btnPanel = document.getElementById('nav-admin-panel');
+            if (btnPanel) btnPanel.style.display = 'none';
+        }
+        
         console.log('✅ Navegación configurada correctamente');
         
-        // Generar menú móvil dinámicamente
-        this.generateMobileMenu();
-        
-        // Reconfigurar event listeners después de la navegación
-        this.reconfigureEventListeners();
-        
-        // Forzar actualización después de un breve delay
-        setTimeout(() => {
-            this.forceNavigationUpdate();
-            this.forceSetupDashboardButtons();
-        }, 100);
+        // 🔄 Limpieza: permitir que CSS controle visibilidad
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.style.display = '';
+        });
     }
     
     // Reconfigurar event listeners después de cambios en la navegación
@@ -3961,7 +3955,7 @@ class VotingSystemFirebase extends VotingSystem {
                 </div>
                 <div class="menu-item" onclick="window.location.href='admin-panel.html'">
                     <span class="icon">⚙️</span>
-                    Panel de Administración
+                    Panel de Control
                 </div>
             `;
         } else if (currentUser.rol === 'registrador') {
@@ -3996,7 +3990,7 @@ class VotingSystemFirebase extends VotingSystem {
                 </div>
                 <div class="menu-item" onclick="window.location.href='admin-panel.html'">
                     <span class="icon">⚙️</span>
-                    Panel de Administración
+                    Panel de Control
                 </div>
             `;
         } else {
@@ -4028,7 +4022,7 @@ class VotingSystemFirebase extends VotingSystem {
                 </div>
                 <div class="menu-item" onclick="window.location.href='admin-panel.html'">
                     <span class="icon">⚙️</span>
-                    Panel de Administración
+                    Panel de Control
                 </div>
             `;
         }

@@ -47,7 +47,12 @@ class NotificationSystem {
             if (!document.getElementById('notification-container')) {
                 this.container = document.createElement('div');
                 this.container.id = 'notification-container';
-                document.body.appendChild(this.container);
+                const bar = document.getElementById('notification-bar');
+                if (bar) {
+                    bar.appendChild(this.container);
+                } else {
+                    document.body.appendChild(this.container);
+                }
             } else {
                 this.container = document.getElementById('notification-container');
             }

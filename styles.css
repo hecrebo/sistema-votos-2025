@@ -2523,7 +2523,8 @@ body {
     opacity: 1;
     visibility: visible;
     transform: scale(1) translateY(0);
-    max-height: 400px;
+    max-height: 70vh;
+    overflow-y: auto;
     /* Sombra más pronunciada cuando está activo */
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
@@ -4143,15 +4144,8 @@ select:focus {
 
 /* === SISTEMA DE NOTIFICACIONES === */
 #notification-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 90vw;
-    width: 400px;
+    position: static !important;
+    padding-top: 0.5rem;
 }
 
 .notification {
@@ -5832,4 +5826,55 @@ select:focus {
         padding: 0.6rem 0.9rem;
         font-size: 0.9rem;
     }
+}
+
+/* === Control de visibilidad por rol === */
+.nav-btn { display: none !important; }
+
+html.role-admin   .nav-btn[data-roles~="admin"],
+html.role-superusuario .nav-btn[data-roles~="superusuario"],
+html.role-registrador .nav-btn[data-roles~="registrador"],
+html.role-verificador .nav-btn[data-roles~="verificador"] {
+  display: inline-flex !important;
+}
+
+/* Ocultar acciones de edición/eliminación para roles restringidos */
+html.role-registrador .btn[title="Editar"],
+html.role-registrador .btn[title="Eliminar"],
+html.role-verificador .btn[title="Editar"],
+html.role-verificador .btn[title="Eliminar"],
+html.role-registrador #bulk-delete-btn,
+html.role-verificador #bulk-delete-btn,
+html.role-registrador #detail-delete-btn,
+html.role-verificador #detail-delete-btn {
+  display: none !important;
+}
+
+/* Barra fija debajo del header */
+.notification-bar {
+  width: 100%;
+  background: transparent;
+  padding: 0 1rem;
+}
+
+/* Contenedor dentro de la barra */
+#notification-container {
+  position: relative;
+  top: auto;
+  right: auto;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  z-index: 1000;
+}
+
+#notification-container {
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  #notification-container {
+    gap: 6px;
+  }
 }
