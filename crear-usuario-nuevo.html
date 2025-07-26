@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Usuario Nuevo - Sistema de Votos</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .create-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .create-form {
+            display: grid;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-group label {
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input, .form-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .btn-create {
+            background: #28a745;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn-create:hover {
+            background: #218838;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .migration-section {
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="create-container">
+        <h1>👤 Crear Usuario Nuevo</h1>
+        <p>Crear un nuevo usuario y opcionalmente migrar datos de un usuario existente.</p>
+        
+        <div class="create-form">
+            <h3>📝 Información del Nuevo Usuario</h3>
+            
+            <div class="form-group">
+                <label for="nuevo-username">Nombre de Usuario:</label>
+                <input type="text" id="nuevo-username" required placeholder="Ej: nuevo_usuario">
+            </div>
+            
+            <div class="form-group">
+                <label for="nuevo-password">Contraseña:</label>
+                <input type="password" id="nuevo-password" required placeholder="Contraseña segura">
+            </div>
+            
+            <div class="form-group">
+                <label for="nuevo-rol">Rol:</label>
+                <select id="nuevo-rol" required>
+                    <option value="">Seleccionar rol...</option>
+                    <option value="superusuario">Superusuario</option>
+                    <option value="admin">Administrador</option>
+                    <option value="registrador">Registrador</option>
+                    <option value="verificador">Verificador</option>
+                    <option value="usuario">Usuario</option>
+                </select>
+            </div>
+            
+            <div class="migration-section">
+                <h3>🔄 Migración de Datos (Opcional)</h3>
+                <p>Si quieres migrar registros de un usuario existente al nuevo usuario:</p>
+                
+                <div class="form-group">
+                    <label for="usuario-migrar">Migrar registros de:</label>
+                    <select id="usuario-migrar">
+                        <option value="">No migrar datos</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="confirmar-migracion">
+                        Confirmo que quiero migrar todos los registros al nuevo usuario
+                    </label>
+                </div>
+            </div>
+            
+            <button class="btn-create" onclick="crearUsuarioNuevo()">✅ Crear Usuario Nuevo</button>
+        </div>
+        
+        <div id="status-message"></div>
+        
+        <div style="margin-top: 30px;">
+            <h3>ℹ️ Información del Proceso</h3>
+            <ul>
+                <li>Se creará un nuevo usuario con los datos especificados</li>
+                <li>Si seleccionas migración, se transferirán TODOS los registros</li>
+                <li>El usuario original mantendrá su cuenta</li>
+                <li>Se creará un registro de auditoría de la migración</li>
+                <li>El nuevo usuario podrá acceder inmediatamente al sistema</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        // Cargar usuarios existentes al iniciar
+        document.addEventListener('DOMContentLoaded', async function() {
+            await cargarUsuariosExistentes();
+        });
+
+        async function cargarUsuariosExistentes() {
+            try {
+                const snapshot = await window.firebaseDB.votesCollection.get();
+                const usuarios = new Set();
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.registeredBy) {
+                        usuarios.add(data.registeredBy);
+                    }
+                });
+                
+                const selectMigrar = document.getElementById('usuario-migrar');
+                
+                // Agregar usuarios existentes
+                Array.from(usuarios).sort().forEach(usuario => {
+                    const option = document.createElement('option');
+                    option.value = usuario;
+                    option.textContent = usuario;
+                    selectMigrar.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('Error cargando usuarios:', error);
+                mostrarStatus('Error cargando usuarios existentes', 'error');
+            }
+        }
+
+        async function crearUsuarioNuevo() {
+            const username = document.getElementById('nuevo-username').value.trim();
+            const password = document.getElementById('nuevo-password').value;
+            const rol = document.getElementById('nuevo-rol').value;
+            const usuarioMigrar = document.getElementById('usuario-migrar').value;
+            const confirmarMigracion = document.getElementById('confirmar-migracion').checked;
+            
+            // Validaciones
+            if (!username || !password || !rol) {
+                mostrarStatus('Por favor completa todos los campos obligatorios', 'error');
+                return;
+            }
+            
+            if (username.length < 3) {
+                mostrarStatus('El nombre de usuario debe tener al menos 3 caracteres', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                mostrarStatus('La contraseña debe tener al menos 6 caracteres', 'error');
+                return;
+            }
+            
+            if (usuarioMigrar && !confirmarMigracion) {
+                mostrarStatus('Debes confirmar la migración de datos', 'error');
+                return;
+            }
+            
+            try {
+                mostrarStatus('🔄 Creando nuevo usuario...', 'info');
+                
+                // Obtener usuarios existentes del localStorage
+                const usuariosExistentes = JSON.parse(localStorage.getItem('usuarios') || '[]');
+                
+                // Verificar si el usuario ya existe
+                const usuarioExistente = usuariosExistentes.find(u => 
+                    u.username.toLowerCase() === username.toLowerCase()
+                );
+                
+                if (usuarioExistente) {
+                    mostrarStatus('❌ El nombre de usuario ya existe', 'error');
+                    return;
+                }
+                
+                // Crear nuevo usuario
+                const nuevoUsuario = {
+                    username: username,
+                    password: password,
+                    rol: rol,
+                    createdAt: new Date().toISOString()
+                };
+                
+                // Agregar a la lista de usuarios
+                usuariosExistentes.push(nuevoUsuario);
+                localStorage.setItem('usuarios', JSON.stringify(usuariosExistentes));
+                
+                let mensaje = `✅ Usuario "${username}" creado exitosamente con rol "${rol}"`;
+                
+                // Migrar datos si se especificó
+                if (usuarioMigrar && confirmarMigracion) {
+                    const registrosMigrados = await migrarRegistros(usuarioMigrar, username);
+                    mensaje += `\n\n📊 Migración completada: ${registrosMigrados} registros transferidos de "${usuarioMigrar}"`;
+                }
+                
+                mostrarStatus(mensaje, 'success');
+                
+                // Limpiar formulario
+                document.getElementById('nuevo-username').value = '';
+                document.getElementById('nuevo-password').value = '';
+                document.getElementById('nuevo-rol').value = '';
+                document.getElementById('usuario-migrar').value = '';
+                document.getElementById('confirmar-migracion').checked = false;
+                
+            } catch (error) {
+                console.error('Error creando usuario:', error);
+                mostrarStatus(`❌ Error creando usuario: ${error.message}`, 'error');
+            }
+        }
+
+        async function migrarRegistros(usuarioOrigen, usuarioDestino) {
+            try {
+                // Obtener registros del usuario origen
+                const snapshot = await window.firebaseDB.votesCollection
+                    .where('registeredBy', '==', usuarioOrigen)
+                    .get();
+                
+                if (snapshot.empty) {
+                    return 0;
+                }
+                
+                const batch = window.firebaseDB.votesCollection.firestore.batch();
+                let migrados = 0;
+                
+                snapshot.forEach(doc => {
+                    const docRef = window.firebaseDB.votesCollection.doc(doc.id);
+                    batch.update(docRef, {
+                        registeredBy: usuarioDestino,
+                        migradoDesde: usuarioOrigen,
+                        fechaMigracion: new Date().toISOString()
+                    });
+                    migrados++;
+                });
+                
+                // Ejecutar la migración
+                await batch.commit();
+                
+                return migrados;
+                
+            } catch (error) {
+                console.error('Error en migración:', error);
+                throw new Error(`Error migrando registros: ${error.message}`);
+            }
+        }
+
+        function mostrarStatus(mensaje, tipo) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.className = `status ${tipo}`;
+            statusDiv.innerHTML = mensaje.replace(/\n/g, '<br>');
+        }
+    </script>
+</body>
+</html> 

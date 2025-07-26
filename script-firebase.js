@@ -1783,14 +1783,14 @@ class VotingSystemFirebase extends VotingSystem {
         // Control de acceso por rol
         if (currentUser.rol === 'verificador') {
             // Los verificadores pueden acceder a confirmación de votos y sus páginas específicas
-            const allowedPages = ['check-in', 'verifier-dashboard', 'verifier-history'];
+            const allowedPages = ['check-in', 'verifier-dashboard', 'verifier-history', 'listado'];
             if (!allowedPages.includes(page)) {
                 this.showMessage('No tienes permisos para acceder a esta página.', 'error', 'check-in');
                 return;
             }
         } else if (currentUser.rol === 'registrador') {
             // Los registradores pueden acceder a registro, dashboard e historial
-            const allowedPages = ['registration', 'registrator-dashboard', 'registrator-history'];
+            const allowedPages = ['registration', 'registrator-dashboard', 'registrator-history', 'listado'];
             if (!allowedPages.includes(page)) {
                 this.showMessage('No tienes permisos para acceder a esta página.', 'error', 'registration');
                 return;
@@ -3735,6 +3735,7 @@ class VotingSystemFirebase extends VotingSystem {
             const navRezagados = document.getElementById('nav-rezagados');
             const navRezagadosMobile = document.getElementById('nav-rezagados-mobile');
             const rezInline = document.getElementById('rezagados-inline');
+            const navListado = document.getElementById('nav-listado');
             
             if (navCheckIn) {
                 navCheckIn.style.display = 'inline-block';
@@ -3756,6 +3757,13 @@ class VotingSystemFirebase extends VotingSystem {
                 console.log('✅ Botón Mi Historial (Verificador) mostrado');
             } else {
                 console.log('❌ No se encontró nav-verifier-history');
+            }
+            if (navListado) {
+                navListado.style.display = 'inline-block';
+                navListado.classList.add('configured');
+                console.log('✅ Botón Listado mostrado');
+            } else {
+                console.log('❌ No se encontró nav-listado');
             }
             if (navRezagados) {
                 navRezagados.style.display = 'inline-block';
@@ -3783,6 +3791,7 @@ class VotingSystemFirebase extends VotingSystem {
             const navRegistration = document.getElementById('nav-registration');
             const navRegistratorDashboard = document.getElementById('nav-registrator-dashboard');
             const navRegistratorHistory = document.getElementById('nav-registrator-history');
+            const navListado2 = document.getElementById('nav-listado');
             
             if (navRegistration) {
                 navRegistration.style.display = 'inline-block';
@@ -3805,6 +3814,13 @@ class VotingSystemFirebase extends VotingSystem {
             } else {
                 console.log('❌ No se encontró nav-registrator-history');
             }
+            if (navListado2) {
+                navListado2.style.display = 'inline-block';
+                navListado2.classList.add('configured');
+                console.log('✅ Botón Listado mostrado');
+            } else {
+                console.log('❌ No se encontró nav-listado');
+            }
             
             // Asegurar que la página inicial sea registration para registradores
             this.navigateToPage('registration');
@@ -3825,7 +3841,8 @@ class VotingSystemFirebase extends VotingSystem {
                     btnId === 'nav-registrator-history' ||
                     btnId === 'nav-rezagados' ||
                     btnId === 'nav-rezagados-mobile' ||
-                    btnId === 'rezagados-inline') {
+                    btnId === 'rezagados-inline' ||
+                    btnId === 'nav-listado') {
                     btn.style.display = 'none';
                     console.log('🚫 Botón oculto (específico de rol):', btnText);
                 } else {
@@ -3926,9 +3943,25 @@ class VotingSystemFirebase extends VotingSystem {
                     <span class="icon">📋</span>
                     Mi Historial
                 </div>
-                <div class="menu-item" onclick="window.location.href='registro-rezagados.html'">
-                    <span class="icon">➕</span>
-                    Registro Rezagados
+                <div class="menu-item" onclick="votingSystem.navigateToPage('listado')">
+                    <span class="icon">📋</span>
+                    Listado
+                </div>
+                <div class="menu-item" onclick="votingSystem.navigateToPage('dashboard')">
+                    <span class="icon">📊</span>
+                    Totales
+                </div>
+                <div class="menu-item" onclick="votingSystem.navigateToPage('statistics')">
+                    <span class="icon">📈</span>
+                    Estadísticas
+                </div>
+                <div class="menu-item" onclick="window.location.href='estadisticas-avanzadas.html'">
+                    <span class="icon">📊</span>
+                    Estadísticas Avanzadas
+                </div>
+                <div class="menu-item" onclick="window.location.href='admin-panel.html'">
+                    <span class="icon">⚙️</span>
+                    Panel de Administración
                 </div>
             `;
         } else if (currentUser.rol === 'registrador') {
@@ -3944,6 +3977,26 @@ class VotingSystemFirebase extends VotingSystem {
                 <div class="menu-item" onclick="votingSystem.navigateToPage('registrator-history')">
                     <span class="icon">📋</span>
                     Mi Historial
+                </div>
+                <div class="menu-item" onclick="votingSystem.navigateToPage('listado')">
+                    <span class="icon">📋</span>
+                    Listado
+                </div>
+                <div class="menu-item" onclick="votingSystem.navigateToPage('dashboard')">
+                    <span class="icon">📊</span>
+                    Totales
+                </div>
+                <div class="menu-item" onclick="votingSystem.navigateToPage('statistics')">
+                    <span class="icon">📈</span>
+                    Estadísticas
+                </div>
+                <div class="menu-item" onclick="window.location.href='estadisticas-avanzadas.html'">
+                    <span class="icon">📊</span>
+                    Estadísticas Avanzadas
+                </div>
+                <div class="menu-item" onclick="window.location.href='admin-panel.html'">
+                    <span class="icon">⚙️</span>
+                    Panel de Administración
                 </div>
             `;
         } else {
